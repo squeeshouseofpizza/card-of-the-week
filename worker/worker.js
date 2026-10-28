@@ -10,7 +10,7 @@ const CARDS_URL = GAME_ORIGIN + '/card-of-the-week/data/cards.json';
 const LAUNCH = [2026, 11, 4];           // week #1 starts Wednesday Nov 4, 2026
 const DROP_HOUR = 9;                    // new card every Wednesday at 9am Eastern
 const TZ = 'America/New_York';
-const MAX_GUESSES = 6, ARCHIVE = 4, ARTIST_AT = 3, ART_AT = 5, TEST_WEEKS = 6;  // week -1 is the public preview, -2..-6 are ?test cards
+const MAX_GUESSES = 6, ARCHIVE = 4, ARTIST_AT = 3, FLAVOR_AT = 4, ART_AT = 5, TEST_WEEKS = 6;  // week -1 is the public preview, -2..-6 are ?test cards
 const MIN_STATS_PLAYERS = 5;
 // Deep cut weeks: an obscure card about twice a year (weeks 13, 39, 65, ...), drawn from the DEEP_CUTS secret.
 const DEEP_EVERY = 26, DEEP_OFFSET = 13;
@@ -95,6 +95,7 @@ async function scry(name) {
         cost: faces.map(f => f.mana_cost || '').join(' // '), type: faces.map(f => f.type_line || '').join(' // '),
         text: faces.map(f => f.oracle_text || '').join('\n//\n'),
         pt: faces[0].power != null ? faces[0].power + '/' + faces[0].toughness : '',
+        flavor: faces.map(f => f.flavor_text || '').filter(Boolean).join('\n') || c.flavor_text || '',
         set: c.set_name, scryfall: c.scryfall_uri,
       };
     }
@@ -155,6 +156,7 @@ async function stateFor(env, D, week, row) {
     const s = await scry(D.cards[ai][0]);
     out.hints = {};
     if (misses >= ARTIST_AT) out.hints.artist = s ? s.artist : '';
+    if (misses >= FLAVOR_AT) out.hints.flavor = s ? s.flavor : '';
     if (misses >= ART_AT && s) out.hints.art = s.crop;
     if (out.done) out.answer = { index: ai, ...(s || { name: D.cards[ai][0] }) };
   }
