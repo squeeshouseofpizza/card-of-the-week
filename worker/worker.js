@@ -252,6 +252,35 @@ export default {
         return J({ week, total: list.length, top: list.slice(0, 25), me: mine }, 200, origin);
       }
 
+      // ----- Pizza Drop weekly high scores (same weekly clock as Guess the Card) -----
+      if (path === '/pizza/score' && req.method === 'POST') {
+        if (origin !== GAME_ORIGIN) return J({ error: 'origin' }, 403, origin);
+        const u = await user(req, env);
+        if (!u) return J({ error: 'signin' }, 401, origin);
+        const b = await req.json().catch(() => ({}));
+        const score = Number(b.score), ms = Number(b.ms), merges = Number(b.merges), drops = Number(b.drops);
+        // Plausibility, not proof: each merge is worth at most 150 points, every merge needs a drop,
+        // and drops are at least 0.48 seconds apart.
+        const ok = [score, ms, merges, drops].every(Number.isInteger) && score > 0 && score <= 150 * merges
+          && merges <= drops && drops <= ms / 450 + 2 && ms <= 6 * 3600e3;
+        if (!ok) return J({ error: 'invalid' }, 400, origin);
+        const week = currentWeek();
+        await env.DB.prepare(`INSERT INTO pizza_scores (week, discord_id, score, ms, merges, created_at) VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(week, discord_id) DO UPDATE SET score = excluded.score, ms = excluded.ms, merges = excluded.merges, created_at = excluded.created_at
+            WHERE excluded.score > pizza_scores.score`).bind(week, u.discord_id, score, ms, merges, Date.now()).run();
+        const best = await env.DB.prepare('SELECT score FROM pizza_scores WHERE week = ? AND discord_id = ?').bind(week, u.discord_id).first();
+        const above = await env.DB.prepare('SELECT COUNT(*) AS n FROM pizza_scores WHERE week = ? AND score > ?').bind(week, best.score).first();
+        return J({ ok: true, best: best.score, rank: above.n + 1 }, 200, origin);
+      }
+      if (path === '/pizza/board') {
+        const week = currentWeek();
+        const rows = (await env.DB.prepare(`SELECT p.discord_id, u.name, u.avatar, p.score FROM pizza_scores p JOIN users u ON u.discord_id = p.discord_id
+            WHERE p.week = ? ORDER BY p.score DESC, p.created_at ASC`).bind(week).all()).results;
+        const me = await user(req, env);
+        const list = rows.map((r, i) => ({ rank: i + 1, name: r.name, avatar: r.avatar ? `https://cdn.discordapp.com/avatars/${r.discord_id}/${r.avatar}.png?size=64` : '', score: r.score, me: !!(me && me.discord_id === r.discord_id) }));
+        return J({ week, total: list.length, top: list.slice(0, 25), me: list.find(r => r.me) || null }, 200, origin);
+      }
+
       // ----- Discord sign-in (popup + polling, so it works inside the Fourthwall iframe) -----
       if (path === '/auth/login') {
         const nonce = url.searchParams.get('nonce') || '';
