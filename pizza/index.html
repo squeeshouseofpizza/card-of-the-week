@@ -23,6 +23,7 @@ html.framed body{background:transparent;color-scheme:dark}
 [hidden]{display:none!important}
 body{margin:0;background:var(--ground);color:var(--cream);font-family:var(--body);font-size:17px;line-height:1.5}
 .wrap{max-width:560px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px}
 .auth{display:flex;justify-content:flex-end;align-items:center;gap:10px;font-size:14px;color:var(--muted);flex-wrap:wrap}
 .auth img{width:22px;height:22px;border-radius:50%}
 .auth b{color:var(--cream);font-weight:500}
@@ -47,6 +48,9 @@ h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,7vw,38px);mar
 .over h2{font-family:var(--display);font-size:26px;margin:0;color:var(--gold-lite)}
 .over .big{font-family:var(--mono);font-size:34px}
 .over p{margin:0;color:var(--muted);font-size:15px;max-width:34ch}
+.bigm{display:flex;align-items:center;gap:10px;text-align:left;font-size:14px;color:var(--muted)}
+.bigm canvas{width:40px;height:40px}.bigm b{color:var(--cream);font-weight:500}
+.over p.goal{color:var(--gold-lite)}
 .over .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 pre.share{margin:0;background:var(--ground);border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-family:var(--mono);font-size:13px;white-space:pre-wrap;user-select:all;text-align:left}
 .legend{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
@@ -78,7 +82,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
 </head>
 <body>
 <div class="wrap">
-  <div class="auth" id="auth"></div>
+  <div class="topbar"><button class="linkbtn" id="mute" type="button" aria-pressed="true">Sound on</button><div class="auth" id="auth"></div></div>
   <header>
     <div class="eyebrow">Squee's House of Pizza</div>
     <h1>Pizza Drop</h1>
@@ -104,7 +108,9 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     <div class="over" id="over" hidden>
       <h2 id="overTitle">The box overflowed</h2>
       <div class="big" id="overScore">0</div>
+      <div class="bigm" id="biggest" hidden><canvas id="bigicon" width="64" height="64" aria-hidden="true"></canvas><span>Biggest this game<br><b id="bigname"></b></span></div>
       <p id="overNote"></p>
+      <p class="goal" id="goal"></p>
       <pre class="share" id="share"></pre>
       <div class="row"><button class="btn" id="again" type="button">Play again</button><button class="btn ghost" id="copy" type="button">Copy score</button></div>
     </div>
@@ -138,9 +144,9 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
 
   // ---------- toppings: radius, points for making one, and how each is drawn ----------
   const T=[
-    {name:'Olive',r:13,d:'olive'},{name:'Basil',r:18,d:'basil'},{name:'Garlic',r:24,d:'garlic'},{name:'Mushroom',r:30,d:'mushroom'},
-    {name:'Onion',r:37,d:'onion'},{name:'Pepperoni',r:45,d:'pepperoni'},{name:'Tomato',r:52,d:'tomato'},{name:'Green pepper',r:60,d:'greenpepper'},
-    {name:'Cheese',r:68,d:'cheese'},{name:'Signature chili',r:78,d:'chili'},{name:'Pizza',r:90,d:'pizza'}];
+    {name:'Olive',r:19,d:'olive'},{name:'Basil',r:26,d:'basil'},{name:'Garlic',r:34,d:'garlic'},{name:'Mushroom',r:43,d:'mushroom'},
+    {name:'Onion',r:53,d:'onion'},{name:'Pepperoni',r:64,d:'pepperoni'},{name:'Tomato',r:75,d:'tomato'},{name:'Green pepper',r:87,d:'greenpepper'},
+    {name:'Mozzarella',r:99,d:'mozz'},{name:'Signature chili',r:113,d:'chili'},{name:'Pizza',r:131,d:'pizza'}];
   T.forEach((t,i)=>t.pts=(i+1)*(i+2)/2);
   const PIZZA=T.length-1, PIZZA_CLEAR=150, DROPPABLE=5;
 
@@ -159,13 +165,23 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
         c.translate(0,r*.18);
         leaf(-1.05,r*1.05,r*.42,'#3f9a36');leaf(1.05,r*1.05,r*.42,'#3f9a36');leaf(0,r*1.15,r*.5,'#4fb043');
         circle(c,0,0,r*.12,'#2c6b26'); break; }
-      case 'garlic': circle(c,0,0,r,'#efe7cf','#9a8b62',2);
-        c.strokeStyle='#c9b98c';c.lineWidth=2;for(const a of [-.5,0,.5]){c.beginPath();c.moveTo(r*a*.9,-r*.85);c.quadraticCurveTo(r*a*1.4,0,r*a*.9,r*.85);c.stroke()}
-        circle(c,0,-r*.78,r*.12,'#b7a674'); break;
-      case 'mushroom': circle(c,0,0,r,'#f3ead6','#6e5a3c',2);
-        c.fillStyle='#a07a52';c.beginPath();c.ellipse(0,-r*.08,r*.8,r*.52,0,Math.PI,0);c.fill();
-        c.fillStyle='#e9dcc0';c.fillRect(-r*.24,-r*.08,r*.48,r*.62);c.strokeStyle='#6e5a3c';c.lineWidth=2;c.strokeRect(-r*.24,-r*.08,r*.48,r*.62);
-        c.beginPath();c.ellipse(0,-r*.08,r*.8,r*.52,0,Math.PI,0);c.closePath();c.stroke(); break;
+      case 'garlic': {
+        const bulb=()=>{c.beginPath();c.moveTo(0,-r);c.bezierCurveTo(r*.12,-r*.62,r*1.02,-r*.42,r*.98,r*.2);c.bezierCurveTo(r*.95,r*.72,r*.45,r*.9,0,r*.9);
+          c.bezierCurveTo(-r*.45,r*.9,-r*.95,r*.72,-r*.98,r*.2);c.bezierCurveTo(-r*1.02,-r*.42,-r*.12,-r*.62,0,-r);c.closePath()};
+        bulb();c.fillStyle='#f4eedd';c.fill();c.strokeStyle='#8f7f58';c.lineWidth=2;c.stroke();
+        c.save();bulb();c.clip();c.fillStyle='rgba(205,170,190,.35)';c.fillRect(-r,r*.35,r*2,r);c.restore();
+        c.strokeStyle='#cbbd94';c.lineWidth=1.6*s+.8;
+        for(const k of [-.62,-.28,.28,.62]){c.beginPath();c.moveTo(0,-r*.82);c.quadraticCurveTo(r*k*1.25,-r*.1,r*k*.75,r*.86);c.stroke()}
+        c.strokeStyle='#b9a77a';c.lineWidth=1.2;for(const k of [-.18,0,.18]){c.beginPath();c.moveTo(r*k*.6,r*.88);c.lineTo(r*k,r*.98);c.stroke()}
+        break; }
+      case 'mushroom': {
+        c.fillStyle='#efe3c6';c.strokeStyle='#6e5a3c';c.lineWidth=2;
+        c.beginPath();c.moveTo(-r*.3,-r*.02);c.lineTo(-r*.34,r*.72);c.quadraticCurveTo(-r*.4,r*.92,-r*.18,r*.94);c.lineTo(r*.18,r*.94);c.quadraticCurveTo(r*.4,r*.92,r*.34,r*.72);c.lineTo(r*.3,-r*.02);c.closePath();c.fill();c.stroke();
+        c.fillStyle='#9c7149';c.beginPath();c.moveTo(-r*.98,r*.08);c.bezierCurveTo(-r*1.02,-r*.6,-r*.55,-r*.96,0,-r*.96);c.bezierCurveTo(r*.55,-r*.96,r*1.02,-r*.6,r*.98,r*.08);
+        c.quadraticCurveTo(0,-r*.12,-r*.98,r*.08);c.closePath();c.fill();c.stroke();
+        c.fillStyle='rgba(255,240,215,.28)';c.beginPath();c.ellipse(-r*.35,-r*.58,r*.26,r*.12,-.35,0,Math.PI*2);c.fill();
+        c.strokeStyle='rgba(110,90,60,.55)';c.lineWidth=1.2;for(const k of [-.7,-.5,-.3,.3,.5,.7]){c.beginPath();c.moveTo(r*k,r*(.06-Math.abs(k)*.02));c.lineTo(r*k*.55,r*.02);c.stroke()}
+        break; }
       case 'onion': circle(c,0,0,r,'#b37bb1','#5f2f5d',3); for(const k of [.78,.56,.34])circle(c,0,0,r*k,null,'#f4e6f3',3*s+1.5); break;
       case 'pepperoni': circle(c,0,0,r,'#c93a2c','#6a1a12',2.5);
         for(const [a,b,k] of [[-.4,-.3,.13],[.35,-.35,.1],[.1,.25,.12],[-.35,.35,.09],[.45,.3,.08],[-.05,-.55,.07]])circle(c,r*a,r*b,r*k,'#8e2117');
@@ -182,8 +198,14 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
         circle(c,0,0,r*.2,'#e6e9c4','#a9c47a',1.5);
         for(const [a,b] of [[-.08,-.06],[.08,-.02],[0,.1],[-.1,.08],[.1,.11]]){c.fillStyle='#fffbe6';c.beginPath();c.ellipse(r*a,r*b,r*.035,r*.05,a*8,0,Math.PI*2);c.fill()}
         break; }
-      case 'cheese': circle(c,0,0,r,'#f2c94c','#9c7a14',3);
-        for(const [a,b,k] of [[-.4,-.3,.15],[.35,-.3,.11],[.05,.3,.17],[-.45,.35,.09],[.45,.35,.1],[0,-.6,.08]])circle(c,r*a,r*b,r*k,'#d9ab2c'); break;
+      case 'mozz': {
+        const gr=c.createRadialGradient(-r*.35,-r*.4,r*.1,0,0,r);gr.addColorStop(0,'#ffffff');gr.addColorStop(.65,'#f3efe6');gr.addColorStop(1,'#d9d1c0');
+        circle(c,0,0,r,gr,'#a89f8b',2.5);
+        c.strokeStyle='rgba(170,160,140,.45)';c.lineWidth=2*s+1;
+        for(const [a,b,k] of [[.25,.3,.35],[-.3,.35,.25],[.45,-.15,.2]]){c.beginPath();c.arc(r*a,r*b,r*k,.3,2.2);c.stroke()}
+        c.save();c.translate(r*.32,-r*.5);c.rotate(.6);c.fillStyle='#3f9a36';c.strokeStyle='#1f5a1c';c.lineWidth=1.5;
+        c.beginPath();c.moveTo(0,r*.22);c.bezierCurveTo(r*.16,r*.1,r*.15,-r*.12,0,-r*.24);c.bezierCurveTo(-r*.15,-r*.12,-r*.16,r*.1,0,r*.22);c.fill();c.stroke();c.restore();
+        break; }
       case 'chili':
         circle(c,0,0,r,'#f6eed8','#d6a34a',5*s+2); circle(c,0,0,r*.86,null,'rgba(214,163,74,.45)',2);
         c.save();c.rotate(.35);
@@ -212,6 +234,19 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   const cv=$('game'),ctx=cv.getContext('2d');
   const chef=new Image();chef.src='assets/chef.png';
   let engine,bodies,score,merges,drops,aimX,next,current,coolUntil,started,over,overSince,pops,startTime,rand,running=false;
+  let biggest,chain,lastMerge,shake,banner;
+
+  // ---------- sound ----------
+  let AC=null,muted=store.get('pizzadrop.muted',false);
+  function ac(){if(muted)return null;try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume()}catch(e){AC=null}return AC}
+  function tone(f0,f1,dur,vol,type){const a=ac();if(!a)return;const t=a.currentTime,o=a.createOscillator(),g=a.createGain();
+    o.type=type||'sine';o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f1,t+dur);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    o.connect(g).connect(a.destination);o.start(t);o.stop(t+dur+.02)}
+  function popSound(lvl,chain){const f=520*Math.pow(.86,lvl)*Math.pow(1.06,Math.min(chain-1,8));tone(f*1.6,f,.13,.22);if(lvl>=6)tone(f*.5,f*.35,.35,.18,'triangle')}
+  function bigSound(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,f*1.01,.22,.16,'triangle'),i*90))}
+  function dropSound(){tone(180,90,.08,.08)}
+  function setMute(m){muted=m;store.set('pizzadrop.muted',m);$('mute').textContent=m?'Sound off':'Sound on';$('mute').setAttribute('aria-pressed',String(!m))}
 
   function rng(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
   function pick(){const r=rand();return r<.3?0:r<.55?1:r<.75?2:r<.9?3:4}
@@ -224,7 +259,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       Bodies.rectangle(WALL-40,H/2,80,H*2,wallOpt),
       Bodies.rectangle(W-WALL+40,H/2,80,H*2,wallOpt)]);
     bodies=new Set();score=0;merges=0;drops=0;aimX=W/2;rand=rng(Date.now());current=pick();next=pick();
-    coolUntil=0;over=false;overSince=null;pops=[];startTime=null;started=false;
+    coolUntil=0;over=false;overSince=null;pops=[];startTime=null;started=false;biggest=-1;chain=0;lastMerge=0;shake=0;banner=null;
     Events.on(engine,'collisionStart',collide);Events.on(engine,'collisionActive',collide);
     $('over').hidden=true;updateHud();showNext();running=true;
   }
@@ -248,10 +283,13 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       const [a,b]=queue.shift();
       Composite.remove(engine.world,a);Composite.remove(engine.world,b);bodies.delete(a);bodies.delete(b);
       const x=(a.position.x+b.position.x)/2,y=(a.position.y+b.position.y)/2,lvl=a.lvl;
-      merges++;
-      if(lvl===PIZZA){score+=PIZZA_CLEAR;pops.push({x,y,r:T[PIZZA].r,t:performance.now(),txt:'+'+PIZZA_CLEAR,big:true})}
+      merges++;const now=performance.now();
+      chain=now-lastMerge<900?chain+1:1;lastMerge=now;
+      if(lvl===PIZZA){score+=PIZZA_CLEAR;pops.push({x,y,r:T[PIZZA].r,t:now,txt:'+'+PIZZA_CLEAR,big:true});banner={txt:'Double pizza!',t:now,big:true};shake=Math.max(shake,14);bigSound()}
       else{const n=lvl+1;score+=T[n].pts;addTopping(n,x,y,(a.velocity.x+b.velocity.x)/2,Math.min(a.velocity.y,b.velocity.y)/2);
-        pops.push({x,y,r:T[n].r,t:performance.now(),txt:'+'+T[n].pts,big:n===PIZZA})}
+        pops.push({x,y,r:T[n].r,t:now,txt:'+'+T[n].pts+(chain>1?'  ×'+chain:''),big:n>=PIZZA-1});popSound(n,chain);
+        if(n>=6)shake=Math.max(shake,n-3);
+        if(n>biggest){biggest=n;if(n>=6){banner={txt:n===PIZZA?'Whole pizza!':n===PIZZA-1?'Signature chili!':'First '+T[n].name.toLowerCase(),t:now,big:n>=PIZZA-1};if(n>=PIZZA-1){shake=Math.max(shake,12);bigSound()}}}}
     }
     updateHud();
   }
@@ -261,7 +299,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     const now=performance.now();if(now<coolUntil)return;
     if(!started){started=true;startTime=Date.now()}
     const r=T[current].r,x=Math.max(WALL+r,Math.min(W-WALL-r,aimX));
-    addTopping(current,x,TOP-10,0,2);drops++;
+    addTopping(current,x,TOP-10,0,2);drops++;dropSound();
     current=next;next=pick();showNext();coolUntil=now+480;
   }
 
@@ -285,7 +323,8 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   }
 
   function draw(now){
-    ctx.clearRect(0,0,W,H);
+    ctx.clearRect(0,0,W,H);ctx.save();
+    if(shake>.3){ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);shake*=.88}else shake=0;
     // box
     ctx.fillStyle='#2a2116';ctx.fillRect(0,0,W,H);
     ctx.fillStyle='#8c6236';ctx.fillRect(0,TOP-30,W,H-TOP+30);
@@ -310,9 +349,15 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     pops=pops.filter(p=>now-p.t<700);
     for(const p of pops){const k=(now-p.t)/700;ctx.globalAlpha=1-k;
       circle(ctx,p.x,p.y,p.r*(1+k*.5),null,p.big?'#e6b862':'rgba(255,240,210,.8)',3);
-      ctx.fillStyle='#fff3d6';ctx.font=`${p.big?22:16}px ui-monospace,monospace`;ctx.textAlign='center';ctx.fillText(p.txt,p.x,p.y-p.r-8-k*24);ctx.globalAlpha=1}
+      ctx.fillStyle='#fff3d6';ctx.font=`${p.big?22:16}px ui-monospace,monospace`;ctx.textAlign='center';ctx.fillText(p.txt,p.x,Math.max(TOP+20,p.y-p.r-8-k*24));ctx.globalAlpha=1}
+    ctx.restore();
+    if(banner){const k=(now-banner.t)/1600;if(k>1)banner=null;else{
+      ctx.globalAlpha=k<.15?k/.15:k>.75?(1-k)/.25:1;const sz=banner.big?40:28,y=TOP+70;
+      ctx.font=`700 ${sz}px Cinzel,Georgia,serif`;ctx.textAlign='center';ctx.lineWidth=6;ctx.strokeStyle='rgba(23,18,12,.85)';ctx.strokeText(banner.txt,W/2,y);
+      ctx.fillStyle=banner.big?'#f0c674':'#fff3d6';ctx.fillText(banner.txt,W/2,y);ctx.globalAlpha=1}}
   }
 
+  $('mute').addEventListener('click',()=>setMute(!muted));setMute(muted);
   // ---------- input ----------
   function toWorld(e){const r=cv.getBoundingClientRect();return (e.clientX-r.left)*W/r.width}
   cv.addEventListener('pointermove',e=>{aimX=toWorld(e)});
@@ -333,7 +378,10 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     if(score>prevBest)store.set('pizzadrop.best',score);
     updateHud();
     $('overScore').textContent=score.toLocaleString();
-    $('share').textContent='🍕 Pizza Drop: '+score.toLocaleString()+' points\n'+SHARE_URL;
+    const everBig=store.get('pizzadrop.biggest',-1),newBig=biggest>everBig;if(newBig)store.set('pizzadrop.biggest',biggest);
+    $('share').textContent='🍕 Pizza Drop: '+score.toLocaleString()+' points'+(biggest>=0?'\nBiggest: '+T[biggest].name+(biggest===PIZZA-1?' 🌶️':biggest===PIZZA?' 🍕':''):'')+'\n'+SHARE_URL;
+    if(biggest>=0){icon($('bigicon'),biggest);$('bigname').textContent=T[biggest].name+(newBig&&everBig>=0?' (your biggest yet)':'');$('biggest').hidden=false}else $('biggest').hidden=true;
+    const top=Math.max(everBig,biggest);$('goal').textContent=top<PIZZA?'Next goal: make a '+T[top+1].name.toLowerCase()+'.':'Next goal: merge two pizzas.';
     let note=score>prevBest&&prevBest>0?'New personal best.':'';
     $('overNote').textContent=note;$('over').hidden=false;
     if(token()&&score>0){
