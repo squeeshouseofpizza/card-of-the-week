@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Card of the Week · Squee's House of Pizza</title>
-<meta name="description" content="Guess the Premodern card of the week. New card every Wednesday.">
+<title>Guess the Card · Squee's House of Pizza</title>
+<meta name="description" content="A weekly Premodern Magic puzzle from Squee's House of Pizza. Guess the card in six tries.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap">
 <style>
@@ -171,8 +171,8 @@ details p{margin:8px 0}
     <div class="bg" id="bannerbg"></div>
     <div class="shade"></div>
     <div class="txt">
-      <div class="eyebrow">Squee's House of Pizza</div>
-      <h1>Card of the Week</h1>
+      <div class="eyebrow">Squee's House of Pizza weekly puzzle</div>
+      <h1>Guess the Card</h1>
       <div class="last" id="lastline" hidden><span>Retired card: <b id="lastname"></b></span><span id="lastcredit"></span></div>
     </div>
   </section>
@@ -225,8 +225,8 @@ details p{margin:8px 0}
   </details>
 
   <footer>
-    <span>Card of the Week by Squee's House of Pizza. Card data from <a href="https://mtgjson.com" target="_blank" rel="noopener">MTGJSON</a>; card images from <a href="https://scryfall.com" target="_blank" rel="noopener">Scryfall</a>.</span>
-    <span>Card of the Week is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.</span>
+    <span>Guess the Card by Squee's House of Pizza. Card data from <a href="https://mtgjson.com" target="_blank" rel="noopener">MTGJSON</a>; card images from <a href="https://scryfall.com" target="_blank" rel="noopener">Scryfall</a>.</span>
+    <span>Guess the Card is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.</span>
   </footer>
 </div>
 
@@ -391,7 +391,7 @@ details p{margin:8px 0}
   }
   function shareText(){
     const rows=ST.fb.map(fb=>fb.map(c=>c[0]==='H'?'🟩':c[0]==='N'?'🟨':'⬛').join(''));
-    return'S.H.O.P. Card of the Week '+weekLabel(cur)+(ST.deep?' (deep cut)':'')+' '+(ST.won?ST.guesses.length:'X')+'/'+MAXG+'\n'+rows.join('\n')+'\n'+SHARE_URL;
+    return'S.H.O.P. Guess the Card '+weekLabel(cur)+(ST.deep?' (deep cut)':'')+' '+(ST.won?ST.guesses.length:'X')+'/'+MAXG+'\n'+rows.join('\n')+'\n'+SHARE_URL;
   }
   function selectPre(pre){const r=document.createRange();r.selectNodeContents(pre);const s=getSelection();s.removeAllRanges();s.addRange(r)}
   let tick=null;

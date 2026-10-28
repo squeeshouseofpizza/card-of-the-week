@@ -1,4 +1,4 @@
-# Card of the Week
+# Guess the Card
 
 A weekly Premodern Magic card-guessing game by Squee's House of Pizza. One card every Wednesday, six guesses, Fourth Edition through Scourge. Played at squeeshouseofpizza.com/pages/card-of-the-week and served from this repo by GitHub Pages.
 
@@ -18,4 +18,4 @@ New card every Wednesday at 9am Eastern, starting Nov 4, 2026.
 
 Card data from MTGJSON. Card images from Scryfall, shown unaltered with artist credit.
 
-Card of the Week is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.
+Guess the Card is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.
