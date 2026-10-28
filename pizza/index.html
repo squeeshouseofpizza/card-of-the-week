@@ -107,7 +107,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
 
   <div class="stage" id="stage">
     <button class="snd" id="snd" type="button"></button>
-    <canvas id="game" width="480" height="680" aria-label="Pizza box. Move to aim, tap or click to drop."></canvas>
+    <canvas id="game" width="480" height="630" aria-label="Pizza box. Move to aim, tap or click to drop."></canvas>
     <div class="over" id="over" hidden>
       <h2 id="overTitle">The box overflowed</h2>
       <div class="big" id="overScore">0</div>
@@ -147,9 +147,9 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
 
   // ---------- toppings: radius, points for making one, and how each is drawn ----------
   const T=[
-    {name:'Olive',r:19,d:'olive'},{name:'Basil',r:26,d:'basil'},{name:'Garlic',r:34,d:'garlic'},{name:'Mushroom',r:43,d:'mushroom'},
-    {name:'Onion',r:53,d:'onion'},{name:'Pepperoni',r:64,d:'pepperoni'},{name:'Tomato',r:75,d:'tomato'},{name:'Green pepper',r:87,d:'greenpepper'},
-    {name:'Mozzarella',r:99,d:'mozz'},{name:'Signature chili',r:113,d:'chili'},{name:'Pizza',r:131,d:'pizza'}];
+    {name:'Olive',r:17,d:'olive'},{name:'Basil',r:23,d:'basil'},{name:'Garlic',r:28,d:'garlic'},{name:'Mushroom',r:40,d:'mushroom'},
+    {name:'Onion',r:45,d:'onion'},{name:'Pepperoni',r:51,d:'pepperoni'},{name:'Tomato',r:59,d:'tomato'},{name:'Green pepper',r:68,d:'greenpepper'},
+    {name:'Mozzarella',r:90,d:'mozz'},{name:'Signature chili',r:113,d:'chili'},{name:'Pizza',r:136,d:'pizza'}];
   T.forEach((t,i)=>t.pts=(i+1)*(i+2)/2);
   const PIZZA=T.length-1, PIZZA_CLEAR=150, DROPPABLE=5;
 
@@ -232,7 +232,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   function showNext(){icon($('next'),next);$('nextname').textContent=T[next].name}
 
   // ---------- world ----------
-  const W=480,H=680,WALL=14,TOP=120,LINE=TOP+18,FLOOR=H-14;
+  const W=480,H=630,WALL=14,TOP=120,LINE=TOP+18,FLOOR=H-14;
   const {Engine,Bodies,Composite,Events,Body}=Matter;
   const cv=$('game'),ctx=cv.getContext('2d');
   const chef=new Image();chef.src='assets/chef.png';
@@ -256,10 +256,10 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     $('snd').setAttribute('aria-label','Sound: '+VNAME[v]+'. Tap to change.');$('snd').title='Sound: '+VNAME[v]}
 
   function rng(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
-  function pick(){const r=rand();return r<.3?0:r<.55?1:r<.75?2:r<.9?3:4}
+  function pick(){return Math.floor(rand()*DROPPABLE)}
 
   function newGame(){
-    engine=Engine.create();engine.gravity.y=1.6;
+    engine=Engine.create();engine.gravity.y=2;
     const wallOpt={isStatic:true,friction:.2,restitution:0};
     Composite.add(engine.world,[
       Bodies.rectangle(W/2,FLOOR+40,W,80,wallOpt),
