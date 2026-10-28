@@ -8,6 +8,7 @@ jobs:
     steps:
       - name: Run probes
         run: |
+          set +e +o pipefail
           exec > probe.txt 2>&1
           curl -sS -o UDS.json -w "UDS %{http_code} %{size_download}\n" https://mtgjson.com/api/v5/UDS.json
           python3 -c "import json;d=json.load(open('UDS.json'))['data'];c=[x for x in d['cards'] if x['name']=='Opalescence'][0];print({k:c.get(k) for k in ['name','manaValue','colors','types','rarity','artist','legalities','setCode','manaCost','type','text']})"
@@ -21,6 +22,7 @@ jobs:
           grep -o '"card_name":"[^"]*"' d.html | sort | uniq -c | sort -rn | head -10
           grep -o '"decktype":"[^"]*"\|"archetype":"[^"]*"' d.html | head -5
       - name: Save output
+        if: always()
         run: |
           git config user.name "probe-bot"; git config user.email "probe@users.noreply.github.com"
           git checkout --orphan probe-output; git rm -rq --cached . || true
