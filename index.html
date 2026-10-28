@@ -79,6 +79,8 @@ select{background:var(--panel);border:1px solid var(--line);border-radius:6px;pa
 .hint .k{font-family:var(--display);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
 .hint .v{color:var(--cream)}
 .hint.locked .v{color:var(--muted);font-style:italic}
+.hintcol{display:flex;flex-direction:column;gap:10px;min-width:0}
+.hint .v.flav{font-style:italic;white-space:pre-line}
 .artbox{aspect-ratio:4/3;max-width:100%;border-radius:6px;background:var(--panel-2);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;text-align:center;padding:8px}
 .artbox img{width:100%;height:100%;object-fit:cover;display:block}
 .artbox.lock{aspect-ratio:auto;height:46px;font-style:italic;background:repeating-linear-gradient(135deg,rgba(214,163,74,.06) 0 8px,transparent 8px 16px),var(--panel-2)}
@@ -216,7 +218,7 @@ details p{margin:8px 0}
     <summary>How to play</summary>
     <p>Guess any Premodern card. Each guess gets compared to the answer on set, mana value, color, type and rarity.</p>
     <p><span class="key" style="background:var(--hit)"></span>✓ is a match. <span class="key" style="background:var(--near)"></span>≈ is close: same block, mana value off by one, or a shared color or type. Arrows point toward the answer.</p>
-    <p>Set is the card's first printing from Fourth Edition through Scourge, so Swords to Plowshares counts as Fourth Edition. You get the artist after three misses and the art after five.</p>
+    <p>Set is the card's first printing from Fourth Edition through Scourge, so Swords to Plowshares counts as Fourth Edition. You get the artist after three misses, the flavor text after four, and the art after five.</p>
     <p>New card every Wednesday at 9am Eastern. The last four weeks stay up for practice. Only the current week counts for your streak and the leaderboard. Missing one week won't break your streak.</p>
     <p>About twice a year the card is a deep cut, something few people will know. Those weeks are marked, and losing one won't break your streak.</p>
     <p>Sign in with Discord to get on the leaderboard. It shows your Discord display name and picture. You don't need to sign in to play. Fewest guesses wins, and ties go to the faster solve.</p>
@@ -233,7 +235,7 @@ details p{margin:8px 0}
   const API='https://card-of-the-week.squeeshouseofpizza.workers.dev';
   const SHARE_URL='squeeshouseofpizza.com/pages/card-of-the-week';
   const TEST=new URLSearchParams(location.search).has('test');
-  const MAXG=6, ARTIST_AT=3, ART_AT=5;
+  const MAXG=6, ARTIST_AT=3, FLAVOR_AT=4, ART_AT=5;
   const TYPES=['Artifact','Creature','Enchantment','Instant','Land','Sorcery'];
   const RAR=['Common','Uncommon','Rare','Land'];
   const COLN={W:'White',U:'Blue',B:'Black',R:'Red',G:'Green'};
@@ -358,9 +360,12 @@ details p{margin:8px 0}
 
   function renderHints(){
     const box=$('hints');box.textContent='';box.hidden=ST.done;if(ST.done)return;
-    const misses=ST.guesses.length,h=ST.hints||{};
+    const misses=ST.guesses.length,h=ST.hints||{},col=el('div','hintcol');
     const a=el('div','hint'+(misses>=ARTIST_AT?'':' locked'));a.appendChild(el('span','k','Artist'));
-    a.appendChild(el('span','v',misses>=ARTIST_AT?(h.artist||'Not listed'):'Unlocks after '+ARTIST_AT+' misses'));box.appendChild(a);
+    a.appendChild(el('span','v',misses>=ARTIST_AT?(h.artist||'Not listed'):'Unlocks after '+ARTIST_AT+' misses'));col.appendChild(a);
+    const f=el('div','hint'+(misses>=FLAVOR_AT?'':' locked'));f.appendChild(el('span','k','Flavor text'));
+    f.appendChild(el('span','v'+(misses>=FLAVOR_AT&&h.flavor?' flav':''),misses>=FLAVOR_AT?(h.flavor||'This card has no flavor text.'):'Unlocks after '+FLAVOR_AT+' misses'));col.appendChild(f);
+    box.appendChild(col);
     const c=el('div','hint'+(misses>=ART_AT?'':' locked'));c.appendChild(el('span','k','Card art'));
     const ab=el('div','artbox'+(misses>=ART_AT?'':' lock'));
     if(misses>=ART_AT&&h.art){const im=el('img');im.alt='Art from this week\'s card';im.src=h.art;ab.appendChild(im);c.appendChild(ab);c.appendChild(el('span','credit','Illus. '+(h.artist||'')+' · ©Wizards of the Coast'))}
