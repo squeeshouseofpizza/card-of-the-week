@@ -1,6 +1,6 @@
 # Guess the Card
 
-A weekly Premodern Magic card-guessing game by Squee's House of Pizza. One card every Wednesday, six guesses, Fourth Edition through Scourge. Played at squeeshouseofpizza.com/pages/card-of-the-week and served from this repo by GitHub Pages.
+A weekly Premodern Magic card-guessing game by Squee's House of Pizza. One card every Wednesday, six guesses, Fourth Edition through Scourge. Played at squeeshouseofpizza.com/pages/guess-the-card and served from this repo by GitHub Pages.
 
 ## How it fits together
 
