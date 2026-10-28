@@ -5,10 +5,11 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Probe
-        run: python3 build/probe_search.py "Fact or Fiction" "Replenish" "Psychatog" "Parallax Wave" "Opalescence" "Stifle" "Phyrexian Dreadnought" "Goblin Lackey" "Survival of the Fittest" "Oath of Druids" "Stasis" "Terravore" "Armageddon" "Enchantress's Presence" "Argothian Enchantress" "Gush" "Swords to Plowshares" "Mishra's Factory" > probe.txt 2>&1 || true
+      - name: Search the channel for each card
+        run: python3 build/probe_search.py > probe.txt 2>&1 || true
       - name: Save
         if: always()
         run: |
