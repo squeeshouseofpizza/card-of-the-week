@@ -499,7 +499,6 @@ details p{margin:8px 0}
   $('guess').addEventListener('blur',()=>setTimeout(closeSugg,120));
 
   // ---------- start ----------
-  if(!store.get('shopweekly.seenhelp',false)){$('help').open=true;store.set('shopweekly.seenhelp',true)}
   await loadMe();renderBanner();
   const PREVIEW=NOW<1&&!TEST;
   if(PREVIEW){
