@@ -94,15 +94,15 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   <header>
     <div class="eyebrow">Squee's House of Pizza</div>
     <h1>Pizza Drop</h1>
-    <p class="sub">Drop toppings. Two of the same merge into the next one up. Build the whole pie before the box overflows.</p>
+    <p class="sub">Two of the same topping make the next one up. Work your way to a whole pizza before the box overflows.</p>
   </header>
 
   <details id="help">
     <summary>How to play</summary>
-    <p>Move to aim and tap or click to drop. On a keyboard, use the arrow keys and space. The speaker button in the corner of the box switches sound between off, low and high.</p>
-    <p>Two matching toppings merge into the next one up. The merge order is under the box. The signature chili is the hard one to make. Two whole pizzas clear for a big bonus.</p>
-    <p>If anything sits above the dashed line for three seconds, the game ends. A countdown shows when that's happening.</p>
-    <p>Sign in with Discord to put your best score on this week's board. It resets every Wednesday at 9am Eastern.</p>
+    <p>On a computer, move the mouse to aim and click to drop (arrow keys and space work too). On a phone, drag to aim and let go to drop.</p>
+    <p>Two olives make a basil, two basils make a garlic, and so on up the list under the box. You only get the five smallest toppings. Everything bigger, you have to build. The chili is the tough one. Two whole pizzas cancel out for 150 points.</p>
+    <p>If anything stays above the dashed line for three seconds, you're done.</p>
+    <p>Sign in with Discord to get on the weekly high scores. They reset Wednesdays at 9am Eastern.</p>
   </details>
 
   <div class="hud">
@@ -128,7 +128,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   <section class="legend" aria-labelledby="mo">
     <h2 id="mo">Merge order <span class="cnt" id="cnt"></span></h2>
     <ol class="chain" id="chain"></ol>
-    <p class="note">Smallest to largest. The chef only drops the first five. Everything after that comes from merging, and stays grayed out until you make it for the first time.</p>
+    <p class="note">The chef only hands you the first five. The rest you make by merging. Gray ones are toppings you haven't made yet.</p>
   </section>
 
 
@@ -248,9 +248,9 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   const W=480,H=630,WALL=14,TOP=120,LINE=TOP+18,FLOOR=H-14;
   const {Engine,Bodies,Composite,Events,Body}=Matter;
   const cv=$('game'),ctx=cv.getContext('2d');
-  const chef=new Image();chef.src='assets/chef.png';
+  const chef=new Image();chef.src='assets/chef.png';let stamp=null;document.fonts&&document.fonts.ready.then(()=>{stamp=null});
   let engine,bodies,score,merges,drops,aimX,next,current,coolUntil,started,over,overSince,pops,startTime,rand,running=false;
-  let biggest,chain,lastMerge,shake,banner,confetti=[],startEver;
+  let biggest,chain,lastMerge,shake,banner,confetti=[],startEver,hop=0;
 
   // ---------- sound ----------
   const VOL=[0,.35,1],VNAME=['Off','Low','High'];
@@ -271,6 +271,9 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   const CONF=['#f0c674','#d42a24','#3f9a36','#f6eed8','#c93a2c','#e6b862'];
   function burst(x,y,n){if(matchMedia('(prefers-reduced-motion: reduce)').matches)n=Math.min(n,12);
     for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,v=3+Math.random()*7;confetti.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-5,r:Math.random()*Math.PI,vr:(Math.random()-.5)*.4,c:CONF[i%CONF.length],w:5+Math.random()*5,t:performance.now()})}}
+
+  const TOUCH=matchMedia('(pointer: coarse)').matches;
+  let taught=store.get('pizzadrop.taught',false);
 
   function rng(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
   function pick(){return Math.floor(rand()*DROPPABLE)}
@@ -307,16 +310,16 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       const [a,b]=queue.shift();
       Composite.remove(engine.world,a);Composite.remove(engine.world,b);bodies.delete(a);bodies.delete(b);
       const x=(a.position.x+b.position.x)/2,y=(a.position.y+b.position.y)/2,lvl=a.lvl;
-      merges++;const now=performance.now();
+      merges++;const now=performance.now();if(!taught){taught=true;store.set('pizzadrop.taught',true)}
       chain=now-lastMerge<900?chain+1:1;lastMerge=now;
       if(lvl===PIZZA){score+=PIZZA_CLEAR;pops.push({x,y,r:T[PIZZA].r,t:now,txt:'+'+PIZZA_CLEAR,big:true,lvl:10});shake=Math.max(shake,16);bigSound();burst(x,y,90);
         if(!everDouble){everDouble=true;store.set('pizzadrop.double',true);renderChain();banner={sub:'First ever',txt:'Double pizza!',t:now,big:true,long:true}}else banner={txt:'Double pizza!',t:now,big:true}}
       else{const n=lvl+1;score+=T[n].pts;addTopping(n,x,y,(a.velocity.x+b.velocity.x)/2,Math.min(a.velocity.y,b.velocity.y)/2).grow=now;
         pops.push({x,y,r:T[n].r,t:now,txt:'+'+T[n].pts+(chain>1?'  ×'+chain:''),big:n>=PIZZA-1,lvl:n});popSound(n,chain);
-        if(n>=6)shake=Math.max(shake,n-3);
+        if(n>=6)shake=Math.max(shake,n-3);if(n>=5)hop=now;
         if(n>everBig){everBig=n;biggest=Math.max(biggest,n);store.set('pizzadrop.biggest',n);renderChain(n);
           banner={sub:'First ever',txt:T[n].name+'!',t:now,big:true,long:true};shake=Math.max(shake,10);bigSound();burst(x,y,n>=PIZZA-1?90:55)}
-        else if(n>biggest){biggest=n;if(n>=6){banner={txt:n===PIZZA?'Whole pizza!':n===PIZZA-1?'Signature chili!':'First '+T[n].name.toLowerCase(),t:now,big:n>=PIZZA-1};if(n>=PIZZA-1){shake=Math.max(shake,12);bigSound();burst(x,y,50)}}}}
+        else if(n>biggest){biggest=n;if(n>=6){banner={txt:n===PIZZA?'Whole pizza!':n===PIZZA-1?'Signature chili!':T[n].name+'!',t:now,big:n>=PIZZA-1};if(n>=PIZZA-1){shake=Math.max(shake,12);bigSound();burst(x,y,50)}}}}
     }
     updateHud();
   }
@@ -355,8 +358,14 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     // box
     ctx.fillStyle='#2a2116';ctx.fillRect(0,0,W,H);
     ctx.fillStyle='#8c6236';ctx.fillRect(0,TOP-30,W,H-TOP+30);
-    const g=ctx.createLinearGradient(0,TOP,0,H);g.addColorStop(0,'#a5753f');g.addColorStop(1,'#7d5530');ctx.fillStyle=g;ctx.fillRect(WALL,TOP-30,W-WALL*2,FLOOR-TOP+30);
-    ctx.strokeStyle='rgba(60,38,18,.35)';ctx.lineWidth=1;
+    const g=ctx.createLinearGradient(0,TOP,0,H);g.addColorStop(0,'#c99a5b');g.addColorStop(1,'#a77a43');ctx.fillStyle=g;ctx.fillRect(WALL,TOP-30,W-WALL*2,FLOOR-TOP+30);
+    if(!stamp){stamp=document.createElement('canvas');stamp.width=W;stamp.height=H;const sc=stamp.getContext('2d'),cy=TOP+(FLOOR-TOP)*.55;
+      sc.translate(W/2,cy);sc.rotate(-.06);sc.strokeStyle='rgba(120,40,28,.22)';sc.fillStyle='rgba(120,40,28,.22)';sc.lineWidth=3;
+      sc.beginPath();sc.arc(0,0,118,0,Math.PI*2);sc.stroke();sc.lineWidth=1.5;sc.beginPath();sc.arc(0,0,108,0,Math.PI*2);sc.stroke();
+      sc.textAlign='center';sc.font='700 25px Cinzel,Georgia,serif';sc.fillText("SQUEE'S",0,-28);sc.font='700 19px Cinzel,Georgia,serif';sc.fillText('HOUSE OF',0,0);
+      sc.font='700 31px Cinzel,Georgia,serif';sc.fillText('PIZZA',0,34);sc.font='600 12px Cinzel,Georgia,serif';sc.fillText('HOT · FRESH · LEGAL',0,62)}
+    ctx.drawImage(stamp,0,0);
+    ctx.strokeStyle='rgba(90,58,24,.16)';ctx.lineWidth=1;
     for(let y=TOP;y<FLOOR;y+=26){ctx.beginPath();ctx.moveTo(WALL,y);ctx.lineTo(W-WALL,y);ctx.stroke()}
     ctx.fillStyle='#6d4a27';ctx.fillRect(0,TOP-30,WALL,H);ctx.fillRect(W-WALL,TOP-30,WALL,H);ctx.fillRect(0,FLOOR,W,H-FLOOR);
     // danger line
@@ -366,7 +375,9 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     const r=T[current].r,hx=Math.max(WALL+r,Math.min(W-WALL-r,aimX));
     if(running&&!over){
       ctx.strokeStyle='rgba(239,230,210,.18)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(hx,TOP);ctx.lineTo(hx,FLOOR);ctx.stroke();
-      if(chef.complete&&chef.naturalWidth){const cw=92,ch=cw*chef.naturalHeight/chef.naturalWidth;ctx.drawImage(chef,hx-cw*.42,4,cw,ch)}
+      if(chef.complete&&chef.naturalWidth){const cw=92,ch=cw*chef.naturalHeight/chef.naturalWidth,hk=(now-hop)/420;
+        const dy=hk>=0&&hk<1?-Math.sin(hk*Math.PI)*16:0,wob=overSince?Math.sin(now/45)*.08:0;
+        ctx.save();ctx.translate(hx-cw*.42+cw/2,4+ch+dy);ctx.rotate(wob);ctx.drawImage(chef,-cw/2,-ch,cw,ch);ctx.restore()}
       if(now>=coolUntil)drawTopping(ctx,current,hx,TOP-10,r,0);
     }
     // toppings
@@ -379,6 +390,11 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       const txt='Overflowing · '+Math.ceil((GRACE-(now-overSince))/1000);ctx.font='700 17px Cinzel,Georgia,serif';ctx.textAlign='center';
       const tw=ctx.measureText(txt).width+28;ctx.fillStyle='rgba(23,18,12,.88)';ctx.beginPath();ctx.roundRect?ctx.roundRect(W/2-tw/2,LINE+10,tw,30,15):ctx.rect(W/2-tw/2,LINE+10,tw,30);ctx.fill();
       ctx.strokeStyle='#e05a3c';ctx.lineWidth=1.5;ctx.stroke();ctx.fillStyle='#ffd9cc';ctx.fillText(txt,W/2,LINE+31)}
+    // first-game hints
+    if(!taught&&running&&!over){const msg=!started?(TOUCH?'Drag to aim, let go to drop':'Move to aim, click to drop'):merges===0?'Land two of the same together':null;
+      if(msg){ctx.globalAlpha=.75+.25*Math.sin(now/300);ctx.font='600 19px Cinzel,Georgia,serif';ctx.textAlign='center';const y=TOP+(FLOOR-TOP)*.22,tw=ctx.measureText(msg).width+32;
+        ctx.fillStyle='rgba(23,18,12,.86)';ctx.beginPath();ctx.roundRect?ctx.roundRect(W/2-tw/2,y-26,tw,38,19):ctx.rect(W/2-tw/2,y-26,tw,38);ctx.fill();
+        ctx.fillStyle='#fff3d6';ctx.fillText(msg,W/2,y);ctx.globalAlpha=1}}
     // merge pops
     pops=pops.filter(p=>now-p.t<700);
     for(const p of pops){const k=(now-p.t)/700;ctx.globalAlpha=1-k;
