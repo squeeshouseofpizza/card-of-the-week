@@ -1,0 +1,437 @@
+Abandoned Outpost	0
+Abeyance	0
+Accumulated Knowledge	1
+Adarkar Sentinel	0
+Adarkar Wastes	0
+Akroma, Angel of Wrath	0
+Aluren	1
+Ambush	0
+Anarchy	2
+Ancient Tomb	0
+Animate Dead	0
+Annul	1
+Arcane Denial	0
+Argothian Enchantress	0
+Ark of Blight	0
+Armageddon	0
+Arrogant Wurm	0
+Attunement	0
+Aura of Silence	0
+Balancing Act	0
+Ball Lightning	5
+Balshan Collaborator	0
+Barbarian Ring	1
+Basking Rootwalla	1
+Belbe's Portal	0
+Benevolent Bodyguard	0
+Benthic Djinn	0
+Binding Grasp	0
+Birds of Paradise	0
+Blastoderm	1
+Blessed Orator	0
+Blistering Barrier	0
+Bloodstained Mire	0
+Blue Elemental Blast	0
+Bog Elemental	1
+Bog Smugglers	0
+Bog Wraith	0
+Boil	0
+Bone Shredder	0
+Boneshard Slasher	0
+Boomerang	1
+Bottle Gnomes	0
+Bouncing Beebles	0
+Braids, Cabal Minion	0
+Branchsnap Lorian	0
+Breath of Darigaaz	0
+Brood Sliver	0
+Brushland	0
+Bubbling Muck	0
+Burning Palm Efreet	0
+Burning Wish	0
+Burnt Offering	0
+Cabal Ritual	0
+Cabal Therapy	0
+Cabal Trainee	0
+Caldera Kavu	0
+Call of the Herd	2
+Carnophage	0
+Carrier Pigeons	0
+Cataclysm	0
+Cateran Persuader	0
+Cave-In	0
+Cavern Harpy	0
+Cemetery Gate	0
+Cephalid Coliseum	0
+Cetavolver	0
+Chain of Vapor	1
+Chill	0
+Chill Haunting	0
+Cinder Cloud	0
+Cinder Seer	0
+Circle of Protection: Red	3
+Circular Logic	0
+City of Brass	0
+City of Traitors	2
+Cloak of Confusion	0
+Coffin Puppets	0
+Cold Snap	0
+Colossus of Sardia	0
+Common Cause	0
+Counterspell	2
+Crackling Club	0
+Crop Rotation	0
+Crown of Vigor	0
+Crystal Chimes	0
+Crystal Vein	0
+Cultural Exchange	0
+Cunning Wish	0
+Cursed Scroll	2
+Cursed Totem	0
+Dark Ritual	0
+Darkling Stalker	0
+Daru Lancer	0
+Dauthi Mercenary	0
+Daze	1
+Death's-Head Buzzard	0
+Decree of Justice	0
+Deep Analysis	0
+Defense Grid	0
+Defiant Vanguard	0
+Deranged Hermit	2
+Despondency	0
+Diabolic Edict	0
+Disenchant	0
+Divine Offering	0
+Dominate	4
+Dragon Shadow	0
+Dream Halls	1
+Dream Prowler	0
+Dreamborn Muse	0
+Drifting Djinn	0
+Duress	9
+Dust Bowl	0
+Dwarven Blastminer	0
+Eladamri's Call	0
+Elfhame Palace	0
+Elvish Lyrist	0
+Elvish Spirit Guide	0
+Ember Beast	0
+Enchantment Alteration	0
+Enchantress's Presence	0
+Engineered Plague	3
+Enlightened Tutor	1
+Ensnaring Bridge	5
+Eternal Dragon	0
+Ether Well	0
+Exalted Angel	2
+Exhume	0
+Extortion	0
+Eye of Yawgmoth	0
+Fact or Fiction	29
+Faerie Conclave	0
+Fallow Earth	0
+Festering Goblin	0
+Fire // Ice	0
+Fire Diamond	0
+Fireblast	0
+Firebolt	0
+Flametongue Kavu	0
+Flaring Pain	1
+Flash of Insight	1
+Flooded Strand	0
+Foil	2
+Forbid	0
+Frantic Search	0
+Freewind Falcon	0
+Fugitive Wizard	0
+Fungus Elemental	0
+Fyndhorn Elves	0
+Gaea's Cradle	0
+Gempalm Incinerator	1
+Gemstone Mine	1
+Genesis	0
+Gerrard's Irregulars	0
+Gerrard's Verdict	0
+Ghitu Encampment	0
+Giant Warthog	0
+Glowering Rogon	0
+Goblin Elite Infantry	0
+Goblin King	1
+Goblin Lackey	2
+Goblin Matron	1
+Goblin Piledriver	0
+Goblin Ringleader	2
+Goblin Sharpshooter	0
+Goblin Warchief	1
+Grandmother Sengir	0
+Grave Servitude	0
+Graveborn Muse	0
+Greater Good	0
+Grim Lavamancer	0
+Gush	0
+Hammer of Bogardan	0
+Harsh Mercy	0
+Heart Wolf	0
+Hermit Druid	0
+Hibernation	0
+Hidden Ancients	0
+Honor the Fallen	0
+Hull Breach	0
+Humility	0
+Hydroblast	0
+Hypnotic Specter	0
+Ill-Gotten Gains	0
+Imps' Taunt	0
+Impulse	1
+Incinerate	1
+Intuition	0
+Ironclaw Orcs	0
+Jackal Pup	0
+Junk Diver	0
+Justice	0
+Karplusan Forest	1
+Kavu Howler	0
+Keldon Battlewagon	0
+Kismet	0
+Kjeldoran Elite Guard	0
+Kjeldoran Home Guard	0
+Knight of the Mists	0
+Lava Dart	0
+Lay Waste	0
+Lead-Belly Chimera	0
+Lightning Bolt	2
+Lion's Eye Diamond	0
+Living Lands	0
+Living Wish	0
+Llanowar Elves	0
+Llanowar Vanguard	0
+Lotus Petal	0
+Lurking Skirge	0
+Maddening Imp	0
+Man-o'-War	0
+Mana Leak	0
+Mana Leech	0
+Mana Short	1
+Master Decoy	1
+Masticore	0
+Meddling Mage	2
+Mesmeric Fiend	0
+Mirri's Guile	0
+Misdirection	1
+Mishra's Factory	4
+Mishra's Helix	0
+Mobile Fort	0
+Mobilization	0
+Mogg Fanatic	1
+Mogg Flunkies	0
+Mogg Salvage	2
+Molimo, Maro-Sorcerer	0
+Mons's Goblin Raiders	0
+Morphling	0
+Mother of Runes	0
+Mourning	0
+Mox Diamond	0
+Mtenda Lion	0
+Multani's Acolyte	0
+Mystic Might	0
+Nantuko Shade	0
+Naturalize	0
+Necratog	0
+Nevinyrral's Disk	0
+Nimble Mongoose	1
+No Mercy	0
+Noxious Field	0
+Null Rod	0
+Oath of Druids	3
+Obliterate	0
+Odylic Wraith	0
+Opal Archangel	0
+Opalescence	0
+Opposition	1
+Opt	0
+Ordered Migration	0
+Orim's Chant	0
+Overload	0
+Pacifism	3
+Parallax Dementia	0
+Parallax Wave	0
+Pariah	0
+Penumbra Bobcat	0
+Perish	0
+Pernicious Deed	0
+Phantom Nishoba	1
+Phyrexian Arena	0
+Phyrexian Dreadnought	3
+Phyrexian Furnace	1
+Phyrexian Grimoire	0
+Phyrexian Negator	0
+Pit Trap	0
+Planar Birth	0
+Planar Void	0
+Plated Spider	0
+Polluted Delta	0
+Polluted Mire	0
+Portent	0
+Powder Keg	0
+Power Taint	0
+Pox	1
+Price of Glory	0
+Price of Progress	3
+Pride of Lions	0
+Priest of Titania	1
+Primal Whisperer	0
+Private Research	0
+Proteus Machine	0
+Psychatog	18
+Pyroblast	1
+Pyroclasm	0
+Pyrokinesis	0
+Quirion Dryad	0
+Quirion Ranger	1
+Rancor	1
+Rathi Assassin	0
+Raven Familiar	0
+Ravenous Baloth	0
+Razortooth Rats	0
+Reanimate	0
+Reaping the Rewards	0
+Rebel Informer	0
+Recoup	0
+Recurring Nightmare	0
+Red Elemental Blast	1
+Red Mana Battery	0
+Relic Ward	0
+Replenish	13
+Resistance Fighter	0
+Reviving Vapors	0
+Ring of Gix	0
+Rishadan Port	2
+Roar of the Wurm	0
+Roots of Life	0
+Rushing River	0
+Sacred Ground	0
+Salt Flats	0
+Samite Archer	0
+Saprazzan Skerry	0
+Sarcomancy	0
+Scarred Puma	0
+Scattershot	0
+Seal of Cleansing	0
+Seal of Doom	0
+Seal of Fire	0
+Seizures	3
+Serra's Sanctum	0
+Shepherd of Rot	0
+Shield Bearer	0
+Shock	0
+Show and Tell	1
+Siege-Gang Commander	0
+Silver Drake	0
+Silver Knight	0
+Skeletal Scrying	0
+Skirk Commando	0
+Skirk Prospector	0
+Skycloud Expanse	0
+Skyshroud Behemoth	0
+Skyshroud Falcon	0
+Smokestack	1
+Smother	0
+Snag	0
+Sneak Attack	0
+Snowblind	0
+Snuff Out	0
+Soldevi Machinist	0
+Soldevi Sage	0
+Soldevi Sentry	0
+Solitary Confinement	0
+Soltari Priest	0
+Sphere of Resistance	1
+Spike Feeder	0
+Spinal Embrace	0
+Spirit of the Night	0
+Spiritmonger	0
+Sporogenesis	0
+Squee, Goblin Nabob	1
+Stampede Driver	0
+Standstill	1
+Stasis	5
+Sterling Grove	0
+Stifle	0
+Stone Rain	1
+Stunted Growth	0
+Sulfuric Vortex	0
+Sulfurous Springs	0
+Survival of the Fittest	3
+Sword of the Chosen	0
+Swords to Plowshares	0
+Sylvan Library	1
+Tainted Well	0
+Tangle Wire	1
+Tariff	0
+Tattoo Ward	0
+Teferi's Response	0
+Temporary Insanity	0
+Terravore	0
+Thawing Glaciers	0
+Thran Foundry	0
+Thrive	0
+Thunder of Hooves	0
+Thunderscape Battlemage	0
+Tooth of Ramos	0
+Tormod's Crypt	1
+Torture Chamber	0
+Towering Baloth	0
+Tragic Poet	0
+Tranquility	0
+Treetop Village	1
+Trenching Steed	0
+Tribal Golem	0
+Troubled Healer	0
+Trumpet Blast	0
+Tsabo's Web	2
+Undertaker	0
+Undiscovered Paradise	0
+Unerring Sling	0
+Unstable Hulk	0
+Upwelling	0
+Urza's Bauble	0
+Urza's Rage	0
+Vampire Hounds	0
+Veldt	0
+Verdant Force	0
+Verdant Succession	0
+Veteran Explorer	0
+Veteran's Voice	0
+Vigilant Drake	0
+Vindicate	3
+Vision Charm	1
+Vodalian Zombie	0
+Volrath's Shapeshifter	0
+Wall of Diffusion	0
+Warmth	1
+Warping Wurm	0
+Wasteland	7
+Waterfront Bouncer	0
+Wave of Indifference	0
+Werebear	1
+Whipcorder	1
+Wild Elephant	0
+Wild Growth	1
+Wild Mongrel	2
+Wildfire Emissary	0
+Windborn Muse	0
+Windswept Heath	0
+Winter Orb	0
+Wirewood Channeler	0
+Wirewood Herald	0
+Wirewood Symbiote	1
+Withered Wretch	0
+Wonder	2
+Wooded Foothills	1
+Words of Wind	0
+Words of Wisdom	0
+Worn Powerstone	0
+Worship	0
+Wrath of God	0
+Yavimaya Elder	0
