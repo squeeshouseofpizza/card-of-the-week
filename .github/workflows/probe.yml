@@ -12,19 +12,19 @@ jobs:
           set +e +o pipefail
           exec > probe.txt 2>&1
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-          curl -sSL -A "$UA" -o feed.xml -w "buzzsprout rss %{http_code} %{size_download}\n" https://feeds.buzzsprout.com/2626886.rss
-          echo "items: $(grep -c '<item>' feed.xml)  transcript tags: $(grep -c 'podcast:transcript' feed.xml)"
-          grep -o '<podcast:transcript[^>]*>' feed.xml | head -3
-          grep -o '<title>[^<]*</title>' feed.xml | head -6
-          t=$(grep -o 'podcast:transcript url="[^"]*"' feed.xml | head -1 | cut -d'"' -f2); echo "first transcript: $t"
-          [ -n "$t" ] && curl -sSL -A "$UA" "$t" | head -c 700; echo
-          echo "--- youtube channel page"
-          curl -sSL -A "$UA" -o yt.html -w "yt %{http_code} %{size_download}\n" "https://www.youtube.com/@SqueesHouseofPizza/videos"
-          cid=$(grep -o '"channelId":"UC[^"]*"' yt.html | head -1 | cut -d'"' -f4); echo "channel id: $cid"
-          curl -sSL -A "$UA" -o ytf.xml -w "yt feed %{http_code} %{size_download}\n" "https://www.youtube.com/feeds/videos.xml?channel_id=$cid"
-          echo "feed entries: $(grep -c '<entry>' ytf.xml)"; grep -o '<title>[^<]*</title>' ytf.xml | head -5
-          grep -o '<media:description>[^<]\{0,400\}' ytf.xml | head -2
-          echo "--- links in yt descriptions"; grep -o 'https\?://[^ <"]*' ytf.xml | grep -v youtube | sed 's#\(https\?://[^/]*\).*#\1#' | sort | uniq -c | sort -rn | head -10
+          curl -sSL -A "$UA" -H "Accept-Language: en-US" -b "CONSENT=YES+1" -o yt.html -w "yt %{http_code} %{size_download}\n" "https://www.youtube.com/@SqueesHouseofPizza/playlists"
+          echo "canonical: $(grep -o '<link rel="canonical" href="[^"]*"' yt.html | head -1)"
+          echo "externalId: $(grep -o '"externalId":"[^"]*"' yt.html | head -1)"
+          grep -o '"playlistId":"[^"]*"' yt.html | sort -u | head -15
+          python3 - <<'PY'
+import re,json
+h=open('yt.html',encoding='utf-8',errors='replace').read()
+for m in re.finditer(r'"playlistId":"(PL[^"]+)".{0,800}?"text":"([^"]{1,80})"',h):
+    print(m.group(1),'|',m.group(2))
+PY
+          cid=$(grep -o '"externalId":"UC[^"]*"' yt.html | head -1 | cut -d'"' -f4)
+          curl -sSL -A "$UA" -o ytf.xml -w "channel feed %{http_code}\n" "https://www.youtube.com/feeds/videos.xml?channel_id=$cid"
+          grep -o '<title>[^<]*</title>' ytf.xml | head -20
       - name: Save
         if: always()
         run: |
