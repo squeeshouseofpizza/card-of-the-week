@@ -2,28 +2,42 @@ name: Build data
 on: workflow_dispatch
 permissions:
   contents: write
+concurrency: build-data
 jobs:
-  build:
+  cards:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - name: Download MTGJSON sets
         run: |
-          mkdir -p mtgjson data build
+          mkdir -p mtgjson data
           for s in 4ED ICE CHR HML ALL MIR VIS 5ED WTH TMP STH EXO USG ULG 6ED UDS MMQ NEM PCY INV PLS 7ED APC ODY TOR JUD ONS LGN SCG; do
             curl -sSf --retry 3 -o mtgjson/$s.json https://mtgjson.com/api/v5/$s.json
           done
       - name: Build card list
-        run: python3 build/build_cards.py mtgjson data/cards.json 2>&1 | tee build/build.log
-      - name: Count MTGO Challenge decklists
-        run: python3 build/build_pool_counts.py build/pool_counts.csv 2>&1 | tee -a build/build.log
+        run: python3 build/build_cards.py mtgjson data/cards.json 2>&1 | tee build/cards.log
       - name: Commit
         if: always()
         run: |
           git config user.name "card-of-the-week-bot"
           git config user.email "card-of-the-week-bot@users.noreply.github.com"
-          git add -f build/build.log
-          [ -f data/cards.json ] && git add data/cards.json
-          [ -f build/pool_counts.csv ] && git add build/pool_counts.csv
-          git diff --cached --quiet || git commit -m "Rebuild card data and decklist counts"
-          git push
+          git add -f build/cards.log; [ -f data/cards.json ] && git add data/cards.json
+          git diff --cached --quiet || git commit -m "Rebuild card data from MTGJSON"
+          git pull --rebase && git push
+  decklists:
+    needs: cards
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Count MTGO Challenge decklists
+        run: python3 build/build_pool_counts.py build/pool_counts.csv 2>&1 | tee build/decklists.log
+      - name: Commit
+        if: always()
+        run: |
+          git config user.name "card-of-the-week-bot"
+          git config user.email "card-of-the-week-bot@users.noreply.github.com"
+          git add -f build/decklists.log; [ -f build/pool_counts.csv ] && git add build/pool_counts.csv
+          git diff --cached --quiet || git commit -m "Count MTGO Challenge decklists"
+          git pull --rebase && git push
