@@ -153,6 +153,8 @@ details p{margin:8px 0}
 .lb td.g,.lb td.t{text-align:right;font-family:var(--mono);font-size:13px;white-space:nowrap;width:5em}
 .lb tr.me td{color:var(--gold-lite)}
 .lbnote{font-size:13px;color:var(--muted);margin:0}
+.deep{margin:14px 0 0;border:1px solid var(--gold);border-radius:8px;padding:9px 12px;font-size:15px;color:var(--cream);background:rgba(214,163,74,.08)}
+.deep b{font-family:var(--display);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-lite);font-weight:500;margin-right:6px}
 .busy{opacity:.6;pointer-events:none}
 </style>
 </head>
@@ -183,10 +185,12 @@ details p{margin:8px 0}
       <span>Streak <b id="streak">0</b> wk · best <b id="best">0</b></span>
       <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <select id="day" aria-label="Choose a week"></select>
-        <button class="toggle" id="hc" type="button" aria-pressed="false">High contrast</button>
+<button class="toggle" id="golb" type="button" hidden>Leaderboard ↓</button>
+                <button class="toggle" id="hc" type="button" aria-pressed="false">High contrast</button>
       </span>
     </div>
 
+    <p class="deep" id="deepnote" hidden><b>Deep cut</b>This week's card is an obscure one. Losing won't break your streak.</p>
     <div class="board" id="board" aria-live="polite" style="margin-top:20px">
       <div class="head"><div>Guess</div><div>Set</div><div>Mana value</div><div>Color</div><div>Type</div><div>Rarity</div></div>
     </div>
@@ -214,6 +218,7 @@ details p{margin:8px 0}
     <p><span class="key" style="background:var(--hit)"></span>✓ is a match. <span class="key" style="background:var(--near)"></span>≈ is close: same block, mana value off by one, or a shared color or type. Arrows point toward the answer.</p>
     <p>Set is the card's first printing from Fourth Edition through Scourge, so Swords to Plowshares counts as Fourth Edition. You get the artist after three misses and the art after five.</p>
     <p>New card every Wednesday at 9am Eastern. The last four weeks stay up for practice. Only the current week counts for your streak and the leaderboard. Missing one week won't break your streak.</p>
+    <p>About twice a year the card is a deep cut, something few people will know. Those weeks are marked, and losing one won't break your streak.</p>
     <p>Sign in with Discord to get on the leaderboard. It shows your Discord display name and picture. You don't need to sign in to play. Fewest guesses wins, and ties go to the faster solve.</p>
   </details>
 
@@ -345,6 +350,7 @@ details p{margin:8px 0}
     const pips=$('pips');pips.textContent='';
     for(let i=0;i<MAXG;i++){const p=el('span','pip');if(i<ST.guesses.length)p.className='pip '+(ST.won&&i===ST.guesses.length-1?'win':'used');pips.appendChild(p)}
     $('num').textContent=weekLabel(cur);$('datestr').textContent=weekDate(cur);
+    $('deepnote').hidden=!ST.deep;
     const s=store.get(K+'streak',{cur:0,best:0});$('streak').textContent=s.cur;$('best').textContent=s.best;
     $('entry').hidden=ST.done;
     renderHints();renderResult(animateLast);
@@ -380,7 +386,7 @@ details p{margin:8px 0}
   }
   function shareText(){
     const rows=ST.fb.map(fb=>fb.map(c=>c[0]==='H'?'🟩':c[0]==='N'?'🟨':'⬛').join(''));
-    return'S.H.O.P. Card of the Week '+weekLabel(cur)+' '+(ST.won?ST.guesses.length:'X')+'/'+MAXG+'\n'+rows.join('\n')+'\n'+SHARE_URL;
+    return'S.H.O.P. Card of the Week '+weekLabel(cur)+(ST.deep?' (deep cut)':'')+' '+(ST.won?ST.guesses.length:'X')+'/'+MAXG+'\n'+rows.join('\n')+'\n'+SHARE_URL;
   }
   function selectPre(pre){const r=document.createRange();r.selectNodeContents(pre);const s=getSelection();s.removeAllRanges();s.addRange(r)}
   let tick=null;
@@ -418,11 +424,15 @@ details p{margin:8px 0}
     else if(cur!==NOW&&!TEST)m.appendChild(el('p','note','Old week. It doesn\'t count for your streak or the leaderboard.'));
   }
 
+  $('golb').addEventListener('click',()=>$('lbwrap').scrollIntoView({behavior:'smooth',block:'start'}));
   async function renderBoard(){
     const wrap=$('lbwrap'),tb=$('lb'),note=$('lbnote');
-    if(cur<0&&!TEST){wrap.hidden=true;return}  // the preview card has no leaderboard
+    $('golb').hidden=true;
+    if(cur<0&&!TEST){  // the practice card before launch has no board of its own
+      wrap.hidden=false;$('golb').hidden=false;tb.textContent='';$('lbtitle').textContent='Leaderboard';
+      note.textContent='The leaderboard starts with week 1 on Wednesday, Nov 4.'+(ME?' You\'re signed in, so you\'ll be on it.':' Sign in with Discord now to be on it.');return}
     try{
-      const b=await api('/leaderboard?week='+cur);wrap.hidden=false;tb.textContent='';
+      const b=await api('/leaderboard?week='+cur);wrap.hidden=false;$('golb').hidden=false;tb.textContent='';
       $('lbtitle').textContent=(cur===NOW?'This week\'s leaderboard':'Week '+weekLabel(cur)+' leaderboard');
       if(!b.top.length){note.textContent=cur===NOW?'Nobody\'s on the board yet.':'Nobody made the board that week.'}
       else{
@@ -437,7 +447,7 @@ details p{margin:8px 0}
   function finishStreak(){
     if(cur!==NOW||TEST)return;
     const s=store.get(K+'streak',{cur:0,best:0,last:0});if(s.last===cur)return;
-    if(ST.won){s.cur=(s.last>=cur-2&&s.last<cur?s.cur:0)+1;s.best=Math.max(s.best,s.cur)}else s.cur=0;
+    if(ST.won){s.cur=(s.last>=cur-2&&s.last<cur?s.cur:0)+1;s.best=Math.max(s.best,s.cur)}else if(!ST.deep)s.cur=0;
     s.last=cur;store.set(K+'streak',s);
   }
 

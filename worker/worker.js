@@ -12,6 +12,9 @@ const DROP_HOUR = 9;                    // new card every Wednesday at 9am Easte
 const TZ = 'America/New_York';
 const MAX_GUESSES = 6, ARCHIVE = 4, ARTIST_AT = 3, ART_AT = 5, TEST_WEEKS = 6;  // week -1 is the public preview, -2..-6 are ?test cards
 const MIN_STATS_PLAYERS = 5;
+// Deep cut weeks: an obscure card about twice a year (weeks 13, 39, 65, ...), drawn from the DEEP_CUTS secret.
+const DEEP_EVERY = 26, DEEP_OFFSET = 13;
+const isDeep = w => w > 0 && w % DEEP_EVERY === DEEP_OFFSET;
 const SESSION_DAYS = 180;
 const SCRYFALL_HEADERS = { 'User-Agent': 'CardOfTheWeek/1.0 (squeeshouseofpizza.com)', 'Accept': 'application/json' };
 
@@ -48,14 +51,16 @@ async function cards() {
   BYNAME = new Map(CARDS.cards.map((c, i) => [c[0].toLowerCase(), i]));
   return CARDS;
 }
-function schedule(env) { return String(env.SCHEDULE || '').split(',').map(s => parseInt(s, 10)).filter(n => Number.isInteger(n)); }
+const intList = v => String(v || '').split(',').map(s => parseInt(s, 10)).filter(n => Number.isInteger(n));
+function schedule(env) { return intList(env.SCHEDULE); }
 // Real weeks count up from the start of the schedule; preview and test weeks (-1..-6) count down from the end.
-// A row in the overrides table replaces a week's scheduled card (Brian's hand-picked weeks).
+// A row in the overrides table replaces a week's scheduled card (Brian's hand-picked weeks; week -1 is the preview).
 async function answerIndex(env, week) {
-  if (week > 0) {
+  if (week > 0 || week === -1) {
     const o = await env.DB.prepare('SELECT card FROM overrides WHERE week = ?').bind(week).first().catch(() => null);
     if (o && BYNAME.has(String(o.card).toLowerCase())) return BYNAME.get(String(o.card).toLowerCase());
   }
+  if (isDeep(week)) { const d = intList(env.DEEP_CUTS); if (d.length) return d[Math.floor(week / DEEP_EVERY) % d.length]; }
   const s = schedule(env); if (!s.length) return null;
   return week > 0 ? s[(week - 1) % s.length] : s[s.length - 1 - ((-week - 1) % s.length)];
 }
@@ -144,7 +149,7 @@ async function stateFor(env, D, week, row) {
   const ai = await answerIndex(env, week);
   if (ai === null) throw new Error('No answer schedule is set');
   const fb = guesses.map(n => feedback(D, BYNAME.get(n.toLowerCase()), ai));
-  const out = { week, guesses, fb, done: !!(row && row.done), won: !!(row && row.won) };
+  const out = { week, guesses, fb, done: !!(row && row.done), won: !!(row && row.won), deep: isDeep(week) };
   const misses = out.won ? guesses.length - 1 : guesses.length;
   if (out.done || misses >= ARTIST_AT) {
     const s = await scry(D.cards[ai][0]);
