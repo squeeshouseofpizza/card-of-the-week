@@ -8,3 +8,4 @@ CREATE TABLE logins (nonce TEXT PRIMARY KEY, token TEXT, expires_at INTEGER NOT 
 CREATE TABLE overrides (week INTEGER PRIMARY KEY, card TEXT NOT NULL);
 -- Pizza Drop: each player's best score per week.
 CREATE TABLE pizza_scores (week INTEGER NOT NULL, discord_id TEXT NOT NULL, score INTEGER NOT NULL, ms INTEGER NOT NULL, merges INTEGER NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (week, discord_id));
+CREATE TABLE pizza_runs (week INTEGER NOT NULL, score INTEGER NOT NULL, ms INTEGER NOT NULL, drops INTEGER NOT NULL, merges INTEGER NOT NULL, top INTEGER NOT NULL, created_at INTEGER NOT NULL);
