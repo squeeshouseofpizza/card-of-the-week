@@ -49,8 +49,14 @@ h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,7vw,38px);mar
 .over p{margin:0;color:var(--muted);font-size:15px;max-width:34ch}
 .over .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 pre.share{margin:0;background:var(--ground);border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-family:var(--mono);font-size:13px;white-space:pre-wrap;user-select:all;text-align:left}
-.chain{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--muted)}
-.chain canvas{width:26px;height:26px}
+.legend{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.legend h2{font-family:var(--display);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0;font-weight:500}
+.chain{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:10px 6px}
+.chain li{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;line-height:1.2;color:var(--cream);text-align:center}
+.chain li.m{color:var(--muted)}
+.chain li.sig{color:var(--gold-lite)}
+.chain canvas{width:38px;height:38px}
+.nn{font-family:var(--body);font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 details{border:1px solid var(--line);border-radius:8px;padding:10px 14px;color:var(--muted);font-size:15px;background:var(--panel)}
 summary{cursor:pointer;font-family:var(--display);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
 details p{margin:8px 0}
@@ -79,10 +85,18 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     <p class="sub">Drop toppings. Two of the same merge into the next one up. Build the whole pie before the box overflows.</p>
   </header>
 
+  <details id="help">
+    <summary>How to play</summary>
+    <p>Move to aim and tap or click to drop. On a keyboard, use the arrow keys and space.</p>
+    <p>Two matching toppings merge into the next one up. The merge order is under the box. The signature chili is the hard one to make. Two whole pizzas clear for a big bonus.</p>
+    <p>If anything sits above the dashed line for two seconds, the game ends.</p>
+    <p>Sign in with Discord to put your best score on this week's board. It resets every Wednesday at 9am Eastern.</p>
+  </details>
+
   <div class="hud">
     <div class="stat"><span class="l">Score</span><span class="n" id="score">0</span></div>
     <div class="stat"><span class="l">Your best</span><span class="n" id="best">0</span></div>
-    <div class="stat"><span class="l">Next</span><span class="n"><canvas id="next" width="56" height="56" aria-label="Next topping"></canvas></span></div>
+    <div class="stat"><span class="l">Next</span><span class="n"><canvas id="next" width="56" height="56" aria-hidden="true"></canvas><span class="nn" id="nextname"></span></span></div>
   </div>
 
   <div class="stage" id="stage">
@@ -96,15 +110,12 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     </div>
   </div>
 
-  <div class="chain" id="chain" aria-label="Merge order"></div>
+  <section class="legend" aria-labelledby="mo">
+    <h2 id="mo">Merge order</h2>
+    <ol class="chain" id="chain"></ol>
+    <p class="note">Smallest to largest. The chef only drops the first five. Everything after that comes from merging.</p>
+  </section>
 
-  <details>
-    <summary>How to play</summary>
-    <p>Move to aim and tap or click to drop. On a keyboard, use the arrow keys and space.</p>
-    <p>Two matching toppings merge into the next one in the row above. The signature chili is the hard one to make. Two whole pizzas clear for a big bonus.</p>
-    <p>If anything sits above the dashed line for two seconds, the game ends.</p>
-    <p>Sign in with Discord to put your best score on this week's board. It resets every Wednesday at 9am Eastern.</p>
-  </details>
 
   <section class="board-lb" id="lbwrap" hidden>
     <h2>This week's high scores</h2>
@@ -139,9 +150,15 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     const s=r/50;
     switch(T[lvl].d){
       case 'olive': circle(c,0,0,r,'#2b2a26','#11100e',2); circle(c,0,0,r*.42,'#6b5b44'); circle(c,-r*.35,-r*.4,r*.18,'rgba(255,255,255,.35)'); break;
-      case 'basil': circle(c,0,0,r,'#2f7d32','#173f19',2);
-        c.strokeStyle='#8fcf6a';c.lineWidth=2.2*s+1;c.beginPath();c.moveTo(-r*.6,r*.5);c.quadraticCurveTo(0,0,r*.6,-r*.55);c.stroke();
-        for(const k of [-.25,.15]){c.beginPath();c.moveTo(r*k,r*k*-.2);c.lineTo(r*(k+.25),r*(k+.35));c.stroke()} break;
+      case 'basil': {
+        const leaf=(a,len,w,col)=>{c.save();c.rotate(a);c.fillStyle=col;c.strokeStyle='#1f5a1c';c.lineWidth=1.2*s+.6;
+          c.beginPath();c.moveTo(0,0);c.bezierCurveTo(w,-len*.25,w*.9,-len*.75,0,-len);c.bezierCurveTo(-w*.9,-len*.75,-w,-len*.25,0,0);c.closePath();c.fill();c.stroke();
+          c.strokeStyle='rgba(220,245,190,.75)';c.lineWidth=1*s+.6;c.beginPath();c.moveTo(0,-len*.08);c.lineTo(0,-len*.88);c.stroke();
+          for(const t of [.3,.5,.7]){c.beginPath();c.moveTo(0,-len*t);c.lineTo(w*.5,-len*(t+.12));c.moveTo(0,-len*t);c.lineTo(-w*.5,-len*(t+.12));c.stroke()}
+          c.restore()};
+        c.translate(0,r*.18);
+        leaf(-1.05,r*1.05,r*.42,'#3f9a36');leaf(1.05,r*1.05,r*.42,'#3f9a36');leaf(0,r*1.15,r*.5,'#4fb043');
+        circle(c,0,0,r*.12,'#2c6b26'); break; }
       case 'garlic': circle(c,0,0,r,'#efe7cf','#9a8b62',2);
         c.strokeStyle='#c9b98c';c.lineWidth=2;for(const a of [-.5,0,.5]){c.beginPath();c.moveTo(r*a*.9,-r*.85);c.quadraticCurveTo(r*a*1.4,0,r*a*.9,r*.85);c.stroke()}
         circle(c,0,-r*.78,r*.12,'#b7a674'); break;
@@ -156,7 +173,15 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       case 'tomato': circle(c,0,0,r,'#e0473b','#7e1d15',2.5); circle(c,0,0,r*.82,'#f26b5b');
         for(let i=0;i<5;i++){const a=i/5*Math.PI*2;c.save();c.rotate(a);c.fillStyle='#ffd6a8';c.beginPath();c.ellipse(0,-r*.45,r*.14,r*.24,0,0,Math.PI*2);c.fill();c.restore()}
         circle(c,0,0,r*.16,'#ffd6a8'); break;
-      case 'greenpepper': circle(c,0,0,r,'#3c8d2f','#1d4a16',3); circle(c,0,0,r*.72,'#b7e08f'); circle(c,0,0,r*.5,'#3c8d2f'); circle(c,0,0,r*.36,'#e9f6d7'); break;
+      case 'greenpepper': {
+        const lobes=(k)=>{c.beginPath();for(let i=0;i<=72;i++){const t=i/72*Math.PI*2,rr=r*k*(.9+.1*Math.cos(4*t+.4));i?c.lineTo(rr*Math.cos(t),rr*Math.sin(t)):c.moveTo(rr*Math.cos(t),rr*Math.sin(t))}c.closePath()};
+        lobes(1);c.fillStyle='#2e7a22';c.fill();c.strokeStyle='#163d10';c.lineWidth=2.5;c.stroke();
+        lobes(.8);c.fillStyle='#7fbf4d';c.fill();
+        lobes(.68);c.fillStyle='#f3f1dc';c.fill();
+        c.strokeStyle='#7fbf4d';c.lineWidth=4*s+2;for(let i=0;i<4;i++){const t=i/4*Math.PI*2+.4;c.beginPath();c.moveTo(Math.cos(t)*r*.62,Math.sin(t)*r*.62);c.lineTo(Math.cos(t)*r*.22,Math.sin(t)*r*.22);c.stroke()}
+        circle(c,0,0,r*.2,'#e6e9c4','#a9c47a',1.5);
+        for(const [a,b] of [[-.08,-.06],[.08,-.02],[0,.1],[-.1,.08],[.1,.11]]){c.fillStyle='#fffbe6';c.beginPath();c.ellipse(r*a,r*b,r*.035,r*.05,a*8,0,Math.PI*2);c.fill()}
+        break; }
       case 'cheese': circle(c,0,0,r,'#f2c94c','#9c7a14',3);
         for(const [a,b,k] of [[-.4,-.3,.15],[.35,-.3,.11],[.05,.3,.17],[-.45,.35,.09],[.45,.35,.1],[0,-.6,.08]])circle(c,r*a,r*b,r*k,'#d9ab2c'); break;
       case 'chili':
@@ -178,7 +203,8 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     c.restore();
   }
   function icon(canvas,lvl){const c=canvas.getContext('2d');c.clearRect(0,0,canvas.width,canvas.height);const w=canvas.width;drawTopping(c,lvl,w/2,w/2,w/2-2,0)}
-  T.forEach((t,i)=>{const cv=document.createElement('canvas');cv.width=52;cv.height=52;cv.title=t.name;cv.setAttribute('role','img');cv.setAttribute('aria-label',t.name);icon(cv,i);$('chain').appendChild(cv);if(i<PIZZA)$('chain').appendChild(el('span',null,'›'))});
+  T.forEach((t,i)=>{const li=el('li',i>=DROPPABLE?(t.d==='chili'?'sig':'m'):null);const cv=document.createElement('canvas');cv.width=76;cv.height=76;cv.setAttribute('aria-hidden','true');icon(cv,i);li.append(cv,el('span',null,t.name));$('chain').appendChild(li)});
+  function showNext(){icon($('next'),next);$('nextname').textContent=T[next].name}
 
   // ---------- world ----------
   const W=480,H=680,WALL=14,TOP=120,LINE=TOP+18,FLOOR=H-14;
@@ -200,7 +226,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     bodies=new Set();score=0;merges=0;drops=0;aimX=W/2;rand=rng(Date.now());current=pick();next=pick();
     coolUntil=0;over=false;overSince=null;pops=[];startTime=null;started=false;
     Events.on(engine,'collisionStart',collide);Events.on(engine,'collisionActive',collide);
-    $('over').hidden=true;updateHud();icon($('next'),next);running=true;
+    $('over').hidden=true;updateHud();showNext();running=true;
   }
 
   const queue=[];
@@ -236,7 +262,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     if(!started){started=true;startTime=Date.now()}
     const r=T[current].r,x=Math.max(WALL+r,Math.min(W-WALL-r,aimX));
     addTopping(current,x,TOP-10,0,2);drops++;
-    current=next;next=pick();icon($('next'),next);coolUntil=now+480;
+    current=next;next=pick();showNext();coolUntil=now+480;
   }
 
   function updateHud(){
