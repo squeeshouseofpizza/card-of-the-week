@@ -1,0 +1,12 @@
+// Cloudflare deploys the game server from this folder whenever main changes (Workers Builds).
+// Secrets (SCHEDULE, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET) live only in the Cloudflare dashboard.
+{
+  "name": "card-of-the-week",
+  "main": "worker.js",
+  "compatibility_date": "2025-09-01",
+  "d1_databases": [
+    { "binding": "DB", "database_name": "cotw-stats", "database_id": "0dcdba85-b903-4937-b9d4-a18a4bece021" }
+  ],
+  "observability": { "enabled": true },
+  "keep_vars": true
+}
