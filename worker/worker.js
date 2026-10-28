@@ -50,7 +50,12 @@ async function cards() {
 }
 function schedule(env) { return String(env.SCHEDULE || '').split(',').map(s => parseInt(s, 10)).filter(n => Number.isInteger(n)); }
 // Real weeks count up from the start of the schedule; test weeks (-1..-5) count down from the end.
-function answerIndex(env, week) {
+// A row in the overrides table replaces a week's scheduled card (Brian's hand-picked weeks).
+async function answerIndex(env, week) {
+  if (week > 0) {
+    const o = await env.DB.prepare('SELECT card FROM overrides WHERE week = ?').bind(week).first().catch(() => null);
+    if (o && BYNAME.has(String(o.card).toLowerCase())) return BYNAME.get(String(o.card).toLowerCase());
+  }
   const s = schedule(env); if (!s.length) return null;
   return week > 0 ? s[(week - 1) % s.length] : s[s.length - 1 - ((-week - 1) % s.length)];
 }
@@ -136,7 +141,8 @@ async function playerKey(req, env, week, client) {
 
 async function stateFor(env, D, week, row) {
   const guesses = row ? JSON.parse(row.guesses) : [];
-  const ai = answerIndex(env, week);
+  const ai = await answerIndex(env, week);
+  if (ai === null) throw new Error('No answer schedule is set');
   const fb = guesses.map(n => feedback(D, BYNAME.get(n.toLowerCase()), ai));
   const out = { week, guesses, fb, done: !!(row && row.done), won: !!(row && row.won) };
   const misses = out.won ? guesses.length - 1 : guesses.length;
@@ -161,7 +167,7 @@ export default {
       if (path === '/meta') {
         const retired = now - ARCHIVE - 1;
         let r = null;
-        if (retired >= 1) { const D = await cards(); const i = answerIndex(env, retired); const s = await scry(D.cards[i][0]); r = { week: retired, name: D.cards[i][0], artist: s ? s.artist : '', crop: s ? s.crop : '' }; }
+        if (retired >= 1) { const D = await cards(); const i = await answerIndex(env, retired); const s = await scry(D.cards[i][0]); r = { week: retired, name: D.cards[i][0], artist: s ? s.artist : '', crop: s ? s.crop : '' }; }
         return J({ week: now, launch: LAUNCH_MS, next: weekStart(Math.max(now, 0) + 1), retired: r, archive: ARCHIVE }, 200, origin);
       }
 
@@ -185,7 +191,7 @@ export default {
         const D = await cards();
         const gi = BYNAME.get(String(b.card || '').trim().toLowerCase());
         if (gi === undefined) return J({ error: 'card' }, 400, origin);
-        const ai = answerIndex(env, week);
+        const ai = await answerIndex(env, week);
         if (ai === null) return J({ error: 'schedule' }, 500, origin);
         let row = await env.DB.prepare('SELECT * FROM plays WHERE week = ? AND player = ?').bind(week, pk.key).first();
         const t = Date.now();
