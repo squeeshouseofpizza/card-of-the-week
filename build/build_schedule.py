@@ -1,21 +1,22 @@
-"""Build data/schedule.json: the order answer-pool cards come up, one per week from Nov 11, 2026.
+"""Build the weekly answer schedule for the Cloudflare Worker's SCHEDULE secret.
 
-Seeded shuffle (same input gives the same schedule), then nudged so two weeks in a row never share
-a color. The result is stored scrambled so it can't be read at a glance in the page source.
-It is not encryption: anyone stepping through the page's code can still recover it.
-Usage: python3 build/build_schedule.py data/cards.json build/pool.txt data/schedule.json
+Seeded shuffle of the answer pool (same input gives the same order), nudged so two weeks in a row
+never share a color. Prints card positions in data/cards.json, comma separated.
+Never commit the output: this repo is public, and the schedule is what keeps the answers secret.
+Usage: python3 build/build_schedule.py data/cards.json pool.txt > schedule.txt
 """
-import json, random, base64, sys
+import json, random, sys
 
-KEY = b'squee-house-of-pizza'
 SEED = 'shop-card-of-the-week-2026'
 
-def main(cards_file, pool_file, out):
+def main(cards_file, pool_file):
     data = json.load(open(cards_file, encoding='utf-8'))
     idx = {c[0]: i for i, c in enumerate(data['cards'])}
     pool = [l.strip() for l in open(pool_file, encoding='utf-8') if l.strip() and not l.startswith('#')]
-    pool = list(dict.fromkeys(pool))
-    order = [idx[n] for n in pool]
+    missing = [n for n in pool if n not in idx]
+    if missing:
+        sys.exit('Not in the card list: ' + ', '.join(missing))
+    order = [idx[n] for n in dict.fromkeys(pool)]
     random.Random(SEED).shuffle(order)
     color = lambda i: data['cards'][i][3] or 'C'
     for k in range(1, len(order)):
@@ -24,10 +25,7 @@ def main(cards_file, pool_file, out):
                 if color(order[j]) != color(order[k - 1]):
                     order[k], order[j] = order[j], order[k]
                     break
-    raw = b''.join(v.to_bytes(2, 'big') for v in order)
-    sch = base64.b64encode(bytes(b ^ KEY[i % len(KEY)] for i, b in enumerate(raw))).decode()
-    json.dump({'sch': sch}, open(out, 'w'))
-    print(f'{len(order)} weeks scheduled')
+    print(','.join(map(str, order)))
 
 if __name__ == '__main__':
-    main(*sys.argv[1:4])
+    main(sys.argv[1], sys.argv[2])
