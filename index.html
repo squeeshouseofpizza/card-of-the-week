@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Card of the Week · Squee's House of Pizza</title>
+<meta name="description" content="One Premodern Magic card every Wednesday. Six guesses, Fourth Edition through Scourge.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap">
+<style>
+/* Layout: one centered play column in the S.H.O.P. dark and gold house style; card art carries the color, the frame stays quiet */
+:root{
+  --ground:#17120c; --panel:#211a11; --panel-2:#2a2116; --line:rgba(214,163,74,.3);
+  --gold:#d6a34a; --gold-lite:#e6b862; --gold-dim:#8a6a2e;
+  --cream:#efe6d2; --muted:#a99873;
+  --hit:#5f7f4f; --hit-fg:#f1f6ea; --near:#b9852f; --near-fg:#1a1309; --miss:#2b241a; --miss-fg:#c9bb9c;
+  --display:"Cinzel",Georgia,serif; --body:"EB Garamond",Georgia,serif; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+html.framed body{background:transparent}
+:root.hc{--hit:#e07b39;--hit-fg:#1d0f05;--near:#5a9bd8;--near-fg:#07182a}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+.pre{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;text-align:center;display:flex;flex-direction:column;gap:8px}
+.pre .big{font-family:var(--display);font-size:24px;color:var(--gold-lite)}
+.pre .cd{font-family:var(--mono);font-size:18px}
+.testbar{border:1px dashed var(--gold-dim);color:var(--gold-lite);font-size:14px;padding:8px 12px;border-radius:6px;text-align:center}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:4px}
+footer a{color:var(--gold)}
+body{margin:0;background:var(--ground);color:var(--cream);font-family:var(--body);font-size:17px;line-height:1.5;min-height:100%}
+.wrap{max-width:760px;margin:0 auto;padding-block:24px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:20px}
+.demo{border:1px dashed var(--gold-dim);color:var(--muted);font-size:14px;padding:8px 12px;border-radius:6px;text-align:center}
+.banner{position:relative;border-radius:12px;overflow:hidden;min-height:150px;border:1px solid var(--line);background:var(--panel);display:flex;align-items:flex-end}
+.banner .bg{position:absolute;inset:0;background-size:cover;background-position:center 30%}
+.banner .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(23,18,12,.15) 0%,rgba(23,18,12,.55) 55%,rgba(23,18,12,.95) 100%)}
+.banner .txt{position:relative;padding:16px 18px;display:flex;flex-direction:column;gap:2px;width:100%}
+.eyebrow{font-family:var(--display);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,6vw,40px);margin:0;letter-spacing:.04em;line-height:1.1;text-wrap:balance}
+.last{font-size:14px;color:var(--muted);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.last b{color:var(--cream);font-weight:500}
+.sub{color:var(--muted);font-size:15px;margin:0}
+.bar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;font-size:15px;color:var(--muted)}
+.bar b{color:var(--cream);font-weight:500;font-family:var(--mono);font-size:14px}
+.pips{display:flex;gap:6px}
+.pip{width:11px;height:11px;border-radius:50%;border:1px solid var(--gold-dim)}
+.pip.used{background:var(--gold-dim)}
+.pip.win{background:var(--hit);border-color:var(--hit)}
+select,button,input{font:inherit;color:inherit}
+select{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:14px}
+.toggle{background:transparent;border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:13px;color:var(--muted);cursor:pointer}
+.toggle[aria-pressed="true"]{color:var(--gold-lite);border-color:var(--gold)}
+.board{display:flex;flex-direction:column;gap:8px}
+.head,.row{display:grid;grid-template-columns:minmax(0,1.7fr) repeat(5,minmax(0,1fr));gap:6px}
+.head div{font-family:var(--display);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:0 4px}
+.tile{position:relative;border-radius:6px;padding:9px 6px;text-align:center;font-size:14px;line-height:1.25;background:var(--miss);color:var(--miss-fg);
+  border:1px solid rgba(255,255,255,.04);display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:52px;min-width:0;overflow-wrap:anywhere}
+.tile small{font-size:11px;opacity:.85;font-family:var(--mono)}
+.tile.hit{background:var(--hit);color:var(--hit-fg)}
+.tile.near{background:var(--near);color:var(--near-fg)}
+.tile .mk{position:absolute;top:2px;right:5px;font-size:11px;font-family:var(--mono);opacity:.85}
+.tile.name{background:var(--panel-2);color:var(--cream);text-align:left;align-items:flex-start;font-weight:500;border-color:var(--line)}
+.tile.name.win{border-color:var(--gold);color:var(--gold-lite)}
+.row.enter .tile{animation:flip .38s ease both}
+.row.enter .tile:nth-child(2){animation-delay:.06s}.row.enter .tile:nth-child(3){animation-delay:.12s}
+.row.enter .tile:nth-child(4){animation-delay:.18s}.row.enter .tile:nth-child(5){animation-delay:.24s}.row.enter .tile:nth-child(6){animation-delay:.3s}
+@keyframes flip{from{transform:rotateX(80deg);opacity:.2}to{transform:none;opacity:1}}
+.empty{border:1px dashed var(--line);border-radius:6px;min-height:52px}
+.entry{position:relative}
+#guess{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:13px 14px;font-size:18px;outline:none}
+#guess:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(214,163,74,.2)}
+#guess::placeholder{color:var(--gold-dim)}
+.sugg{position:absolute;left:0;right:0;top:calc(100% + 4px);background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;z-index:5;list-style:none;margin:0;padding:0}
+.sugg li{padding:9px 14px;cursor:pointer;display:flex;justify-content:space-between;gap:12px}
+.sugg li span{color:var(--muted);font-size:13px;font-family:var(--mono);white-space:nowrap}
+.sugg li.on,.sugg li:hover{background:var(--panel-2);color:var(--gold-lite)}
+.err{color:#e08a6e;font-size:14px;min-height:1.2em;margin:4px 2px 0}
+.hints{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:10px;align-items:start}
+.hint{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.hint .k{font-family:var(--display);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.hint .v{color:var(--cream)}
+.hint.locked .v{color:var(--muted);font-style:italic}
+.artbox{aspect-ratio:4/3;max-width:100%;border-radius:6px;background:var(--panel-2);overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;text-align:center;padding:8px}
+.artbox img{width:100%;height:100%;object-fit:cover;display:block}
+.artbox.lock{background:repeating-linear-gradient(135deg,rgba(214,163,74,.06) 0 8px,transparent 8px 16px),var(--panel-2)}
+.credit{font-size:12px;color:var(--muted)}
+.result{display:grid;grid-template-columns:minmax(0,260px) minmax(0,1fr);gap:22px;align-items:start;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px}
+.result.won .cardslot{animation:reveal .7s cubic-bezier(.2,.9,.25,1.15) both}
+.result.won .cardslot>*{box-shadow:0 0 0 1px var(--gold),0 0 38px rgba(214,163,74,.45)}
+@keyframes reveal{from{transform:rotateY(90deg) scale(.85);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.row.enter .tile,.result.won .cardslot{animation:none}}
+.cardimg{width:100%;border-radius:12px;display:block}
+.verdict{font-family:var(--display);font-size:22px;margin:0 0 6px;color:var(--gold-lite)}
+.verdict.lose{color:var(--cream)}
+.card{background:#1d1812;border:9px solid #0d0b08;border-radius:12px;padding:8px;font-family:var(--body);color:#1c1710;box-shadow:0 0 0 1px var(--gold-dim)}
+.cf{border-radius:4px;padding:6px 8px;display:flex;flex-direction:column;gap:6px}
+.cbar{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#e9e0c9;border-radius:3px;padding:4px 7px;font-weight:500;font-size:15px}
+.cost{display:flex;gap:2px;flex-wrap:wrap;justify-content:flex-end}
+.m{width:16px;height:16px;border-radius:50%;font-size:10px;font-family:var(--mono);display:inline-flex;align-items:center;justify-content:center;color:#1c1710;border:1px solid rgba(0,0,0,.35)}
+.art{height:110px;border-radius:3px;background:repeating-linear-gradient(135deg,rgba(0,0,0,.12) 0 6px,transparent 6px 12px),var(--frame);display:flex;align-items:flex-end;justify-content:flex-end;padding:6px;font-size:11px;color:rgba(0,0,0,.55);font-style:italic}
+.ctype{background:#e9e0c9;border-radius:3px;padding:3px 7px;font-size:14px;display:flex;justify-content:space-between;gap:6px}
+.ctext{background:#efe8d6;border-radius:3px;padding:8px;font-size:14px;line-height:1.35;white-space:pre-line;min-height:70px}
+.cfoot{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#e9e0c9;padding:0 2px}
+.cpt{background:#e9e0c9;color:#1c1710;border-radius:3px;padding:1px 6px;font-weight:500;font-size:13px}
+.meta{display:flex;flex-direction:column;gap:12px;min-width:0}
+.meta p{margin:0}
+.next{font-family:var(--mono);font-size:14px;color:var(--cream);background:var(--panel-2);border-radius:8px;padding:8px 10px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.next span:first-child{font-family:var(--body);color:var(--muted);font-size:14px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.stat{background:var(--panel-2);border-radius:8px;padding:9px 10px}
+.stat .l{font-size:12px;color:var(--muted)}
+.stat .n{font-family:var(--mono);font-size:17px;color:var(--cream)}
+.dist{display:flex;flex-direction:column;gap:3px;font-family:var(--mono);font-size:12px}
+.dist div{display:grid;grid-template-columns:14px 1fr 34px;gap:8px;align-items:center;color:var(--muted)}
+.dist i{display:block;height:10px;background:var(--gold-dim);border-radius:2px}
+.dist .me i{background:var(--gold)}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.btn{background:var(--gold);color:#1a1309;border:0;border-radius:6px;padding:9px 14px;font-family:var(--display);font-size:13px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;text-decoration:none;display:inline-block}
+.btn:hover{background:var(--gold-lite)}
+.btn.ghost{background:transparent;color:var(--gold);border:1px solid var(--line)}
+.btn:focus-visible,select:focus-visible,.toggle:focus-visible{outline:2px solid var(--gold-lite);outline-offset:2px}
+pre.share{margin:0;background:var(--ground);border:1px solid var(--line);border-radius:6px;padding:10px;font-family:var(--mono);font-size:13px;line-height:1.35;white-space:pre-wrap;user-select:all}
+.note{font-size:13px;color:var(--muted)}
+details{border-top:1px solid var(--line);padding-top:12px;color:var(--muted);font-size:15px}
+summary{cursor:pointer;font-family:var(--display);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+details p{margin:8px 0}
+.key{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:4px}
+@media (max-width:560px){
+  .head{display:none}
+  .row{grid-template-columns:repeat(5,minmax(0,1fr))}
+  .row .tile.name{grid-column:1/-1;min-height:0;padding:6px 10px}
+  .tile{font-size:11.5px;min-height:46px;padding:7px 2px;overflow-wrap:normal;word-break:normal;hyphens:none}
+  .stat .n{font-size:15px}
+  .hints{grid-template-columns:1fr}
+  .result{grid-template-columns:1fr}
+  .cardslot{max-width:280px;margin:0 auto;width:100%}
+}
+</style>
+<style>
+.auth{display:flex;justify-content:flex-end;align-items:center;gap:10px;font-size:14px;color:var(--muted);flex-wrap:wrap}
+.auth img{width:22px;height:22px;border-radius:50%}
+.auth b{color:var(--cream);font-weight:500}
+.linkbtn{background:none;border:0;color:var(--gold);cursor:pointer;padding:0;font:inherit;text-decoration:underline;text-underline-offset:3px}
+.btn.discord{background:#5865f2;color:#fff;font-family:var(--body);text-transform:none;letter-spacing:0;font-size:15px;padding:7px 12px}
+.btn.discord:hover{background:#4752c4}
+.board-lb{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.board-lb h2{font-family:var(--display);font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0;font-weight:500}
+.lb{width:100%;border-collapse:collapse;font-size:15px}
+.lb td{padding:6px 4px;border-top:1px solid rgba(214,163,74,.12)}
+.lb td.r{width:2.4em;color:var(--muted);font-family:var(--mono);font-size:13px}
+.lb td.n{display:flex;align-items:center;gap:8px;min-width:0}
+.lb td.n img{width:20px;height:20px;border-radius:50%;flex:none}
+.lb td.n span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb td.g,.lb td.t{text-align:right;font-family:var(--mono);font-size:13px;white-space:nowrap;width:5em}
+.lb tr.me td{color:var(--gold-lite)}
+.lbnote{font-size:13px;color:var(--muted);margin:0}
+.busy{opacity:.6;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="testbar" id="testbar" hidden>Test mode: five practice cards from the end of the schedule. They never count toward real weeks, your streak or the real leaderboard.</div>
+  <div class="testbar" id="errbar" hidden></div>
+
+  <div class="auth" id="auth"></div>
+
+  <section class="banner" id="banner" aria-label="Card that rotated out of practice">
+    <div class="bg" id="bannerbg"></div>
+    <div class="shade"></div>
+    <div class="txt">
+      <div class="eyebrow">Squee's House of Pizza</div>
+      <h1>Card of the Week</h1>
+      <div class="last" id="lastline" hidden><span>Rotated out of practice: <b id="lastname"></b></span><span id="lastcredit"></span></div>
+    </div>
+  </section>
+
+  <section class="pre" id="pre" hidden><div class="eyebrow">Coming soon</div><div class="big">The first card drops Wednesday, Nov 11 at 9am Eastern</div><div class="cd" id="precd"></div><p class="sub" style="margin:0">One Premodern card every Wednesday. Six guesses. Sign in with Discord now to be on the first leaderboard.</p></section>
+
+  <div id="game" hidden>
+    <p class="sub">One Premodern card every Wednesday at 9am Eastern. Six guesses. Fourth Edition through Scourge.</p>
+    <div class="bar" style="margin-top:20px">
+      <span>Week <b id="num">#1</b> · <span id="datestr"></span></span>
+      <span class="pips" id="pips" aria-label="Guesses used"></span>
+      <span>Streak <b id="streak">0</b> wk · best <b id="best">0</b></span>
+      <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <select id="day" aria-label="Choose a week"></select>
+        <button class="toggle" id="hc" type="button" aria-pressed="false">High contrast</button>
+      </span>
+    </div>
+
+    <div class="board" id="board" aria-live="polite" style="margin-top:20px">
+      <div class="head"><div>Guess</div><div>Set</div><div>Mana value</div><div>Color</div><div>Type</div><div>Rarity</div></div>
+    </div>
+
+    <div class="entry" id="entry" style="margin-top:20px">
+      <input id="guess" type="text" autocomplete="off" spellcheck="false" placeholder="Name a Premodern card" aria-label="Your guess" aria-autocomplete="list" aria-controls="sugg">
+      <ul class="sugg" id="sugg" role="listbox" hidden></ul>
+      <p class="err" id="err"></p>
+    </div>
+
+    <div class="hints" id="hints" style="margin-top:4px"></div>
+
+    <section class="result" id="result" hidden style="margin-top:20px"></section>
+  </div>
+
+  <section class="board-lb" id="lbwrap" hidden>
+    <h2 id="lbtitle">Leaderboard</h2>
+    <table class="lb"><tbody id="lb"></tbody></table>
+    <p class="lbnote" id="lbnote"></p>
+  </section>
+
+  <details>
+    <summary>How to play</summary>
+    <p>Guess any Premodern-legal card. Each guess is compared with this week's card on five things.</p>
+    <p><span class="key" style="background:var(--hit)"></span>Exact match (marked ✓). <span class="key" style="background:var(--near)"></span>Close (marked ≈): same block for sets, one away for mana value, a shared color or card type. Arrows point toward the answer.</p>
+    <p>Set means the card's first printing between Fourth Edition and Scourge, so Swords to Plowshares counts as Fourth Edition. The artist unlocks after three misses and the card's art after four.</p>
+    <p>A new card comes out every Wednesday at 9am Eastern. You can play the last four weeks for practice; only the current week counts toward your streak and the leaderboard, and your streak survives one skipped week.</p>
+    <p>The leaderboard ranks this week's solvers who are signed in with Discord: fewest guesses first, then fastest time from first guess to last. Signing in shows your Discord display name and picture on the board. You can play without signing in.</p>
+  </details>
+
+  <footer>
+    <span>Card of the Week by Squee's House of Pizza. Card data from <a href="https://mtgjson.com" target="_blank" rel="noopener">MTGJSON</a>; card images from <a href="https://scryfall.com" target="_blank" rel="noopener">Scryfall</a>.</span>
+    <span>Card of the Week is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.</span>
+  </footer>
+</div>
+
+<script>
+(async function(){
+  const API='https://card-of-the-week.squeeshouseofpizza.workers.dev';
+  const SHARE_URL='squeeshouseofpizza.com/pages/card-of-the-week';
+  const TEST=new URLSearchParams(location.search).has('test');
+  const MAXG=6, ARTIST_AT=3, ART_AT=4;
+  const TYPES=['Artifact','Creature','Enchantment','Instant','Land','Sorcery'];
+  const RAR=['Common','Uncommon','Rare','Land'];
+  const COLN={W:'White',U:'Blue',B:'Black',R:'Red',G:'Green'};
+  const PIPC={W:'#f3ecd2',U:'#8fb7d8',B:'#a99bb5',R:'#d98563',G:'#8db577'};
+  const FRAME={W:'#e8e0c4',U:'#7fa8c9',B:'#7d6f86',R:'#c4694a',G:'#7d9e6a',M:'#cdb26a',C:'#a59a87'};
+  const $=id=>document.getElementById(id);
+  const store={get(k,f){try{const v=localStorage.getItem(k);return v?JSON.parse(v):f}catch(e){return f}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+  const K=TEST?'shoptest.':'shopweekly.';
+  function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
+  function fail(msg){const b=$('errbar');b.textContent=msg;b.hidden=false}
+
+  if(window.parent!==window){document.documentElement.classList.add('framed');const post=()=>parent.postMessage({cardOfTheWeek:true,height:document.documentElement.scrollHeight},'*');new ResizeObserver(post).observe(document.body);addEventListener('load',post)}
+  if(TEST)$('testbar').hidden=false;
+
+  const hcb=$('hc');
+  function setHC(on){document.documentElement.classList.toggle('hc',on);hcb.setAttribute('aria-pressed',String(on));store.set('shopweekly.hc',on)}
+  setHC(!!store.get('shopweekly.hc',false));
+  hcb.addEventListener('click',()=>setHC(!document.documentElement.classList.contains('hc')));
+
+  // ---------- server ----------
+  function clientId(){let id=store.get('shopweekly.id','');if(!/^[A-Za-z0-9_-]{8,64}$/.test(id)){id=(crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2)+Date.now()).replace(/[^A-Za-z0-9_-]/g,'');store.set('shopweekly.id',id)}return id}
+  function token(){return store.get('shopweekly.token','')}
+  async function api(path,opts={}){
+    const h=Object.assign({},opts.headers||{});const t=token();if(t)h.Authorization='Bearer '+t;
+    if(opts.body){h['Content-Type']='application/json';opts.body=JSON.stringify(opts.body)}
+    const r=await fetch(API+path,Object.assign({},opts,{headers:h}));
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok&&r.status!==409){const e=new Error(j.error||('HTTP '+r.status));e.code=j.error;throw e}
+    return j;
+  }
+
+  let DATA,META,byName;
+  try{
+    [DATA,META]=await Promise.all([fetch('data/cards.json').then(r=>r.json()),api('/meta')]);
+  }catch(e){fail(API?'The game server isn\'t responding right now. Refresh in a minute.':'The game server isn\'t connected yet.');return}
+  byName=new Map(DATA.cards.map(c=>[c[0].toLowerCase(),c]));
+  const NOW=TEST?-1:META.week;
+
+  // ---------- helpers ----------
+  const setInfo=i=>DATA.sets[i];
+  function colorsLabel(c){if(!c)return'Colorless';if(c.length>2)return c.length+' colors';return c.split('').map(x=>COLN[x]).join('/​')}
+  function typesLabel(m){const t=TYPES.filter((_,i)=>m&1<<i);return t.join(' ')||'Other'}
+  function frameColor(c){if(!c)return FRAME.C;if(c.length>1)return FRAME.M;return FRAME[c]}
+  function weekLabel(n){return n<0?'Test '+(-n):'#'+n}
+  function weekDate(n){if(n<0)return'practice card';const d=new Date(META.launch+7*864e5*(n-1));return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}
+  function fmtLeft(ms){const m=Math.max(0,Math.floor(ms/6e4)),d=Math.floor(m/1440),h=Math.floor(m%1440/60),mm=m%60;return(d?d+'d ':'')+h+'h '+String(mm).padStart(2,'0')+'m'}
+  function fmtSecs(s){if(s<60)return s+'s';const m=Math.floor(s/60);if(m<60)return m+'m '+String(s%60).padStart(2,'0')+'s';return Math.floor(m/60)+'h '+String(m%60).padStart(2,'0')+'m'}
+  const CLS=c=>c[0]==='H'?'hit':c[0]==='N'?'near':'';
+  function tiles(card,fb){
+    const s=setInfo(card[1]);
+    return[
+      {cls:CLS(fb[0]),txt:s[1],sub:fb[0].length>1?(fb[0][1]==='<'?'← earlier':'later →'):''},
+      {cls:CLS(fb[1]),txt:String(card[2]),sub:fb[1].length>1?(fb[1][1]==='<'?'↓ lower':'↑ higher'):''},
+      {cls:CLS(fb[2]),txt:colorsLabel(card[3])},
+      {cls:CLS(fb[3]),txt:typesLabel(card[4])},
+      {cls:CLS(fb[4]),txt:RAR[card[5]]},
+    ];
+  }
+
+  // ---------- auth ----------
+  let ME=null;
+  async function loadMe(){ME=null;if(token()){try{const m=await api('/me');if(m.name)ME=m;else store.del('shopweekly.token')}catch(e){}}renderAuth()}
+  function renderAuth(){
+    const a=$('auth');a.textContent='';
+    if(ME){if(ME.avatar){const i=el('img');i.src=ME.avatar;i.alt='';a.appendChild(i)}
+      const s=el('span',null,'Signed in as ');s.appendChild(el('b',null,ME.name));a.appendChild(s);
+      const o=el('button','linkbtn','Sign out');o.type='button';o.addEventListener('click',async()=>{try{await api('/auth/logout',{method:'POST'})}catch(e){}store.del('shopweekly.token');await loadMe();refresh()});a.appendChild(o);
+    }else{
+      a.appendChild(el('span',null,'Get on the leaderboard:'));
+      const b=el('button','btn discord','Sign in with Discord');b.type='button';b.addEventListener('click',signIn);a.appendChild(b);
+    }
+  }
+  function signIn(){
+    const nonce=Array.from(crypto.getRandomValues(new Uint8Array(18)),x=>x.toString(16).padStart(2,'0')).join('');
+    const w=window.open(API+'/auth/login?nonce='+nonce,'cotw-login','width=520,height=780');
+    if(!w){fail('Your browser blocked the sign-in window. Allow pop-ups for this page and try again.');return}
+    const a=$('auth');a.classList.add('busy');
+    let tries=0;const iv=setInterval(async()=>{
+      tries++;
+      try{const r=await api('/auth/claim?nonce='+nonce);if(r.token){clearInterval(iv);store.set('shopweekly.token',r.token);a.classList.remove('busy');await loadMe();refresh();return}}catch(e){}
+      if(tries>90||(w.closed&&tries>3&&tries%5===0&&tries>20)){clearInterval(iv);a.classList.remove('busy')}
+    },2000);
+  }
+
+  // ---------- banner ----------
+  function renderBanner(){
+    const r=META.retired,bg=$('bannerbg');
+    if(TEST||!r){$('lastline').hidden=true;bg.style.background='radial-gradient(ellipse 80% 90% at 70% 20%,rgba(214,163,74,.22),transparent 70%),var(--panel)';return}
+    $('lastline').hidden=false;$('lastname').textContent=r.name;
+    $('lastcredit').textContent=r.artist?'Illus. '+r.artist+' · ©Wizards of the Coast':'';
+    const c=byName.get(r.name.toLowerCase());
+    bg.style.background='radial-gradient(ellipse 80% 90% at 70% 20%,'+frameColor(c?c[3]:'')+'55,transparent 70%),var(--panel)';
+    if(r.crop){bg.style.background='';bg.style.backgroundImage='url("'+r.crop+'")'}
+  }
+
+  // ---------- game ----------
+  let cur=NOW,ST={guesses:[],fb:[],done:false,won:false};
+
+  function renderRows(animateLast){
+    const board=$('board');board.querySelectorAll('.row,.empty').forEach(e=>e.remove());
+    ST.guesses.forEach((n,i)=>{
+      const card=byName.get(n.toLowerCase()),fb=ST.fb[i],row=el('div','row'+(animateLast&&i===ST.guesses.length-1?' enter':''));
+      const win=fb.every(x=>x==='H');
+      row.appendChild(el('div','tile name'+(win?' win':''),card[0]));
+      tiles(card,fb).forEach(c=>{const t=el('div','tile '+c.cls);if(c.cls)t.appendChild(el('span','mk',c.cls==='hit'?'✓':'≈'));t.appendChild(el('span',null,c.txt));if(c.sub)t.appendChild(el('small',null,c.sub));
+        t.setAttribute('aria-label',c.txt+(c.cls==='hit'?', exact':c.cls==='near'?', close':', no match')+(c.sub?', answer is '+c.sub.replace(/[←→↑↓]/g,'').trim():''));row.appendChild(t)});
+      board.appendChild(row);
+    });
+    if(!ST.done)board.appendChild(el('div','empty'));
+  }
+
+  function render(animateLast){
+    renderRows(animateLast);
+    const pips=$('pips');pips.textContent='';
+    for(let i=0;i<MAXG;i++){const p=el('span','pip');if(i<ST.guesses.length)p.className='pip '+(ST.won&&i===ST.guesses.length-1?'win':'used');pips.appendChild(p)}
+    $('num').textContent=weekLabel(cur);$('datestr').textContent=weekDate(cur);
+    const s=store.get(K+'streak',{cur:0,best:0});$('streak').textContent=s.cur;$('best').textContent=s.best;
+    $('entry').hidden=ST.done;
+    renderHints();renderResult(animateLast);
+  }
+
+  function renderHints(){
+    const box=$('hints');box.textContent='';box.hidden=ST.done;if(ST.done)return;
+    const misses=ST.guesses.length,h=ST.hints||{};
+    const a=el('div','hint'+(misses>=ARTIST_AT?'':' locked'));a.appendChild(el('span','k','Artist'));
+    a.appendChild(el('span','v',misses>=ARTIST_AT?(h.artist||'Not listed'):'Unlocks after '+ARTIST_AT+' misses'));box.appendChild(a);
+    const c=el('div','hint'+(misses>=ART_AT?'':' locked'));c.appendChild(el('span','k','Card art'));
+    const ab=el('div','artbox'+(misses>=ART_AT?'':' lock'));
+    if(misses>=ART_AT&&h.art){const im=el('img');im.alt='Art from this week\'s card';im.src=h.art;ab.appendChild(im);c.appendChild(ab);c.appendChild(el('span','credit','Illus. '+(h.artist||'')+' · ©Wizards of the Coast'))}
+    else{ab.textContent=misses>=ART_AT?'Art isn\'t available right now':'Unlocks after '+ART_AT+' misses';c.appendChild(ab)}
+    box.appendChild(c);
+  }
+
+  function costPips(cost){
+    const box=el('span','cost');
+    (cost||'').match(/\{[^}]+\}/g)?.forEach(sym=>{sym=sym.slice(1,-1);const m=el('span','m',/^\d+$|^[XY]$/.test(sym)?sym:'');const col=sym.split('/')[0];m.style.background=PIPC[col]||'#c9c0ad';if(PIPC[col])m.title=COLN[col];box.appendChild(m)});
+    return box;
+  }
+  function drawnCard(a){
+    const card=DATA.cards[a.index]||byName.get((a.name||'').toLowerCase());const s=setInfo(card[1]);
+    const c=el('div','card');c.setAttribute('aria-label',card[0]+' card details');
+    const f=el('div','cf');c.appendChild(f);c.style.setProperty('--frame',frameColor(card[3]));f.style.background=frameColor(card[3]);
+    const top=el('div','cbar');top.appendChild(el('span',null,card[0]));top.appendChild(costPips(a.cost));f.appendChild(top);
+    f.appendChild(el('div','art',a.artist?'Illus. '+a.artist:''));
+    const ty=el('div','ctype');ty.appendChild(el('span',null,a.type||typesLabel(card[4])));ty.appendChild(el('span',null,s[0]));f.appendChild(ty);
+    f.appendChild(el('div','ctext',a.text||''));
+    const ft=el('div','cfoot');ft.appendChild(el('span',null,s[1]+' · '+RAR[card[5]]));if(a.pt)ft.appendChild(el('span','cpt',a.pt));f.appendChild(ft);
+    return c;
+  }
+  function shareText(){
+    const rows=ST.fb.map(fb=>fb.map(c=>c[0]==='H'?'🟩':c[0]==='N'?'🟨':'⬛').join(''));
+    return'S.H.O.P. Card of the Week '+weekLabel(cur)+' '+(ST.won?ST.guesses.length:'X')+'/'+MAXG+'\n'+rows.join('\n')+'\n'+SHARE_URL;
+  }
+  function selectPre(pre){const r=document.createRange();r.selectNodeContents(pre);const s=getSelection();s.removeAllRanges();s.addRange(r)}
+  let tick=null;
+
+  function renderResult(fresh){
+    const box=$('result');box.textContent='';box.hidden=!ST.done;box.classList.toggle('won',!!(ST.won&&fresh));
+    if(tick){clearInterval(tick);tick=null}
+    if(!ST.done||!ST.answer)return;
+    const a=ST.answer,slot=el('div','cardslot');box.appendChild(slot);
+    if(a.image){const im=el('img','cardimg');im.alt=a.name;im.src=a.image;im.addEventListener('error',()=>{slot.textContent='';slot.appendChild(drawnCard(a))});slot.appendChild(im)}else slot.appendChild(drawnCard(a));
+    const m=el('div','meta');box.appendChild(m);
+    m.appendChild(el('p','verdict'+(ST.won?'':' lose'),ST.won?(ST.guesses.length===1?'First try.':'Got it in '+ST.guesses.length+'.'):'It was '+a.name+'.'));
+    if(!TEST){const nx=el('div','next');nx.appendChild(el('span',null,'Next card'));const left=el('span',null,'');nx.appendChild(left);m.appendChild(nx);
+      const upd=()=>{left.textContent=fmtLeft(META.next-Date.now())+' · Wed '+new Date(META.next).toLocaleDateString(undefined,{month:'short',day:'numeric'})+', 9am ET'};upd();tick=setInterval(upd,30000)}
+    const statBox=el('div');m.appendChild(statBox);
+    api('/stats?week='+cur).then(s=>{
+      if(!s||!s.players){statBox.appendChild(el('p','note','Community stats show up once five people have finished this week.'));return}
+      const st=el('div','stats');
+      [['Solved',s.solved+' of '+s.players],['Most common',s.mode?s.mode+' guesses':'none yet'],['Top first guess',s.first||'none yet']].forEach(([l,n])=>{const b=el('div','stat');b.appendChild(el('div','l',l));b.appendChild(el('div','n',n));st.appendChild(b)});
+      statBox.appendChild(st);
+      const max=Math.max(...s.dist,1),dist=el('div','dist');dist.setAttribute('aria-label','How many guesses players needed');
+      s.dist.forEach((v,i)=>{const r=el('div',ST.won&&ST.guesses.length===i+1?'me':null);r.appendChild(el('span',null,String(i+1)));const bar=el('i');bar.style.width=Math.max(2,Math.round(v/max*100))+'%';const w=el('span');w.appendChild(bar);r.appendChild(w);r.appendChild(el('span',null,String(v)));dist.appendChild(r)});
+      statBox.appendChild(dist);
+    }).catch(()=>{});
+    const pre=el('pre','share',shareText());m.appendChild(pre);
+    const act=el('div','actions');const copy=el('button','btn','Copy result');copy.type='button';
+    copy.addEventListener('click',()=>{const t=shareText(),done=()=>{copy.textContent='Copied';setTimeout(()=>copy.textContent='Copy result',1600)};
+      if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(done).catch(()=>selectPre(pre));else selectPre(pre)});
+    act.appendChild(copy);
+    const q=encodeURIComponent(a.name.split(' // ')[0]);
+    const yt=el('a','btn ghost','Find it in our videos');yt.href='https://www.youtube.com/@SqueesHouseofPizza/search?query='+q;yt.target='_blank';yt.rel='noopener';act.appendChild(yt);
+    const sf=el('a','btn ghost','View on Scryfall');sf.href=a.scryfall||('https://scryfall.com/search?q=%21%22'+encodeURIComponent(a.name)+'%22');sf.target='_blank';sf.rel='noopener';act.appendChild(sf);
+    m.appendChild(act);
+    if(cur!==NOW&&!TEST)m.appendChild(el('p','note','Practice week. It doesn\'t count toward your streak or the leaderboard.'));
+  }
+
+  async function renderBoard(){
+    const wrap=$('lbwrap'),tb=$('lb'),note=$('lbnote');
+    if(cur<0&&!TEST){wrap.hidden=true;return}
+    try{
+      const b=await api('/leaderboard?week='+cur);wrap.hidden=false;tb.textContent='';
+      $('lbtitle').textContent=(cur===NOW?'This week\'s leaderboard':'Leaderboard, week '+weekLabel(cur));
+      if(!b.top.length){note.textContent=cur===NOW?'Nobody signed in has solved it yet. First one in takes the top spot.':'No signed-in solvers that week.'}
+      else{
+        const rows=b.top.slice();if(b.me&&!rows.some(r=>r.me))rows.push(b.me);
+        rows.forEach(r=>{const tr=el('tr',r.me?'me':null);tr.appendChild(el('td','r',String(r.rank)));const n=el('td','n');if(r.avatar){const i=el('img');i.src=r.avatar;i.alt='';n.appendChild(i)}n.appendChild(el('span',null,r.name));tr.appendChild(n);
+          tr.appendChild(el('td','g',r.guesses+(r.guesses===1?' guess':' guesses')));tr.appendChild(el('td','t',fmtSecs(r.seconds)));tb.appendChild(tr)});
+        note.textContent=b.total+' signed-in '+(b.total===1?'solver':'solvers')+'. Ranked by guesses, then time from first guess to last.'+(ME?'':' Sign in with Discord to join.');
+      }
+    }catch(e){wrap.hidden=true}
+  }
+
+  function finishStreak(){
+    if(cur!==NOW||TEST)return;
+    const s=store.get(K+'streak',{cur:0,best:0,last:0});if(s.last===cur)return;
+    if(ST.won){s.cur=(s.last>=cur-2&&s.last<cur?s.cur:0)+1;s.best=Math.max(s.best,s.cur)}else s.cur=0;
+    s.last=cur;store.set(K+'streak',s);
+  }
+
+  async function refresh(animate){
+    try{ST=await api('/state?week='+cur+'&client='+clientId())}catch(e){fail('Couldn\'t load your game. Refresh to try again.');return}
+    if(ST.done)finishStreak();
+    render(!!animate);renderBoard();
+  }
+
+  let sending=false;
+  async function submit(name){
+    if(ST.done||sending)return;
+    const c=byName.get(name.trim().toLowerCase());
+    if(!c){$('err').textContent='That isn\'t a Premodern-legal card. Pick one from the list.';return}
+    if(ST.guesses.some(x=>x.toLowerCase()===c[0].toLowerCase())){$('err').textContent='You already guessed '+c[0]+'.';return}
+    sending=true;$('entry').classList.add('busy');
+    try{
+      ST=await api('/guess',{method:'POST',body:{week:cur,card:c[0],client:clientId()}});
+      $('guess').value='';closeSugg();
+      if(ST.done){finishStreak();renderBoard()}
+      render(true);if(!ST.done)$('guess').focus();
+    }catch(e){$('err').textContent=e.code==='week'?'This week has rotated out. Pick another week.':'That guess didn\'t go through. Try again.'}
+    finally{sending=false;$('entry').classList.remove('busy')}
+  }
+
+  let sel=-1,items=[];
+  function closeSugg(){$('sugg').hidden=true;sel=-1;items=[];$('guess').removeAttribute('aria-activedescendant')}
+  function suggest(){
+    const v=$('guess').value.trim().toLowerCase();$('err').textContent='';
+    if(v.length<2){closeSugg();return}
+    const used=new Set(ST.guesses.map(x=>x.toLowerCase())),starts=[],has=[];
+    for(const c of DATA.cards){const n=c[0].toLowerCase();if(used.has(n))continue;if(n.startsWith(v))starts.push(c);else if(n.includes(v))has.push(c);if(starts.length>=8)break}
+    items=starts.concat(has).slice(0,8);const ul=$('sugg');ul.textContent='';
+    if(!items.length){closeSugg();return}
+    items.forEach((c,i)=>{const li=el('li');li.id='sg'+i;li.setAttribute('role','option');li.appendChild(el('strong',null,c[0]));li.appendChild(el('span',null,setInfo(c[1])[0]));
+      li.addEventListener('mousedown',e=>{e.preventDefault();submit(c[0])});ul.appendChild(li)});
+    sel=0;mark();ul.hidden=false;
+  }
+  function mark(){[...$('sugg').children].forEach((li,i)=>li.classList.toggle('on',i===sel));if(sel>=0)$('guess').setAttribute('aria-activedescendant','sg'+sel)}
+  $('guess').addEventListener('input',suggest);
+  $('guess').addEventListener('keydown',e=>{
+    if(e.key==='ArrowDown'&&items.length){e.preventDefault();sel=(sel+1)%items.length;mark()}
+    else if(e.key==='ArrowUp'&&items.length){e.preventDefault();sel=(sel-1+items.length)%items.length;mark()}
+    else if(e.key==='Enter'){e.preventDefault();if(items.length&&sel>=0)submit(items[sel][0]);else if($('guess').value.trim())submit($('guess').value);else $('err').textContent='Type a card name first.'}
+    else if(e.key==='Escape')closeSugg();
+  });
+  $('guess').addEventListener('blur',()=>setTimeout(closeSugg,120));
+
+  // ---------- start ----------
+  await loadMe();renderBanner();
+  if(NOW<1&&!TEST){
+    $('pre').hidden=false;const up=()=>{$('precd').textContent=fmtLeft(META.launch-Date.now())};up();setInterval(up,30000);return;
+  }
+  const dsel=$('day');
+  const weeks=TEST?[-1,-2,-3,-4,-5]:Array.from({length:META.archive+1},(_,i)=>NOW-i).filter(n=>n>=1);
+  weeks.forEach(n=>{const o=el('option',null,n===NOW?(TEST?'Test 1':'This week ('+weekLabel(n)+')'):(TEST?'Test '+(-n):'Practice '+weekLabel(n)+' · '+new Date(META.launch+7*864e5*(n-1)).toLocaleDateString(undefined,{month:'short',day:'numeric'})));o.value=n;dsel.appendChild(o)});
+  dsel.addEventListener('change',()=>{cur=+dsel.value;closeSugg();$('err').textContent='';refresh(false)});
+  $('game').hidden=false;
+  refresh(false);
+})();
+</script>
+</body>
+</html>
