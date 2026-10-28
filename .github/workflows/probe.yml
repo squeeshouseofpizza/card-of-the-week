@@ -11,17 +11,12 @@ jobs:
         run: |
           set +e +o pipefail
           exec > probe.txt 2>&1
-          curl -sS -o UDS.json -w "UDS %{http_code} %{size_download}\n" https://mtgjson.com/api/v5/UDS.json
-          python3 -c "import json;d=json.load(open('UDS.json'))['data'];c=[x for x in d['cards'] if x['name']=='Opalescence'][0];print({k:c.get(k) for k in ['name','manaValue','colors','types','rarity','artist','legalities','setCode','manaCost','type','text']})"
-          python3 -c "import json;d=json.load(open('UDS.json'))['data'];print(d.keys())"
-          curl -sS -A "Mozilla/5.0" -o y.html -w "mtgo month %{http_code} %{size_download}\n" "https://www.mtgo.com/decklists/2026/10"
-          grep -o '/decklist/[a-z0-9-]*' y.html | sort -u | grep -i premodern | head -20
-          echo "---all formats sample"; grep -o '/decklist/[a-z0-9-]*' y.html | sed 's/-[0-9].*//' | sort | uniq -c | sort -rn | head -20
-          u=$(grep -o '/decklist/premodern[a-z0-9-]*' y.html | head -1); echo "url $u"
-          curl -sS -A "Mozilla/5.0" -o d.html "https://www.mtgo.com$u"; wc -c d.html
-          grep -o 'window.MTGO.decklists.data = .\{0,400\}' d.html | head -c 800; echo
-          grep -o '"card_name":"[^"]*"' d.html | sort | uniq -c | sort -rn | head -10
-          grep -o '"decktype":"[^"]*"\|"archetype":"[^"]*"' d.html | head -5
+          for u in /decklist/premodern-challenge-32-2026-10-0112855462 /decklist/premodern-challenge-16-2026-10-2712857011; do
+            curl -sSL -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" -H "Accept: text/html" -o d.html -w "$u %{http_code} %{size_download} %{url_effective}\n" "https://www.mtgo.com$u"
+            grep -o 'window.MTGO.decklists.data = .\{0,300\}' d.html | head -c 400; echo
+            grep -o '"card_name":"[^"]*"' d.html | sort | uniq -c | sort -rn | head -8
+            grep -o '"[a-z_]*":' d.html | sort | uniq -c | sort -rn | head -40
+          done
       - name: Save output
         if: always()
         run: |
