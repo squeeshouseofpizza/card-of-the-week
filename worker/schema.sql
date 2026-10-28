@@ -4,3 +4,5 @@ CREATE INDEX plays_week ON plays (week, done, won);
 CREATE TABLE users (discord_id TEXT PRIMARY KEY, name TEXT NOT NULL, avatar TEXT, created_at INTEGER NOT NULL);
 CREATE TABLE sessions (token TEXT PRIMARY KEY, discord_id TEXT NOT NULL, expires_at INTEGER NOT NULL);
 CREATE TABLE logins (nonce TEXT PRIMARY KEY, token TEXT, expires_at INTEGER NOT NULL);
+-- Hand-picked weeks: a row here replaces that week's scheduled card. Card name must match the card list exactly.
+CREATE TABLE overrides (week INTEGER PRIMARY KEY, card TEXT NOT NULL);
