@@ -61,6 +61,12 @@ pre.share{margin:0;background:var(--ground);border:1px solid var(--line);border-
 .chain li{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;line-height:1.2;color:var(--cream);text-align:center}
 .chain li.m{color:var(--muted)}
 .chain li.sig{color:var(--gold-lite)}
+.chain li.locked{color:rgba(169,152,115,.55)}
+.chain li.locked canvas{filter:grayscale(1) brightness(.55);opacity:.45}
+.chain li.fresh canvas{animation:unlock 1.2s ease-out}
+@keyframes unlock{0%{transform:scale(.6);filter:drop-shadow(0 0 0 rgba(240,198,116,0))}40%{transform:scale(1.25);filter:drop-shadow(0 0 10px rgba(240,198,116,.9))}100%{transform:scale(1)}}
+.legend .cnt{font-family:var(--body);font-size:14px;letter-spacing:0;text-transform:none;color:var(--muted);margin-left:8px}
+@media (prefers-reduced-motion:reduce){.chain li.fresh canvas{animation:none}}
 .chain canvas{width:38px;height:38px}
 .nn{font-family:var(--body);font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 details{border:1px solid var(--line);border-radius:8px;padding:10px 14px;color:var(--muted);font-size:15px;background:var(--panel)}
@@ -120,9 +126,9 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   </div>
 
   <section class="legend" aria-labelledby="mo">
-    <h2 id="mo">Merge order</h2>
+    <h2 id="mo">Merge order <span class="cnt" id="cnt"></span></h2>
     <ol class="chain" id="chain"></ol>
-    <p class="note">Smallest to largest. The chef only drops the first five. Everything after that comes from merging.</p>
+    <p class="note">Smallest to largest. The chef only drops the first five. Everything after that comes from merging, and stays grayed out until you make it for the first time.</p>
   </section>
 
 
@@ -228,7 +234,16 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     c.restore();
   }
   function icon(canvas,lvl){const c=canvas.getContext('2d');c.clearRect(0,0,canvas.width,canvas.height);const w=canvas.width;drawTopping(c,lvl,w/2,w/2,w/2-2,0)}
-  T.forEach((t,i)=>{const li=el('li',i>=DROPPABLE?(t.d==='chili'?'sig':'m'):null);const cv=document.createElement('canvas');cv.width=76;cv.height=76;cv.setAttribute('aria-hidden','true');icon(cv,i);li.append(cv,el('span',null,t.name));$('chain').appendChild(li)});
+  // Lifetime collection: the highest topping ever made on this device (the first five are always unlocked), plus double pizza.
+  let everBig=Math.max(DROPPABLE-1,store.get('pizzadrop.biggest',-1)),everDouble=store.get('pizzadrop.double',false);
+  const chainItems=T.map((t,i)=>{const li=el('li');const cv=document.createElement('canvas');cv.width=76;cv.height=76;cv.setAttribute('aria-hidden','true');icon(cv,i);
+    const nm=el('span',null,t.name);li.append(cv,nm);$('chain').appendChild(li);return li});
+  function renderChain(fresh){chainItems.forEach((li,i)=>{const locked=i>everBig;
+      li.className=locked?'locked':i>=DROPPABLE?(T[i].d==='chili'?'sig':'m'):'';if(i===fresh)li.classList.add('fresh');
+      li.querySelector('span').textContent=T[i].name;li.title=locked?'Not made yet':T[i].name});
+    const merged=T.length-DROPPABLE,got=Math.max(0,everBig-DROPPABLE+1);
+    $('cnt').textContent=got+' of '+merged+' made'+(everDouble?' · double pizza ✓':'')}
+  renderChain();
   function showNext(){icon($('next'),next);$('nextname').textContent=T[next].name}
 
   // ---------- world ----------
@@ -237,7 +252,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   const cv=$('game'),ctx=cv.getContext('2d');
   const chef=new Image();chef.src='assets/chef.png';
   let engine,bodies,score,merges,drops,aimX,next,current,coolUntil,started,over,overSince,pops,startTime,rand,running=false;
-  let biggest,chain,lastMerge,shake,banner;
+  let biggest,chain,lastMerge,shake,banner,confetti=[],startEver;
 
   // ---------- sound ----------
   const VOL=[0,.35,1],VNAME=['Off','Low','High'];
@@ -255,6 +270,10 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     $('snd').innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/>'+waves+'</svg><span>'+VNAME[v]+'</span>';
     $('snd').setAttribute('aria-label','Sound: '+VNAME[v]+'. Tap to change.');$('snd').title='Sound: '+VNAME[v]}
 
+  const CONF=['#f0c674','#d42a24','#3f9a36','#f6eed8','#c93a2c','#e6b862'];
+  function burst(x,y,n){if(matchMedia('(prefers-reduced-motion: reduce)').matches)n=Math.min(n,12);
+    for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,v=3+Math.random()*7;confetti.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-5,r:Math.random()*Math.PI,vr:(Math.random()-.5)*.4,c:CONF[i%CONF.length],w:5+Math.random()*5,t:performance.now()})}}
+
   function rng(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
   function pick(){return Math.floor(rand()*DROPPABLE)}
 
@@ -266,7 +285,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       Bodies.rectangle(WALL-40,H/2,80,H*2,wallOpt),
       Bodies.rectangle(W-WALL+40,H/2,80,H*2,wallOpt)]);
     bodies=new Set();score=0;merges=0;drops=0;aimX=W/2;rand=rng(Date.now());current=pick();next=pick();
-    coolUntil=0;over=false;overSince=null;pops=[];startTime=null;started=false;biggest=-1;chain=0;lastMerge=0;shake=0;banner=null;
+    coolUntil=0;over=false;overSince=null;pops=[];startTime=null;started=false;biggest=-1;chain=0;lastMerge=0;shake=0;banner=null;confetti=[];startEver=everBig;
     Events.on(engine,'collisionStart',collide);Events.on(engine,'collisionActive',collide);
     $('over').hidden=true;updateHud();showNext();running=true;
   }
@@ -292,11 +311,14 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       const x=(a.position.x+b.position.x)/2,y=(a.position.y+b.position.y)/2,lvl=a.lvl;
       merges++;const now=performance.now();
       chain=now-lastMerge<900?chain+1:1;lastMerge=now;
-      if(lvl===PIZZA){score+=PIZZA_CLEAR;pops.push({x,y,r:T[PIZZA].r,t:now,txt:'+'+PIZZA_CLEAR,big:true});banner={txt:'Double pizza!',t:now,big:true};shake=Math.max(shake,14);bigSound()}
+      if(lvl===PIZZA){score+=PIZZA_CLEAR;pops.push({x,y,r:T[PIZZA].r,t:now,txt:'+'+PIZZA_CLEAR,big:true});shake=Math.max(shake,16);bigSound();burst(x,y,90);
+        if(!everDouble){everDouble=true;store.set('pizzadrop.double',true);renderChain();banner={sub:'First ever',txt:'Double pizza!',t:now,big:true,long:true}}else banner={txt:'Double pizza!',t:now,big:true}}
       else{const n=lvl+1;score+=T[n].pts;addTopping(n,x,y,(a.velocity.x+b.velocity.x)/2,Math.min(a.velocity.y,b.velocity.y)/2);
         pops.push({x,y,r:T[n].r,t:now,txt:'+'+T[n].pts+(chain>1?'  ×'+chain:''),big:n>=PIZZA-1});popSound(n,chain);
         if(n>=6)shake=Math.max(shake,n-3);
-        if(n>biggest){biggest=n;if(n>=6){banner={txt:n===PIZZA?'Whole pizza!':n===PIZZA-1?'Signature chili!':'First '+T[n].name.toLowerCase(),t:now,big:n>=PIZZA-1};if(n>=PIZZA-1){shake=Math.max(shake,12);bigSound()}}}}
+        if(n>everBig){everBig=n;biggest=Math.max(biggest,n);store.set('pizzadrop.biggest',n);renderChain(n);
+          banner={sub:'First ever',txt:T[n].name+'!',t:now,big:true,long:true};shake=Math.max(shake,10);bigSound();burst(x,y,n>=PIZZA-1?90:55)}
+        else if(n>biggest){biggest=n;if(n>=6){banner={txt:n===PIZZA?'Whole pizza!':n===PIZZA-1?'Signature chili!':'First '+T[n].name.toLowerCase(),t:now,big:n>=PIZZA-1};if(n>=PIZZA-1){shake=Math.max(shake,12);bigSound();burst(x,y,50)}}}}
     }
     updateHud();
   }
@@ -358,10 +380,15 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       circle(ctx,p.x,p.y,p.r*(1+k*.5),null,p.big?'#e6b862':'rgba(255,240,210,.8)',3);
       ctx.fillStyle='#fff3d6';ctx.font=`${p.big?22:16}px ui-monospace,monospace`;ctx.textAlign='center';ctx.fillText(p.txt,p.x,Math.max(TOP+20,p.y-p.r-8-k*24));ctx.globalAlpha=1}
     ctx.restore();
-    if(banner){const k=(now-banner.t)/1600;if(k>1)banner=null;else{
-      ctx.globalAlpha=k<.15?k/.15:k>.75?(1-k)/.25:1;const sz=banner.big?40:28,y=TOP+70;
-      ctx.font=`700 ${sz}px Cinzel,Georgia,serif`;ctx.textAlign='center';ctx.lineWidth=6;ctx.strokeStyle='rgba(23,18,12,.85)';ctx.strokeText(banner.txt,W/2,y);
-      ctx.fillStyle=banner.big?'#f0c674':'#fff3d6';ctx.fillText(banner.txt,W/2,y);ctx.globalAlpha=1}}
+    confetti=confetti.filter(p=>now-p.t<1800);
+    for(const p of confetti){p.vy+=.35;p.vx*=.985;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;ctx.globalAlpha=Math.max(0,1-(now-p.t)/1800);
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.fillStyle=p.c;ctx.fillRect(-p.w/2,-p.w/4,p.w,p.w/2);ctx.restore()}
+    ctx.globalAlpha=1;
+    if(banner){const dur=banner.long?2400:1600,k=(now-banner.t)/dur;if(k>1)banner=null;else{
+      ctx.globalAlpha=k<.12?k/.12:k>.78?(1-k)/.22:1;const sz=banner.big?40:28,y=TOP+(banner.sub?92:70),pop=k<.12?.7+.3*(k/.12)+.08*Math.sin(k/.12*Math.PI):1;
+      ctx.save();ctx.translate(W/2,y);ctx.scale(pop,pop);ctx.textAlign='center';ctx.lineWidth=6;ctx.strokeStyle='rgba(23,18,12,.85)';
+      if(banner.sub){ctx.font='600 16px Cinzel,Georgia,serif';ctx.strokeText(banner.sub.toUpperCase(),0,-sz*.95);ctx.fillStyle='#fff3d6';ctx.fillText(banner.sub.toUpperCase(),0,-sz*.95)}
+      ctx.font=`700 ${sz}px Cinzel,Georgia,serif`;ctx.strokeText(banner.txt,0,0);ctx.fillStyle=banner.big?'#f0c674':'#fff3d6';ctx.fillText(banner.txt,0,0);ctx.restore();ctx.globalAlpha=1}}
   }
 
   $('snd').addEventListener('click',()=>{setVol((vol+1)%3);if(vol)popSound(3,1)});setVol(vol);
@@ -385,11 +412,12 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     if(score>prevBest)store.set('pizzadrop.best',score);
     updateHud();
     $('overScore').textContent=score.toLocaleString();
-    const everBig=store.get('pizzadrop.biggest',-1),newBig=biggest>everBig;if(newBig)store.set('pizzadrop.biggest',biggest);
+    const newBig=biggest>startEver;
     $('share').textContent='🍕 Pizza Drop: '+score.toLocaleString()+' points'+(biggest>=0?'\nBiggest: '+T[biggest].name+(biggest===PIZZA-1?' 🌶️':biggest===PIZZA?' 🍕':''):'')+'\n'+SHARE_URL;
-    if(biggest>=0){icon($('bigicon'),biggest);$('bigname').textContent=T[biggest].name+(newBig&&everBig>=0?' (your biggest yet)':'');$('biggest').hidden=false}else $('biggest').hidden=true;
-    const top=Math.max(everBig,biggest);$('goal').textContent=top<PIZZA?'Next goal: make a '+T[top+1].name.toLowerCase()+'.':'Next goal: merge two pizzas.';
-    let note=score>prevBest&&prevBest>0?'New personal best.':'';
+    if(biggest>=0){icon($('bigicon'),biggest);$('bigname').textContent=T[biggest].name+(newBig?' (new!)':'');$('biggest').hidden=false}else $('biggest').hidden=true;
+    $('goal').textContent=everBig<PIZZA?'Next goal: make a '+T[everBig+1].name.toLowerCase()+'.':!everDouble?'Next goal: merge two pizzas.':'Next goal: beat your best.';
+    const gap=prevBest-score;
+    let note=score>prevBest&&prevBest>0?'New personal best.':gap>0&&gap<=Math.max(100,prevBest*.15)?'Only '+gap.toLocaleString()+' short of your best.':'';
     $('overNote').textContent=note;$('over').hidden=false;
     if(token()&&score>0){
       try{const r=await api('/pizza/score',{method:'POST',body:{score,ms,merges,drops}});
