@@ -155,7 +155,7 @@ details p{margin:8px 0}
 .lb td.g,.lb td.t{text-align:right;font-family:var(--mono);font-size:13px;white-space:nowrap;width:5em}
 .lb tr.me td{color:var(--gold-lite)}
 .lbnote{font-size:13px;color:var(--muted);margin:0}
-.deep{margin:14px 0 0;border:1px solid var(--gold);border-radius:8px;padding:9px 12px;font-size:15px;color:var(--cream);background:rgba(214,163,74,.08)}
+.deep{margin:0;border:1px solid var(--gold);border-radius:8px;padding:9px 12px;font-size:15px;color:var(--cream);background:rgba(214,163,74,.08)}
 .deep b{font-family:var(--display);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-lite);font-weight:500;margin-right:6px}
 .busy{opacity:.6;pointer-events:none}
 </style>
@@ -200,7 +200,6 @@ details p{margin:8px 0}
       </span>
     </div>
 
-    <p class="deep" id="deepnote" hidden><b>Deep cut</b>This week's card is an obscure one. Losing won't break your streak.</p>
     <div class="board" id="board" aria-live="polite" style="margin-top:20px">
       <div class="head"><div>Guess</div><div>Set</div><div>Mana value</div><div>Color</div><div>Type</div><div>Rarity</div></div>
     </div>
@@ -349,7 +348,6 @@ details p{margin:8px 0}
     const pips=$('pips');pips.textContent='';
     for(let i=0;i<MAXG;i++){const p=el('span','pip');if(i<ST.guesses.length)p.className='pip '+(ST.won&&i===ST.guesses.length-1?'win':'used');pips.appendChild(p)}
     if(cur<0&&!TEST){$('weekline').textContent='Practice card'}else{$('num').textContent=weekLabel(cur);$('datestr').textContent=weekDate(cur)}
-    $('deepnote').hidden=!ST.deep;
     const s=store.get(K+'streak',{cur:0,best:0});$('streak').textContent=s.cur;$('best').textContent=s.best;
     $('entry').hidden=ST.done;
     renderHints();renderResult(animateLast);
@@ -388,7 +386,7 @@ details p{margin:8px 0}
   }
   function shareText(){
     const rows=ST.fb.map(fb=>fb.map(c=>c[0]==='H'?'🟩':c[0]==='N'?'🟨':'⬛').join(''));
-    return'S.H.O.P. Guess the Card '+weekLabel(cur)+(ST.deep?' (deep cut)':'')+' '+(ST.won?ST.guesses.length:'X')+'/'+MAXG+'\n'+rows.join('\n')+'\n'+SHARE_URL;
+    return'S.H.O.P. Guess the Card '+weekLabel(cur)+' '+(ST.won?ST.guesses.length:'X')+'/'+MAXG+'\n'+rows.join('\n')+'\n'+SHARE_URL;
   }
   function selectPre(pre){const r=document.createRange();r.selectNodeContents(pre);const s=getSelection();s.removeAllRanges();s.addRange(r)}
   let tick=null;
@@ -401,6 +399,7 @@ details p{margin:8px 0}
     if(a.image){const im=el('img','cardimg');im.alt=a.name;im.src=a.image;im.addEventListener('error',()=>{slot.textContent='';slot.appendChild(drawnCard(a))});slot.appendChild(im)}else slot.appendChild(drawnCard(a));
     const m=el('div','meta');box.appendChild(m);
     m.appendChild(el('p','verdict'+(ST.won?'':' lose'),ST.won?(ST.guesses.length===1?'First try.':'Got it in '+ST.guesses.length+'.'):'It was '+a.name+'.'));
+    if(ST.deep){const d=el('p','deep');d.appendChild(el('b',null,'Deep cut'));d.appendChild(document.createTextNode(ST.won?'Not many people would know that one.':'That one was obscure on purpose. Your streak is safe.'));m.appendChild(d)}
     if(!TEST){const nx=el('div','next');nx.appendChild(el('span',null,cur<0?'Week 1':'Next card'));const left=el('span',null,'');nx.appendChild(left);m.appendChild(nx);
       const upd=()=>{left.textContent=fmtLeft((cur<0?META.launch:META.next)-Date.now())+' · Wed '+new Date(cur<0?META.launch:META.next).toLocaleDateString(undefined,{month:'short',day:'numeric'})+', 9am ET'};upd();tick=setInterval(upd,30000)}
     const statBox=el('div');m.appendChild(statBox);
