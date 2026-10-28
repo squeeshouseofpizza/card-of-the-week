@@ -12,15 +12,15 @@ jobs:
           set +e +o pipefail
           exec > probe.txt 2>&1
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-          for u in "https://www.mtgo.com/decklists/2026/09" "https://www.mtgo.com/decklists/2026/9" "https://www.mtgo.com/decklists?year=2026&month=09" "https://www.mtgo.com/decklists/2025/12"; do
-            curl -sSL -A "$UA" -o p.html -w "$u -> %{http_code} %{size_download} %{url_effective}\n" "$u"
-            echo "  premodern links: $(grep -o '/decklist/premodern-[a-z0-9-]*' p.html | sort -u | wc -l)  any links: $(grep -o '/decklist/[a-z0-9-]*' p.html | sort -u | wc -l)"
-            grep -o '/decklist/[a-z0-9-]*' p.html | sort -u | head -3
-            grep -o 'decklists/20[0-9][0-9]/[0-9]*[^"]*' p.html | sort -u | head -5
+          curl -sSL -A "$UA" -o p.html "https://www.mtgo.com/decklists/2026/09"
+          echo "--- scripts"; grep -o '<script[^>]*src="[^"]*"' p.html | head -20
+          echo "--- api-ish strings"; grep -o '[a-zA-Z0-9_./:-]*\(api\|json\|decklist[a-z]*\)[a-zA-Z0-9_./?=&{}:-]*' p.html | sort -u | head -40
+          echo "--- window.MTGO"; grep -o 'window.MTGO[^;]\{0,200\}' p.html | head -10
+          for js in $(grep -o '<script[^>]*src="[^"]*"' p.html | grep -o 'src="[^"]*' | cut -c6- | grep -i -v "google\|gtm\|onetrust\|cookie" | head -8); do
+            case "$js" in http*) u="$js";; //*) u="https:$js";; *) u="https://www.mtgo.com$js";; esac
+            curl -sSL -A "$UA" -o j.js "$u"; echo "=== $u $(wc -c < j.js)"
+            grep -o '.\{0,80\}decklist.\{0,120\}' j.js | grep -i "fetch\|url\|api\|ajax\|get(\|\.json\|/[0-9]" | head -8
           done
-          echo "--- skipped page check"
-          curl -sSL -A "$UA" -o s.html -w "%{http_code} %{url_effective}\n" "https://www.mtgo.com/decklist/premodern-challenge-16-2026-10-0212855762"
-          grep -o 'window.MTGO.decklists.data = .\{0,120\}' s.html
       - name: Save
         if: always()
         run: |
