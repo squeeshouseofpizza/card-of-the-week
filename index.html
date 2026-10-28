@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<script>if(window.parent!==window)document.documentElement.classList.add('framed')</script>
 <title>Guess the Card · Squee's House of Pizza</title>
 <meta name="description" content="A weekly Premodern Magic puzzle from Squee's House of Pizza. Guess the card in six tries.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,7 +18,8 @@
   --display:"Cinzel",Georgia,serif; --body:"EB Garamond",Georgia,serif; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
   color-scheme:dark;
 }
-html.framed body{background:transparent}
+html.framed{color-scheme:light;background:transparent}
+html.framed body{background:transparent;color-scheme:dark}
 :root.hc{--hit:#e07b39;--hit-fg:#1d0f05;--near:#5a9bd8;--near-fg:#07182a}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
