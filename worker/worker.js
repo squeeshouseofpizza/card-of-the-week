@@ -270,7 +270,7 @@ export default {
         const token = randomToken();
         await env.DB.prepare('INSERT INTO sessions (token, discord_id, expires_at) VALUES (?, ?, ?)').bind(token, me.id, Date.now() + SESSION_DAYS * 864e5).run();
         await env.DB.prepare('UPDATE logins SET token = ? WHERE nonce = ?').bind(token, nonce).run();
-        return page('Signed in. You can close this window.');
+        return page('You\'re signed in. You can close this window.');
       }
       if (path === '/auth/claim') {
         const nonce = url.searchParams.get('nonce') || '';
