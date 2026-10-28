@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<script>if(window.parent!==window)document.documentElement.classList.add('framed')</script>
+<title>Pizza Drop · Squee's House of Pizza</title>
+<meta name="description" content="Drop toppings, merge matching ones, build the whole pie. A Squee's House of Pizza game.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap">
+<style>
+/* Layout: one narrow column; the pizza box is the hero, scores above it, leaderboard below */
+:root{
+  --ground:#17120c; --panel:#211a11; --panel-2:#2a2116; --line:rgba(214,163,74,.3);
+  --gold:#d6a34a; --gold-lite:#e6b862; --gold-dim:#8a6a2e; --cream:#efe6d2; --muted:#a99873;
+  --box:#b9884f; --box-in:#8c6236; --box-edge:#6d4a27;
+  --display:"Cinzel",Georgia,serif; --body:"EB Garamond",Georgia,serif; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+html.framed{color-scheme:light;background:transparent}
+html.framed body{background:transparent;color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--ground);color:var(--cream);font-family:var(--body);font-size:17px;line-height:1.5}
+.wrap{max-width:560px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
+.auth{display:flex;justify-content:flex-end;align-items:center;gap:10px;font-size:14px;color:var(--muted);flex-wrap:wrap}
+.auth img{width:22px;height:22px;border-radius:50%}
+.auth b{color:var(--cream);font-weight:500}
+.linkbtn{background:none;border:0;color:var(--gold);cursor:pointer;padding:0;font:inherit;text-decoration:underline;text-underline-offset:3px}
+.btn{background:var(--gold);color:#1a1309;border:0;border-radius:6px;padding:9px 14px;font-family:var(--display);font-size:13px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+.btn:hover{background:var(--gold-lite)}
+.btn.ghost{background:transparent;color:var(--gold);border:1px solid var(--line)}
+.btn.discord{background:#5865f2;color:#fff;font-family:var(--body);text-transform:none;letter-spacing:0;font-size:15px;padding:7px 12px}
+.btn:focus-visible,.linkbtn:focus-visible{outline:2px solid var(--gold-lite);outline-offset:2px}
+header{display:flex;flex-direction:column;gap:2px}
+.eyebrow{font-family:var(--display);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,7vw,38px);margin:0;letter-spacing:.04em;line-height:1.1}
+.sub{color:var(--muted);font-size:15px;margin:0}
+.hud{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.stat .l{font-family:var(--display);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.stat .n{font-family:var(--mono);font-size:20px;color:var(--cream);font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:8px;min-height:28px}
+.stat canvas{width:28px;height:28px}
+.stage{position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--panel)}
+#game{display:block;width:100%;height:auto;touch-action:none;cursor:crosshair}
+.over{position:absolute;inset:0;background:rgba(18,13,8,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center}
+.over h2{font-family:var(--display);font-size:26px;margin:0;color:var(--gold-lite)}
+.over .big{font-family:var(--mono);font-size:34px}
+.over p{margin:0;color:var(--muted);font-size:15px;max-width:34ch}
+.over .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+pre.share{margin:0;background:var(--ground);border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-family:var(--mono);font-size:13px;white-space:pre-wrap;user-select:all;text-align:left}
+.chain{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--muted)}
+.chain canvas{width:26px;height:26px}
+details{border:1px solid var(--line);border-radius:8px;padding:10px 14px;color:var(--muted);font-size:15px;background:var(--panel)}
+summary{cursor:pointer;font-family:var(--display);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+details p{margin:8px 0}
+.board-lb{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.board-lb h2{font-family:var(--display);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0;font-weight:500}
+.lb{width:100%;border-collapse:collapse;font-size:15px}
+.lb td{padding:6px 4px;border-top:1px solid rgba(214,163,74,.12)}
+.lb td.r{width:2.4em;color:var(--muted);font-family:var(--mono);font-size:13px}
+.lb td.n{display:flex;align-items:center;gap:8px;min-width:0}
+.lb td.n img{width:20px;height:20px;border-radius:50%;flex:none}
+.lb td.n span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb td.s{text-align:right;font-family:var(--mono);font-size:14px;white-space:nowrap}
+.lb tr.me td{color:var(--gold-lite)}
+.note{font-size:13px;color:var(--muted);margin:0}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
+.err{color:#e08a6e;font-size:14px}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="auth" id="auth"></div>
+  <header>
+    <div class="eyebrow">Squee's House of Pizza</div>
+    <h1>Pizza Drop</h1>
+    <p class="sub">Drop toppings. Two of the same merge into the next one up. Build the whole pie before the box overflows.</p>
+  </header>
+
+  <div class="hud">
+    <div class="stat"><span class="l">Score</span><span class="n" id="score">0</span></div>
+    <div class="stat"><span class="l">Your best</span><span class="n" id="best">0</span></div>
+    <div class="stat"><span class="l">Next</span><span class="n"><canvas id="next" width="56" height="56" aria-label="Next topping"></canvas></span></div>
+  </div>
+
+  <div class="stage" id="stage">
+    <canvas id="game" width="480" height="680" aria-label="Pizza box. Move to aim, tap or click to drop."></canvas>
+    <div class="over" id="over" hidden>
+      <h2 id="overTitle">The box overflowed</h2>
+      <div class="big" id="overScore">0</div>
+      <p id="overNote"></p>
+      <pre class="share" id="share"></pre>
+      <div class="row"><button class="btn" id="again" type="button">Play again</button><button class="btn ghost" id="copy" type="button">Copy score</button></div>
+    </div>
+  </div>
+
+  <div class="chain" id="chain" aria-label="Merge order"></div>
+
+  <details>
+    <summary>How to play</summary>
+    <p>Move to aim and tap or click to drop. On a keyboard, use the arrow keys and space.</p>
+    <p>Two matching toppings merge into the next one in the row above. The signature chili is the hard one to make. Two whole pizzas clear for a big bonus.</p>
+    <p>If anything sits above the dashed line for two seconds, the game ends.</p>
+    <p>Sign in with Discord to put your best score on this week's board. It resets every Wednesday at 9am Eastern.</p>
+  </details>
+
+  <section class="board-lb" id="lbwrap" hidden>
+    <h2>This week's high scores</h2>
+    <table class="lb"><tbody id="lb"></tbody></table>
+    <p class="note" id="lbnote"></p>
+  </section>
+
+  <footer>Pizza Drop by Squee's House of Pizza.</footer>
+</div>
+
+<script src="vendor/matter-0.20.0.min.js"></script>
+<script>
+(function(){
+  const API='https://card-of-the-week.squeeshouseofpizza.workers.dev';
+  const SHARE_URL='squeeshouseofpizza.com/pages/pizza-drop';
+  const $=id=>document.getElementById(id);
+  const store={get(k,f){try{const v=localStorage.getItem(k);return v?JSON.parse(v):f}catch(e){return f}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+  function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
+  if(window.parent!==window){const post=()=>parent.postMessage({pizzaDrop:true,height:document.documentElement.scrollHeight},'*');new ResizeObserver(post).observe(document.body);addEventListener('load',post)}
+
+  // ---------- toppings: radius, points for making one, and how each is drawn ----------
+  const T=[
+    {name:'Olive',r:13,d:'olive'},{name:'Basil',r:18,d:'basil'},{name:'Garlic',r:24,d:'garlic'},{name:'Mushroom',r:30,d:'mushroom'},
+    {name:'Onion',r:37,d:'onion'},{name:'Pepperoni',r:45,d:'pepperoni'},{name:'Tomato',r:52,d:'tomato'},{name:'Green pepper',r:60,d:'greenpepper'},
+    {name:'Cheese',r:68,d:'cheese'},{name:'Signature chili',r:78,d:'chili'},{name:'Pizza',r:90,d:'pizza'}];
+  T.forEach((t,i)=>t.pts=(i+1)*(i+2)/2);
+  const PIZZA=T.length-1, PIZZA_CLEAR=150, DROPPABLE=5;
+
+  function circle(c,x,y,r,fill,stroke,lw){c.beginPath();c.arc(x,y,r,0,Math.PI*2);if(fill){c.fillStyle=fill;c.fill()}if(stroke){c.lineWidth=lw||2;c.strokeStyle=stroke;c.stroke()}}
+  function drawTopping(c,lvl,x,y,r,rot){
+    c.save();c.translate(x,y);c.rotate(rot||0);
+    const s=r/50;
+    switch(T[lvl].d){
+      case 'olive': circle(c,0,0,r,'#2b2a26','#11100e',2); circle(c,0,0,r*.42,'#6b5b44'); circle(c,-r*.35,-r*.4,r*.18,'rgba(255,255,255,.35)'); break;
+      case 'basil': circle(c,0,0,r,'#2f7d32','#173f19',2);
+        c.strokeStyle='#8fcf6a';c.lineWidth=2.2*s+1;c.beginPath();c.moveTo(-r*.6,r*.5);c.quadraticCurveTo(0,0,r*.6,-r*.55);c.stroke();
+        for(const k of [-.25,.15]){c.beginPath();c.moveTo(r*k,r*k*-.2);c.lineTo(r*(k+.25),r*(k+.35));c.stroke()} break;
+      case 'garlic': circle(c,0,0,r,'#efe7cf','#9a8b62',2);
+        c.strokeStyle='#c9b98c';c.lineWidth=2;for(const a of [-.5,0,.5]){c.beginPath();c.moveTo(r*a*.9,-r*.85);c.quadraticCurveTo(r*a*1.4,0,r*a*.9,r*.85);c.stroke()}
+        circle(c,0,-r*.78,r*.12,'#b7a674'); break;
+      case 'mushroom': circle(c,0,0,r,'#f3ead6','#6e5a3c',2);
+        c.fillStyle='#a07a52';c.beginPath();c.ellipse(0,-r*.08,r*.8,r*.52,0,Math.PI,0);c.fill();
+        c.fillStyle='#e9dcc0';c.fillRect(-r*.24,-r*.08,r*.48,r*.62);c.strokeStyle='#6e5a3c';c.lineWidth=2;c.strokeRect(-r*.24,-r*.08,r*.48,r*.62);
+        c.beginPath();c.ellipse(0,-r*.08,r*.8,r*.52,0,Math.PI,0);c.closePath();c.stroke(); break;
+      case 'onion': circle(c,0,0,r,'#b37bb1','#5f2f5d',3); for(const k of [.78,.56,.34])circle(c,0,0,r*k,null,'#f4e6f3',3*s+1.5); break;
+      case 'pepperoni': circle(c,0,0,r,'#c93a2c','#6a1a12',2.5);
+        for(const [a,b,k] of [[-.4,-.3,.13],[.35,-.35,.1],[.1,.25,.12],[-.35,.35,.09],[.45,.3,.08],[-.05,-.55,.07]])circle(c,r*a,r*b,r*k,'#8e2117');
+        circle(c,-r*.35,-r*.5,r*.1,'rgba(255,255,255,.25)'); break;
+      case 'tomato': circle(c,0,0,r,'#e0473b','#7e1d15',2.5); circle(c,0,0,r*.82,'#f26b5b');
+        for(let i=0;i<5;i++){const a=i/5*Math.PI*2;c.save();c.rotate(a);c.fillStyle='#ffd6a8';c.beginPath();c.ellipse(0,-r*.45,r*.14,r*.24,0,0,Math.PI*2);c.fill();c.restore()}
+        circle(c,0,0,r*.16,'#ffd6a8'); break;
+      case 'greenpepper': circle(c,0,0,r,'#3c8d2f','#1d4a16',3); circle(c,0,0,r*.72,'#b7e08f'); circle(c,0,0,r*.5,'#3c8d2f'); circle(c,0,0,r*.36,'#e9f6d7'); break;
+      case 'cheese': circle(c,0,0,r,'#f2c94c','#9c7a14',3);
+        for(const [a,b,k] of [[-.4,-.3,.15],[.35,-.3,.11],[.05,.3,.17],[-.45,.35,.09],[.45,.35,.1],[0,-.6,.08]])circle(c,r*a,r*b,r*k,'#d9ab2c'); break;
+      case 'chili':
+        circle(c,0,0,r,'#f6eed8','#d6a34a',5*s+2); circle(c,0,0,r*.86,null,'rgba(214,163,74,.45)',2);
+        c.save();c.rotate(.35);
+        c.fillStyle='#d42a24';c.strokeStyle='#5c0d0a';c.lineWidth=2.5*s+1;
+        c.beginPath();c.moveTo(-r*.12,-r*.48);c.bezierCurveTo(r*.35,-r*.46,r*.32,r*.05,r*.05,r*.42);c.quadraticCurveTo(-r*.08,r*.62,-r*.02,r*.72);
+        c.quadraticCurveTo(-r*.3,r*.45,-r*.24,r*.05);c.bezierCurveTo(-r*.22,-r*.22,-r*.3,-r*.4,-r*.12,-r*.48);c.closePath();c.fill();c.stroke();
+        c.fillStyle='rgba(255,255,255,.45)';c.beginPath();c.ellipse(r*.06,-r*.18,r*.05,r*.2,.15,0,Math.PI*2);c.fill();
+        c.fillStyle='#2f7d32';c.strokeStyle='#173f19';c.lineWidth=2;
+        c.beginPath();c.moveTo(-r*.3,-r*.5);c.quadraticCurveTo(-r*.05,-r*.62,r*.18,-r*.48);c.quadraticCurveTo(-r*.02,-r*.4,-r*.3,-r*.5);c.fill();c.stroke();
+        c.lineWidth=3*s+1;c.beginPath();c.moveTo(-r*.05,-r*.55);c.quadraticCurveTo(-r*.02,-r*.75,r*.15,-r*.8);c.stroke();
+        c.restore(); break;
+      default: circle(c,0,0,r,'#c9792f','#6b3a12',3); circle(c,0,0,r*.84,'#c8402f'); circle(c,0,0,r*.76,'#f6e3a8');
+        for(const [a,b] of [[-.4,-.3],[.35,-.35],[.1,.3],[-.35,.35],[.45,.25],[0,-.05]])circle(c,r*a,r*b,r*.13,'#b8352b');
+        for(const [a,b] of [[.2,-.55],[-.6,0],[.6,-.05]])c.save(),c.translate(r*a,r*b),c.rotate(a*3),c.fillStyle='#a07a52',c.beginPath(),c.ellipse(0,0,r*.11,r*.07,0,0,Math.PI*2),c.fill(),c.restore();
+        c.save();c.translate(-r*.05,r*.58);c.rotate(-.4);c.fillStyle='#d42a24';c.beginPath();c.ellipse(0,0,r*.07,r*.16,0,0,Math.PI*2);c.fill();c.restore();
+    }
+    c.restore();
+  }
+  function icon(canvas,lvl){const c=canvas.getContext('2d');c.clearRect(0,0,canvas.width,canvas.height);const w=canvas.width;drawTopping(c,lvl,w/2,w/2,w/2-2,0)}
+  T.forEach((t,i)=>{const cv=document.createElement('canvas');cv.width=52;cv.height=52;cv.title=t.name;cv.setAttribute('role','img');cv.setAttribute('aria-label',t.name);icon(cv,i);$('chain').appendChild(cv);if(i<PIZZA)$('chain').appendChild(el('span',null,'›'))});
+
+  // ---------- world ----------
+  const W=480,H=680,WALL=14,TOP=120,LINE=TOP+18,FLOOR=H-14;
+  const {Engine,Bodies,Composite,Events,Body}=Matter;
+  const cv=$('game'),ctx=cv.getContext('2d');
+  const chef=new Image();chef.src='assets/chef.png';
+  let engine,bodies,score,merges,drops,aimX,next,current,coolUntil,started,over,overSince,pops,startTime,rand,running=false;
+
+  function rng(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+  function pick(){const r=rand();return r<.3?0:r<.55?1:r<.75?2:r<.9?3:4}
+
+  function newGame(){
+    engine=Engine.create();engine.gravity.y=1.6;
+    const wallOpt={isStatic:true,friction:.2,restitution:0};
+    Composite.add(engine.world,[
+      Bodies.rectangle(W/2,FLOOR+40,W,80,wallOpt),
+      Bodies.rectangle(WALL-40,H/2,80,H*2,wallOpt),
+      Bodies.rectangle(W-WALL+40,H/2,80,H*2,wallOpt)]);
+    bodies=new Set();score=0;merges=0;drops=0;aimX=W/2;rand=rng(Date.now());current=pick();next=pick();
+    coolUntil=0;over=false;overSince=null;pops=[];startTime=null;started=false;
+    Events.on(engine,'collisionStart',collide);Events.on(engine,'collisionActive',collide);
+    $('over').hidden=true;updateHud();icon($('next'),next);running=true;
+  }
+
+  const queue=[];
+  function collide(ev){
+    for(const p of ev.pairs){
+      const a=p.bodyA,b=p.bodyB;
+      if(a.lvl==null||b.lvl==null||a.lvl!==b.lvl||a.gone||b.gone)continue;
+      a.gone=b.gone=true;queue.push([a,b]);
+    }
+  }
+  function addTopping(lvl,x,y,vx,vy){
+    const t=T[lvl];
+    const body=Bodies.circle(x,y,t.r,{restitution:.12,friction:.12,frictionAir:.004,density:.0016});
+    body.lvl=lvl;body.born=performance.now();Body.setVelocity(body,{x:vx||0,y:vy||0});
+    Composite.add(engine.world,body);bodies.add(body);return body;
+  }
+  function resolveMerges(){
+    while(queue.length){
+      const [a,b]=queue.shift();
+      Composite.remove(engine.world,a);Composite.remove(engine.world,b);bodies.delete(a);bodies.delete(b);
+      const x=(a.position.x+b.position.x)/2,y=(a.position.y+b.position.y)/2,lvl=a.lvl;
+      merges++;
+      if(lvl===PIZZA){score+=PIZZA_CLEAR;pops.push({x,y,r:T[PIZZA].r,t:performance.now(),txt:'+'+PIZZA_CLEAR,big:true})}
+      else{const n=lvl+1;score+=T[n].pts;addTopping(n,x,y,(a.velocity.x+b.velocity.x)/2,Math.min(a.velocity.y,b.velocity.y)/2);
+        pops.push({x,y,r:T[n].r,t:performance.now(),txt:'+'+T[n].pts,big:n===PIZZA})}
+    }
+    updateHud();
+  }
+
+  function drop(){
+    if(!running||over)return;
+    const now=performance.now();if(now<coolUntil)return;
+    if(!started){started=true;startTime=Date.now()}
+    const r=T[current].r,x=Math.max(WALL+r,Math.min(W-WALL-r,aimX));
+    addTopping(current,x,TOP-10,0,2);drops++;
+    current=next;next=pick();icon($('next'),next);coolUntil=now+480;
+  }
+
+  function updateHud(){
+    $('score').textContent=score.toLocaleString();
+    const best=Math.max(store.get('pizzadrop.best',0),score);$('best').textContent=best.toLocaleString();
+  }
+
+  // ---------- loop ----------
+  let last=performance.now(),acc=0;
+  function frame(now){
+    requestAnimationFrame(frame);
+    if(running&&!over){
+      acc+=Math.min(100,now-last);
+      while(acc>=1000/60){Engine.update(engine,1000/60);resolveMerges();acc-=1000/60}
+      let above=false;
+      for(const b of bodies){if(now-b.born>1200&&b.position.y-T[b.lvl].r<LINE&&Math.abs(b.velocity.y)<1.2){above=true;break}}
+      if(above){overSince=overSince||now;if(now-overSince>2000)endGame()}else overSince=null;
+    }
+    last=now;draw(now);
+  }
+
+  function draw(now){
+    ctx.clearRect(0,0,W,H);
+    // box
+    ctx.fillStyle='#2a2116';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#8c6236';ctx.fillRect(0,TOP-30,W,H-TOP+30);
+    const g=ctx.createLinearGradient(0,TOP,0,H);g.addColorStop(0,'#a5753f');g.addColorStop(1,'#7d5530');ctx.fillStyle=g;ctx.fillRect(WALL,TOP-30,W-WALL*2,FLOOR-TOP+30);
+    ctx.strokeStyle='rgba(60,38,18,.35)';ctx.lineWidth=1;
+    for(let y=TOP;y<FLOOR;y+=26){ctx.beginPath();ctx.moveTo(WALL,y);ctx.lineTo(W-WALL,y);ctx.stroke()}
+    ctx.fillStyle='#6d4a27';ctx.fillRect(0,TOP-30,WALL,H);ctx.fillRect(W-WALL,TOP-30,WALL,H);ctx.fillRect(0,FLOOR,W,H-FLOOR);
+    // danger line
+    const warn=overSince?Math.min(1,(now-overSince)/2000):0;
+    ctx.setLineDash([8,8]);ctx.lineWidth=2;ctx.strokeStyle=warn?`rgba(224,90,60,${.5+.5*Math.sin(now/90)})`:'rgba(239,230,210,.45)';
+    ctx.beginPath();ctx.moveTo(WALL,LINE);ctx.lineTo(W-WALL,LINE);ctx.stroke();ctx.setLineDash([]);
+    // chef + held topping
+    const r=T[current].r,hx=Math.max(WALL+r,Math.min(W-WALL-r,aimX));
+    if(running&&!over){
+      ctx.strokeStyle='rgba(239,230,210,.18)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(hx,TOP);ctx.lineTo(hx,FLOOR);ctx.stroke();
+      if(chef.complete&&chef.naturalWidth){const cw=92,ch=cw*chef.naturalHeight/chef.naturalWidth;ctx.drawImage(chef,hx-cw*.42,4,cw,ch)}
+      if(now>=coolUntil)drawTopping(ctx,current,hx,TOP-10,r,0);
+    }
+    // toppings
+    for(const b of bodies)drawTopping(ctx,b.lvl,b.position.x,b.position.y,T[b.lvl].r,b.angle);
+    // merge pops
+    pops=pops.filter(p=>now-p.t<700);
+    for(const p of pops){const k=(now-p.t)/700;ctx.globalAlpha=1-k;
+      circle(ctx,p.x,p.y,p.r*(1+k*.5),null,p.big?'#e6b862':'rgba(255,240,210,.8)',3);
+      ctx.fillStyle='#fff3d6';ctx.font=`${p.big?22:16}px ui-monospace,monospace`;ctx.textAlign='center';ctx.fillText(p.txt,p.x,p.y-p.r-8-k*24);ctx.globalAlpha=1}
+  }
+
+  // ---------- input ----------
+  function toWorld(e){const r=cv.getBoundingClientRect();return (e.clientX-r.left)*W/r.width}
+  cv.addEventListener('pointermove',e=>{aimX=toWorld(e)});
+  cv.addEventListener('pointerdown',e=>{aimX=toWorld(e);if(e.pointerType==='mouse')drop();else cv.setPointerCapture(e.pointerId)});
+  cv.addEventListener('pointerup',e=>{if(e.pointerType!=='mouse'){aimX=toWorld(e);drop()}});
+  addEventListener('keydown',e=>{
+    if(over)return;
+    if(e.key==='ArrowLeft'){aimX-=18;e.preventDefault()}else if(e.key==='ArrowRight'){aimX+=18;e.preventDefault()}
+    else if(e.key===' '||e.key==='Enter'){if(document.activeElement===document.body||document.activeElement===cv){drop();e.preventDefault()}}
+    aimX=Math.max(0,Math.min(W,aimX));
+  });
+
+  // ---------- end of game ----------
+  async function endGame(){
+    over=true;running=false;
+    const ms=startTime?Date.now()-startTime:0;
+    const prevBest=store.get('pizzadrop.best',0);
+    if(score>prevBest)store.set('pizzadrop.best',score);
+    updateHud();
+    $('overScore').textContent=score.toLocaleString();
+    $('share').textContent='🍕 Pizza Drop: '+score.toLocaleString()+' points\n'+SHARE_URL;
+    let note=score>prevBest&&prevBest>0?'New personal best.':'';
+    $('overNote').textContent=note;$('over').hidden=false;
+    if(token()&&score>0){
+      try{const r=await api('/pizza/score',{method:'POST',body:{score,ms,merges,drops}});
+        if(r.rank)$('overNote').textContent=(note?note+' ':'')+'You\'re #'+r.rank+' this week.';}
+      catch(e){$('overNote').textContent=(note?note+' ':'')+'Your score didn\'t reach the board. Try again next game.'}
+      loadBoard();
+    }else if(!token()){$('overNote').textContent=(note?note+' ':'')+'Sign in with Discord to put scores on the board.'}
+  }
+  $('again').addEventListener('click',()=>{newGame()});
+  $('copy').addEventListener('click',()=>{const t=$('share').textContent,b=$('copy');
+    const sel=()=>{const r=document.createRange();r.selectNodeContents($('share'));const s=getSelection();s.removeAllRanges();s.addRange(r)};
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(()=>{b.textContent='Copied';setTimeout(()=>b.textContent='Copy score',1500)}).catch(sel);else sel()});
+
+  // ---------- server: sign-in and board ----------
+  function token(){return store.get('shopweekly.token','')}
+  async function api(path,opts={}){
+    const h=Object.assign({},opts.headers||{});const t=token();if(t)h.Authorization='Bearer '+t;
+    if(opts.body){h['Content-Type']='application/json';opts.body=JSON.stringify(opts.body)}
+    const r=await fetch(API+path,Object.assign({},opts,{headers:h}));const j=await r.json().catch(()=>({}));
+    if(!r.ok){const e=new Error(j.error||'HTTP '+r.status);e.code=j.error;throw e}return j;
+  }
+  let ME=null;
+  async function loadMe(){ME=null;if(token()){try{const m=await api('/me');if(m.name)ME=m;else store.del('shopweekly.token')}catch(e){}}renderAuth()}
+  function renderAuth(){
+    const a=$('auth');a.textContent='';
+    if(ME){if(ME.avatar){const i=el('img');i.src=ME.avatar;i.alt='';a.appendChild(i)}const s=el('span',null,'Signed in as ');s.appendChild(el('b',null,ME.name));a.appendChild(s);
+      const o=el('button','linkbtn','Sign out');o.type='button';o.addEventListener('click',async()=>{try{await api('/auth/logout',{method:'POST'})}catch(e){}store.del('shopweekly.token');await loadMe();loadBoard()});a.appendChild(o)}
+    else{a.appendChild(el('span',null,'High scores:'));const b=el('button','btn discord','Sign in with Discord');b.type='button';b.addEventListener('click',signIn);a.appendChild(b)}
+  }
+  function signIn(){
+    const nonce=Array.from(crypto.getRandomValues(new Uint8Array(18)),x=>x.toString(16).padStart(2,'0')).join('');
+    const w=window.open(API+'/auth/login?nonce='+nonce,'cotw-login','width=520,height=780');if(!w)return;
+    let tries=0;const iv=setInterval(async()=>{tries++;
+      try{const r=await api('/auth/claim?nonce='+nonce);if(r.token){clearInterval(iv);store.set('shopweekly.token',r.token);await loadMe();loadBoard();return}}catch(e){}
+      if(tries>90)clearInterval(iv)},2000);
+  }
+  async function loadBoard(){
+    try{
+      const b=await api('/pizza/board');const tb=$('lb');tb.textContent='';$('lbwrap').hidden=false;
+      if(!b.top.length){$('lbnote').textContent='No scores yet this week.'+(ME?'':' Sign in with Discord to get on it.');return}
+      const rows=b.top.slice();if(b.me&&!rows.some(r=>r.me))rows.push(b.me);
+      rows.forEach(r=>{const tr=el('tr',r.me?'me':null);tr.appendChild(el('td','r',String(r.rank)));const n=el('td','n');if(r.avatar){const i=el('img');i.src=r.avatar;i.alt='';n.appendChild(i)}n.appendChild(el('span',null,r.name));tr.appendChild(n);tr.appendChild(el('td','s',r.score.toLocaleString()));tb.appendChild(tr)});
+      $('lbnote').textContent='Resets Wednesday at 9am Eastern.'+(ME?'':' Sign in with Discord to get on it.');
+    }catch(e){$('lbwrap').hidden=true}
+  }
+
+  newGame();requestAnimationFrame(frame);
+  loadMe().then(loadBoard);
+})();
+</script>
+</body>
+</html>

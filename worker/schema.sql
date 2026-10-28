@@ -6,3 +6,5 @@ CREATE TABLE sessions (token TEXT PRIMARY KEY, discord_id TEXT NOT NULL, expires
 CREATE TABLE logins (nonce TEXT PRIMARY KEY, token TEXT, expires_at INTEGER NOT NULL);
 -- Hand-picked weeks: a row here replaces that week's scheduled card. Card name must match the card list exactly.
 CREATE TABLE overrides (week INTEGER PRIMARY KEY, card TEXT NOT NULL);
+-- Pizza Drop: each player's best score per week.
+CREATE TABLE pizza_scores (week INTEGER NOT NULL, discord_id TEXT NOT NULL, score INTEGER NOT NULL, ms INTEGER NOT NULL, merges INTEGER NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (week, discord_id));
