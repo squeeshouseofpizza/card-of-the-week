@@ -10,12 +10,13 @@ BASICS = {'Plains', 'Island', 'Swamp', 'Mountain', 'Forest', 'Snow-Covered Plain
           'Snow-Covered Swamp', 'Snow-Covered Mountain', 'Snow-Covered Forest'}
 
 def get(url):
-    for attempt in range(4):
+    for attempt in range(2):
         try:
-            with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=60) as r:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=20) as r:
                 return r.read().decode('utf-8', 'replace'), r.geturl()
         except Exception as e:
-            time.sleep(3 * (attempt + 1))
+            print('  retry', url, e, flush=True)
+            time.sleep(3)
     return '', url
 
 def months(n=12):
@@ -36,14 +37,17 @@ def main(out):
     urls = []
     for y, m in months():
         html, _ = get(f'https://www.mtgo.com/decklists/{y}/{m:02d}')
-        urls += sorted(set(re.findall(r'/decklist/premodern-challenge-[a-z0-9-]+', html)))
-        time.sleep(1)
-    print(len(urls), 'challenge pages')
+        found = sorted(set(re.findall(r'/decklist/premodern-challenge-[a-z0-9-]+', html)))
+        print(f'{y}-{m:02d}: {len(found)} challenges', flush=True)
+        urls += found
+        time.sleep(0.5)
+    print(len(urls), 'challenge pages', flush=True)
     counts, decks, events = {}, 0, 0
     for u in urls:
         html, final = get('https://www.mtgo.com' + u)
         data = decklist_data(html) if final.endswith(u) else None
-        time.sleep(1)
+        print(('ok  ' if data else 'skip') + ' ' + u, flush=True)
+        time.sleep(0.5)
         if not data:
             continue
         events += 1
