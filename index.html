@@ -173,7 +173,7 @@ details p{margin:8px 0}
     </div>
   </section>
 
-  <section class="pre" id="pre" hidden><div class="eyebrow">Coming soon</div><div class="big">The first card drops Wednesday, Nov 11 at 9am Eastern</div><div class="cd" id="precd"></div><p class="sub" style="margin:0">One Premodern card every Wednesday. Six guesses. Sign in with Discord now to be on the first leaderboard.</p></section>
+  <section class="pre" id="pre" hidden><div class="eyebrow">Coming soon</div><div class="big">Week 1 drops Wednesday, Nov 4 at 9am Eastern</div><div class="cd" id="precd"></div><p class="sub" style="margin:0">Until then, try the preview card below. It doesn't count toward the leaderboard or your streak.</p></section>
 
   <div id="game" hidden>
     <p class="sub">One Premodern card every Wednesday at 9am Eastern. Six guesses. Fourth Edition through Scourge.</p>
@@ -212,7 +212,7 @@ details p{margin:8px 0}
     <summary>How to play</summary>
     <p>Guess any Premodern-legal card. Each guess is compared with this week's card on five things.</p>
     <p><span class="key" style="background:var(--hit)"></span>Exact match (marked ✓). <span class="key" style="background:var(--near)"></span>Close (marked ≈): same block for sets, one away for mana value, a shared color or card type. Arrows point toward the answer.</p>
-    <p>Set means the card's first printing between Fourth Edition and Scourge, so Swords to Plowshares counts as Fourth Edition. The artist unlocks after three misses and the card's art after four.</p>
+    <p>Set means the card's first printing between Fourth Edition and Scourge, so Swords to Plowshares counts as Fourth Edition. The artist unlocks after three misses, and the card's art after five, as a last clue before your final guess.</p>
     <p>A new card comes out every Wednesday at 9am Eastern. You can play the last four weeks for practice; only the current week counts toward your streak and the leaderboard, and your streak survives one skipped week.</p>
     <p>The leaderboard ranks this week's solvers who are signed in with Discord: fewest guesses first, then fastest time from first guess to last. Signing in shows your Discord display name and picture on the board. You can play without signing in.</p>
   </details>
@@ -228,7 +228,7 @@ details p{margin:8px 0}
   const API='https://card-of-the-week.squeeshouseofpizza.workers.dev';
   const SHARE_URL='squeeshouseofpizza.com/pages/card-of-the-week';
   const TEST=new URLSearchParams(location.search).has('test');
-  const MAXG=6, ARTIST_AT=3, ART_AT=4;
+  const MAXG=6, ARTIST_AT=3, ART_AT=5;
   const TYPES=['Artifact','Creature','Enchantment','Instant','Land','Sorcery'];
   const RAR=['Common','Uncommon','Rare','Land'];
   const COLN={W:'White',U:'Blue',B:'Black',R:'Red',G:'Green'};
@@ -265,15 +265,15 @@ details p{margin:8px 0}
     [DATA,META]=await Promise.all([fetch('data/cards.json').then(r=>r.json()),api('/meta')]);
   }catch(e){fail(API?'The game server isn\'t responding right now. Refresh in a minute.':'The game server isn\'t connected yet.');return}
   byName=new Map(DATA.cards.map(c=>[c[0].toLowerCase(),c]));
-  const NOW=TEST?-1:META.week;
+  const NOW=TEST?-2:META.week;
 
   // ---------- helpers ----------
   const setInfo=i=>DATA.sets[i];
   function colorsLabel(c){if(!c)return'Colorless';if(c.length>2)return c.length+' colors';return c.split('').map(x=>COLN[x]).join('/​')}
   function typesLabel(m){const t=TYPES.filter((_,i)=>m&1<<i);return t.join(' ')||'Other'}
   function frameColor(c){if(!c)return FRAME.C;if(c.length>1)return FRAME.M;return FRAME[c]}
-  function weekLabel(n){return n<0?'Test '+(-n):'#'+n}
-  function weekDate(n){if(n<0)return'practice card';const d=new Date(META.launch+7*864e5*(n-1));return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}
+  function weekLabel(n){return n<0?(TEST?'Test '+(-n-1):'Preview'):'#'+n}
+  function weekDate(n){if(n<0)return TEST?'practice card':'doesn\'t count';const d=new Date(META.launch+7*864e5*(n-1));return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}
   function fmtLeft(ms){const m=Math.max(0,Math.floor(ms/6e4)),d=Math.floor(m/1440),h=Math.floor(m%1440/60),mm=m%60;return(d?d+'d ':'')+h+'h '+String(mm).padStart(2,'0')+'m'}
   function fmtSecs(s){if(s<60)return s+'s';const m=Math.floor(s/60);if(m<60)return m+'m '+String(s%60).padStart(2,'0')+'s';return Math.floor(m/60)+'h '+String(m%60).padStart(2,'0')+'m'}
   const CLS=c=>c[0]==='H'?'hit':c[0]==='N'?'near':'';
@@ -393,8 +393,8 @@ details p{margin:8px 0}
     if(a.image){const im=el('img','cardimg');im.alt=a.name;im.src=a.image;im.addEventListener('error',()=>{slot.textContent='';slot.appendChild(drawnCard(a))});slot.appendChild(im)}else slot.appendChild(drawnCard(a));
     const m=el('div','meta');box.appendChild(m);
     m.appendChild(el('p','verdict'+(ST.won?'':' lose'),ST.won?(ST.guesses.length===1?'First try.':'Got it in '+ST.guesses.length+'.'):'It was '+a.name+'.'));
-    if(!TEST){const nx=el('div','next');nx.appendChild(el('span',null,'Next card'));const left=el('span',null,'');nx.appendChild(left);m.appendChild(nx);
-      const upd=()=>{left.textContent=fmtLeft(META.next-Date.now())+' · Wed '+new Date(META.next).toLocaleDateString(undefined,{month:'short',day:'numeric'})+', 9am ET'};upd();tick=setInterval(upd,30000)}
+    if(!TEST){const nx=el('div','next');nx.appendChild(el('span',null,cur<0?'Week 1':'Next card'));const left=el('span',null,'');nx.appendChild(left);m.appendChild(nx);
+      const upd=()=>{left.textContent=fmtLeft((cur<0?META.launch:META.next)-Date.now())+' · Wed '+new Date(cur<0?META.launch:META.next).toLocaleDateString(undefined,{month:'short',day:'numeric'})+', 9am ET'};upd();tick=setInterval(upd,30000)}
     const statBox=el('div');m.appendChild(statBox);
     api('/stats?week='+cur).then(s=>{
       if(!s||!s.players){statBox.appendChild(el('p','note','Community stats show up once five people have finished this week.'));return}
@@ -414,12 +414,13 @@ details p{margin:8px 0}
     const yt=el('a','btn ghost','Find it in our videos');yt.href='https://www.youtube.com/@SqueesHouseofPizza/search?query='+q;yt.target='_blank';yt.rel='noopener';act.appendChild(yt);
     const sf=el('a','btn ghost','View on Scryfall');sf.href=a.scryfall||('https://scryfall.com/search?q=%21%22'+encodeURIComponent(a.name)+'%22');sf.target='_blank';sf.rel='noopener';act.appendChild(sf);
     m.appendChild(act);
-    if(cur!==NOW&&!TEST)m.appendChild(el('p','note','Practice week. It doesn\'t count toward your streak or the leaderboard.'));
+    if(cur<0&&!TEST)m.appendChild(el('p','note','Preview card. It doesn\'t count toward your streak or the leaderboard.'));
+    else if(cur!==NOW&&!TEST)m.appendChild(el('p','note','Practice week. It doesn\'t count toward your streak or the leaderboard.'));
   }
 
   async function renderBoard(){
     const wrap=$('lbwrap'),tb=$('lb'),note=$('lbnote');
-    if(cur<0&&!TEST){wrap.hidden=true;return}
+    if(cur<0&&!TEST){wrap.hidden=true;return}  // the preview card has no leaderboard
     try{
       const b=await api('/leaderboard?week='+cur);wrap.hidden=false;tb.textContent='';
       $('lbtitle').textContent=(cur===NOW?'This week\'s leaderboard':'Leaderboard, week '+weekLabel(cur));
@@ -487,12 +488,15 @@ details p{margin:8px 0}
 
   // ---------- start ----------
   await loadMe();renderBanner();
-  if(NOW<1&&!TEST){
-    $('pre').hidden=false;const up=()=>{$('precd').textContent=fmtLeft(META.launch-Date.now())};up();setInterval(up,30000);return;
+  const PREVIEW=NOW<1&&!TEST;
+  if(PREVIEW){
+    $('pre').hidden=false;const up=()=>{$('precd').textContent=fmtLeft(META.launch-Date.now())};up();setInterval(up,30000);
+    cur=-1;$('day').hidden=true;document.querySelector('.bar span:nth-child(3)').hidden=true;
+    $('game').hidden=false;refresh(false);return;
   }
   const dsel=$('day');
-  const weeks=TEST?[-1,-2,-3,-4,-5]:Array.from({length:META.archive+1},(_,i)=>NOW-i).filter(n=>n>=1);
-  weeks.forEach(n=>{const o=el('option',null,n===NOW?(TEST?'Test 1':'This week ('+weekLabel(n)+')'):(TEST?'Test '+(-n):'Practice '+weekLabel(n)+' · '+new Date(META.launch+7*864e5*(n-1)).toLocaleDateString(undefined,{month:'short',day:'numeric'})));o.value=n;dsel.appendChild(o)});
+  const weeks=TEST?[-2,-3,-4,-5,-6]:Array.from({length:META.archive+1},(_,i)=>NOW-i).filter(n=>n>=1);
+  weeks.forEach(n=>{const o=el('option',null,n===NOW?(TEST?'Test 1':'This week ('+weekLabel(n)+')'):(TEST?'Test '+(-n-1):'Practice '+weekLabel(n)+' · '+new Date(META.launch+7*864e5*(n-1)).toLocaleDateString(undefined,{month:'short',day:'numeric'})));o.value=n;dsel.appendChild(o)});
   dsel.addEventListener('change',()=>{cur=+dsel.value;closeSugg();$('err').textContent='';refresh(false)});
   $('game').hidden=false;
   refresh(false);

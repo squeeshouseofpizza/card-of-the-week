@@ -14,7 +14,7 @@ A weekly Premodern Magic card-guessing game by Squee's House of Pizza. One card 
 
 Add `?test` to the page address to play five practice cards from the end of the schedule. Test mode works before launch and never touches real weeks, your streak, the real stats or the real leaderboard.
 
-New card every Wednesday at 9am Eastern, starting Nov 11, 2026.
+New card every Wednesday at 9am Eastern, starting Nov 4, 2026.
 
 Card data from MTGJSON. Card images from Scryfall, shown unaltered with artist credit.
 
