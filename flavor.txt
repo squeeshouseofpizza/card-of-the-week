@@ -1,0 +1,507 @@
+Abandoned Outpost	ODY	no	
+Abeyance	WTH	yes	"I'm too modest a wizard to reveal the full extent of my abilities." —Ertai, wizard adept
+Accumulated Knowledge	NEM	yes	"I have seen and heard much here. There are secrets within secrets. Let me show you." —Tak
+Adarkar Sentinel	ICE	yes	"We encountered the Sentinels in the wastes, near no living thing. Their purpose was inscr
+Adarkar Wastes	ICE	no	
+Aerial Caravan	MMQ	yes	Successful delivery is *not* guaranteed.
+Akroma, Angel of Wrath	LGN	yes	"No rest. No mercy. No matter what."
+Aluren	TMP	yes	Squee bounced up and down. "I sees a horsey, an' a piggy, an' a—" "If you don't shut up," 
+Ambush	HML	yes	"Don't these goons have anything better to do?" —Joskun, An-Havva Constable
+Anarchy	ICE	yes	"The Shaman waved the staff, and the land itself went mad." —Disa the Restless, journal en
+Ancestral Tribute	ODY	no	
+Ancient Tomb	TMP	yes	There is no glory to be gained in the kingdom of the dead. —Vec tomb inscription
+Animate Dead	LEA	no	
+Annul	USG	yes	The most effective way to destroy a spell is to ensure it was never cast in the first plac
+Arcane Denial	ALL	no	
+Argothian Enchantress	USG	no	
+Ark of Blight	SCG	yes	When opened, it erases entire landscapes from minds and maps.
+Armageddon	LEA	no	
+Arrogant Wurm	TOR	yes	It's hard to be humble when the whole world is bite size.
+Attunement	USG	yes	"The solution can hide for only so long." —Urza
+Aura Fracture	PCY	yes	Jamuraa's rhystic mages treat magic as their garden, uprooting unwanted spells as botherso
+Aura Shards	INV	yes	Gaea forged her soldiers into self-wielding weapons that struck down all impurities.
+Aura of Silence	WTH	no	
+Avalanche Riders	ULG	no	
+Aysen Highway	HML	yes	"Tread the roads of righteousness, Murat, lest you lose your way and be consumed." —Baris,
+Balancing Act	ODY	no	
+Ball Lightning	DRK	no	
+Balshan Collaborator	TOR	yes	"Power, gold, crackers—every bird has its price." —Chainer, dementia master
+Barbarian Ring	ODY	no	
+Barrow Ghoul	WTH	yes	"They killed my family to deny me a future. They fed on my ancestors to deny me a past." —
+Basking Rootwalla	TOR	no	
+Belbe's Portal	NEM	yes	The fight will continue on a new battlefield.
+Benevolent Bodyguard	JUD	yes	"My destiny is to save others so their destinies may be achieved."
+Benthic Djinn	MIR	yes	"In all my years I've only met one mage who successfully trapped a djinn—and none who trie
+Binding Grasp	ICE	yes	"What I want, I take." —Gustha Ebbasdotter, Kjeldoran Royal Mage
+Birds of Paradise	LEA	no	
+Blastoderm	NEM	no	
+Blessed Orator	ODY	yes	His quiet words fade into the night's chill, yet they burn into his listeners' minds with 
+Blistering Barrier	MIR	yes	I live without food, stand without leg, wound without force, and am harder to fight than t
+Bloodstained Mire	ONS	no	
+Blue Elemental Blast	LEA	no	
+Bog Elemental	PCY	yes	"When the bog walks, the wise run." —Erissa, bog witch
+Bog Smugglers	MMQ	yes	They slide over the bog like oil across glass.
+Bog Wraith	LEA	yes	'Twas in the bogs of Cannelbrae My mate did meet an early grave 'Twas nothing left for us 
+Boil	TMP	yes	"The fishers will throw out their nets and draw them back filled with dust." —Oracle *en*-
+Bone Shredder	ULG	no	
+Boneshard Slasher	TOR	no	
+Boomerang	LEG	yes	"O! call back yesterday, bid time return." —William Shakespeare, *King Richard the Second*
+Bottle Gnomes	TMP	yes	"I am reminded of the fable of the silver egg. Its owner cracks it open to see what jewels
+Bottomless Pit	STH	yes	"I'm sure it came with the place. I don't think you build one on purpose." —Gerrard
+Bouncing Beebles	ULG	yes	Beebles are frequently hurled against stone surfaces at high speed but always zing back in
+Braids, Cabal Minion	ODY	yes	"Home is where you can find a decent graveyard and strangers can disappear without awkward
+Branchsnap Lorian	LGN	yes	Lorians treat trees and prey the same way: by ripping them limb from limb.
+Breath of Darigaaz	INV	no	
+Breezekeeper	VIS	yes	"He blows a gust across the cliff to vanish in a breath of wind." —"Song of the Wind Being
+Brood Sliver	LGN	yes	Within weeks, more slivers nested in Otaria than ever existed on Rath.
+Brushland	ICE	no	
+Bubbling Muck	UDS	yes	The muck claims a hundred living things for each meager treasure it spews forth.
+Burning Palm Efreet	MIR	yes	Even the lion envies the lark.
+Burning Wish	JUD	yes	She wished for a weapon, but not for the skill to wield it.
+Burnt Offering	ICE	yes	"My foes serve me twice: in dying, and in death." —Lim-Dûl, the Necromancer
+Cabal Ritual	TOR	yes	"Each syllable chills your veins. Each word rattles your mind." —Cabal Patriarch
+Cabal Therapy	JUD	no	
+Cabal Trainee	JUD	yes	"Ah, a faceshredder. Very rare. Nearly unstoppable. Good luck!" —Cabal instructor
+Caldera Kavu	PLS	yes	As powerful and malleable as the molten rock it calls home.
+Call of the Herd	ODY	no	
+Call to Arms	ICE	no	
+Carnophage	EXO	yes	Eating is all it knows.
+Carrier Pigeons	ALL	yes	"Birds know no borders! Why, then, should we?" —General Varchild, in a missive to King Dar
+Cataclysm	EXO	yes	The *Weatherlight* dragged the *Predator* behind it, the cradle hauling the casket.
+Cateran Persuader	MMQ	no	
+Cave-In	MMQ	yes	One fleet was gone; others were poised.
+Cavern Harpy	PLS	no	
+Cemetery Gate	HML	yes	"It keeps some out, yes. It also keeps others in!" —Grandmother Sengir
+Cephalid Coliseum	ODY	no	
+Cetavolver	APC	no	
+Chain of Vapor	ONS	no	
+Chamber of Manipulation	ODY	yes	Politics is just a subtle form of mind control—and cephalids are master politicians.
+Charging Paladin	POR	yes	A true warrior's thoughts are of victory, not death.
+Chill	TMP	yes	"Temper, temper." —Ertai, wizard adept
+Chill Haunting	SCG	no	
+Cinder Cloud	MIR	no	
+Cinder Seer	UDS	no	
+Circle of Protection: Blue	LEA	no	
+Circle of Protection: Red	LEA	no	
+Circular Logic	TOR	no	
+City of Brass	ARN	no	
+City of Traitors	EXO	yes	"While we fought, the *il* surrendered." —Oracle *en*-Vec
+Cloak of Confusion	ICE	no	
+Close Quarters	MMQ	yes	The Mercadians' ineptitude in close combat sometimes accidentally pays off.
+Coffin Puppets	PCY	yes	The ground won't accept them.
+Cold Snap	ICE	yes	Who knows from whence the winter comes?
+Colossus of Sardia	ATQ	yes	From the Sardian mountains wakes ancient doom: Warrior born from a rocky womb.
+Common Cause	MMQ	yes	Mercadia City's troops are at their best when they have no enemy to fight.
+Counterspell	LEA	no	
+Crackling Club	TOR	yes	It adds injury to injury.
+Crimson Manticore	LEG	yes	Noted neither for their good looks nor their charm, Crimson Manticores can be fearsome all
+Crimson Roc	MIR	no	
+Crop Rotation	ULG	yes	"Hmm . . . maybe lotuses this year."
+Crown of Vigor	ONS	yes	"Life, be my shield."
+Crystal Chimes	USG	yes	As Serra was to learn, the peace and sanctity of her realm were as fragile as glass.
+Crystal Vein	MIR	no	
+Cultural Exchange	ODY	no	
+Cunning Wish	JUD	yes	He wished for knowledge, but not for the will to apply it.
+Cursed Scroll	TMP	no	
+Cursed Totem	MIR	yes	Pass me from soul to soul / soldier to herder, herder to beast, beast to soil / until I am
+Dark Ritual	LEA	no	
+Darkling Stalker	TMP	yes	"In this dark place, yes, I *am* afraid of my own shadow." —Mirri of the *Weatherlight*
+Daru Lancer	ONS	yes	Although the Order frowned upon his preparations for the pits, behind closed doors most sa
+Dauthi Mercenary	TMP	yes	"The Dauthi believe they dignify murder by paying for it." —Lyna, Soltari emissary
+Daze	NEM	no	
+Death's-Head Buzzard	SCG	yes	Infested with vermin, ever hungering, dropping from night's sky.
+Decree of Justice	SCG	no	
+Decree of Silence	SCG	no	
+Deep Analysis	TOR	yes	"The specimen seems to be broken."
+Defense Grid	ULG	yes	"We've managed to keep the goblins in their assigned areas, but there's little we can do a
+Defiant Vanguard	NEM	no	
+Deranged Hermit	ULG	no	
+Despondency	USG	no	
+Diabolic Edict	TMP	yes	Greven *il*-Vec lifted Vhati off his feet. "The fall will give you time to think on your f
+Disenchant	LEA	no	
+Divine Offering	LEG	yes	D'Haren stared at the twisted lump of metal that had been a prized artifact. The fight was
+Dominate	NEM	yes	"I've come to reclaim what is mine. And you, Greven, are mine." —Volrath
+Dragon Roost	ONS	yes	A powerful mage created the roost to guard a portal between the planes. The mage is long g
+Dragon Shadow	SCG	no	
+Dream Halls	STH	yes	Within without.
+Dream Prowler	STH	yes	"To think that some find sleep a restful state." —Volrath
+Dreamborn Muse	LGN	yes	"Her voice is insight, piercing and true." —Ixidor, reality sculptor
+Drifting Djinn	USG	no	
+Duress	USG	yes	"We decide who is worthy of our works." —Gix, Yawgmoth praetor
+Dust Bowl	MMQ	no	
+Dwarven Blastminer	ONS	yes	"Life is too short for something like a hunk of rock to get in my way."
+Eladamri's Call	PLS	yes	Tribal rivalries and petty disputes were laid aside at Eladamri's summons.
+Elfhame Palace	INV	yes	Llanowar has seven elfhames, or kingdoms, each with its own ruler. Their palaces are objec
+Elvish Herder	USG	yes	Before Urza and Mishra came to Argoth, the herders prevented their creatures from stampedi
+Elvish Lyrist	USG	yes	Bring the spear of ancient briar; Bring the torch to light the pyre. Bring the one who tro
+Elvish Spirit Guide	ALL	yes	"We are never without guidance, if we but seek it." —Taaveti of Kelsinko, Elvish Hunter
+Ember Beast	ODY	yes	Spot one ember beast, attack. Spot a second, best fall back. —Dwarven saying
+Enchantment Alteration	LEG	no	
+Enchantress's Presence	ONS	yes	"The wise learn from successes as well as mistakes."
+Engineered Plague	ULG	yes	"The admixture of bitterwort in the viral brew has produced most favorable results." —Phyr
+Enlightened Tutor	MIR	yes	"I do not teach. I simply reveal." —Daudi, Femeref tutor
+Ensnaring Bridge	STH	yes	"I expected a fight, but I didn't expect it from the building itself." —Gerrard
+Eternal Dragon	SCG	no	
+Ether Well	MIR	yes	"Whoa—my tail will *never* fit through that hole!"
+Exalted Angel	ONS	no	
+Exhume	USG	yes	"Death—an outmoded concept. We sleep, and we change." —Sitrik, birth priest
+Extortion	MMQ	yes	The enforcers make no effort to distinguish gold from flesh.
+Eye of Yawgmoth	NEM	no	
+Fact or Fiction	INV	no	
+Faerie Conclave	ULG	no	
+Fallow Earth	MIR	yes	". . . and when the farmer awoke the next morning, all the seeds from his field were once 
+Festering Goblin	ONS	yes	In life, it was a fetid, disease-ridden thing. In death, not much changed.
+Fire // Ice	APC	no	
+Fire Diamond	MIR	no	
+Fireblast	VIS	yes	Embermages aren't well known for their diplomatic skills.
+Firebolt	ODY	yes	Reach out and torch someone.
+Flailing Ogre	MMQ	no	
+Flame Rift	NEM	yes	Crovax hungered for power, and the stronghold devoured the sky.
+Flametongue Kavu	PLS	yes	"For dim-witted, thick-skulled genetic mutants, they have pretty good aim." —Sisay
+Flare	ICE	yes	"I strive for elegance and speed in my work." —Jaya Ballard, Task Mage
+Flaring Pain	JUD	yes	"I don't rub salt in wounds. I use sulfur." —Matoc, lavamancer
+Flash of Insight	JUD	no	
+Flooded Strand	ONS	no	
+Flowstone Crusher	NEM	yes	"Someone must have done something very bad to make a rock that angry." —Rebel scout
+Flowstone Hellion	STH	yes	Volrath leaves no stone untrained.
+Foil	PCY	no	
+Forbid	EXO	no	
+Forgotten Ancient	SCG	yes	Its blood is life. Its body is growth.
+Frantic Search	ULG	yes	Motivation was high in the academy once students realized flunking their exams could kill 
+Freewind Falcon	VIS	yes	"That does it! I'm going back to hunting chickens!" —Rhirhok, goblin archer
+Fugitive Wizard	LGN	yes	Many wizards came to the Riptide Project hoping to return home with answers. Most, however
+Fungus Elemental	WTH	yes	I rot growth and grow rot. What am I? —Elvish riddle
+Fyndhorn Elves	ICE	yes	"Living side by side with the Elves for so long leaves me with no doubt that we serve the 
+Gaea's Cradle	USG	yes	"Here sprouted the first seedling of Argoth. Here the last tree will fall." —Gamelen, Cita
+Gempalm Incinerator	LGN	no	
+Gemstone Mine	WTH	no	
+Genesis	JUD	yes	"First through the Riftstone was Genesis—and the world was lifeless no more." —*Scroll of 
+Gerrard's Irregulars	MMQ	yes	Had Gerrard realized he'd end up fighting against them, he might not have trained them so 
+Gerrard's Verdict	APC	yes	A heart of light and a soul of darkness cannot coexist.
+Ghitu Encampment	ULG	no	
+Giant Warthog	JUD	yes	"When the Ancestor saw the cruelty her human children were capable of, Her fury shook the 
+Glowering Rogon	LGN	yes	A herd of one.
+Goblin Cadets	USG	yes	"If you kids don't stop that racket, I'm turning this expedition around *right now!*"
+Goblin Elite Infantry	MIR	yes	They talk a good fight.
+Goblin King	LEA	yes	To become king of the Goblins, one must assassinate the previous king. Thus, only the most
+Goblin Lackey	USG	yes	All bark, someone else's bite.
+Goblin Matron	USG	yes	There's always room for one more.
+Goblin Piledriver	ONS	yes	Throw enough goblins at any problem and it should go away. At the very least, there'll be 
+Goblin Ringleader	APC	no	
+Goblin Sharpshooter	ONS	no	
+Goblin Warchief	SCG	yes	They poured from the Skirk Ridge like lava, burning and devouring everything in their path
+Grandmother Sengir	HML	yes	"Rarely have power and madness been so delightfully wed as they have in our dear Grandmoth
+Grave Servitude	MIR	yes	"I no longer believe in a final resting place." —Shauku, Endbringer
+Graveborn Muse	LGN	yes	"Her voice is damnation, unyielding and certain." —Phage the Untouchable
+Greater Good	USG	yes	"We have more sprouts than they have hands." —Gamelen, Citanul elder
+Grim Lavamancer	TOR	yes	"Fools dig for water, corpses, or gold. The earth's real treasure is far deeper."
+Gush	MMQ	yes	Don't trust your secrets to the sea.
+Halls of Mist	ICE	no	
+Hammer of Bogardan	MIR	no	
+Harsh Mercy	ONS	yes	"There is no greater burden than choosing who to save." —Kamahl, druid acolyte
+Headhunter	ONS	no	
+Heart Wolf	HML	no	
+Hermit Druid	STH	yes	Seeking the company of plants ensures that your wits will go to seed.
+Hibernation	USG	yes	On its way to the cave, the armadillo brushed by a sapling. It awoke to find a full-grown 
+Hidden Ancients	USG	yes	The only alert the invaders had was the rustling of leaves on a day without wind.
+Holy Day	LEG	yes	"The day of spirits; my soul's calm retreat/ Which none disturb!" —Henry Vaughan, "Silex S
+Honor the Fallen	MMQ	yes	"May the River claim Cho-Manno's body, wherever it lies." —Ta-Karnst, Cho-Arrim healer
+Hull Breach	PLS	yes	"Crovax knows we're coming now," said a grinning Sisay. "I just sent the *Predator* crashi
+Humility	TMP	yes	"One cannot cleanse the wounds of failure." —Karn, silver golem
+Hydroblast	ICE	yes	"Heed the lessons of our time: the forms of water may move the land itself and hold captiv
+Hypnotic Specter	LEA	yes	"...There was no trace/ Of aught on that illumined face..." —Samuel Coleridge, "Phantom"
+Ill-Gotten Gains	USG	yes	Urza thought it a crusade. Xantcha knew it was a robbery.
+Imps' Taunt	TMP	no	
+Impulse	VIS	yes	"Controlling time ensures you need never look impulsive again." —Teferi
+Incinerate	ICE	yes	"Yes, I think 'toast' is an appropriate description." —Jaya Ballard, Task Mage
+Infernal Darkness	ICE	yes	"I thought the day had brought enough horrors for our ragged band, but the night was far w
+Intuition	TMP	no	
+Ironclaw Orcs	LEA	yes	Generations of genetic weeding have given rise to the deviously cowardly Ironclaw clan. To
+Jackal Pup	TMP	yes	The first morning after acquiring her familiar, the wizard awoke with fleabites and mange.
+Junk Diver	UDS	yes	Garbage in, treasure out.
+Justice	ICE	no	
+Karplusan Forest	ICE	no	
+Kavu Howler	APC	no	
+Keldon Battlewagon	PCY	no	
+Keldon Vandals	UDS	yes	Keldons divide all their spoils into two groups: trophies and catapult ammunition.
+Kismet	LEG	no	
+Kjeldoran Elite Guard	ICE	yes	The winged helms of the Guard are put on for pageants—but taken off for war.
+Kjeldoran Home Guard	ALL	no	
+Knight Errant	POR	yes	". . . [B]efore honor is humility." —*The Bible*, Proverbs 15:33
+Knight of the Mists	VIS	yes	Fear the mists, for they are armed.
+Lava Dart	JUD	no	
+Lay Waste	USG	no	
+Lead Golem	MIR	yes	Slow and heavy swings the club.
+Lead-Belly Chimera	VIS	no	
+Leviathan	DRK	no	
+Lightning Bolt	LEA	no	
+Lightning Dart	INV	yes	Broken and punctured by dozens of Phyrexian portals, the angry sky began to spit lightning
+Lion's Eye Diamond	MIR	yes	Held in the lion's eye —Zhalfirin saying meaning "caught in the moment of crisis"
+Living Lands	LEA	no	
+Living Wish	JUD	yes	He wished for growth, but not for a way to control it.
+Llanowar Elves	LEA	yes	Whenever the Llanowar Elves gather the fruits of their forest, they leave one plant of eac
+Llanowar Vanguard	INV	yes	Llanowar rallied around Eladamri's banner and united in his name.
+Lotus Petal	TMP	yes	"Hard to imagine," mused Hanna, stroking the petal, "such a lovely flower inspiring such g
+Lurking Skirge	ULG	yes	They never miss a funeral.
+Maddening Imp	TMP	no	
+Maggot Therapy	MMQ	yes	"If this is the cure, I'd hate to see the disease." —Orim
+Man-o'-War	VIS	yes	"Beauty to the eye does not always translate to the touch." —Naimah, Femeref philosopher
+Mana Leak	STH	yes	"The fatal flaw in every plan is the assumption that you know more than your enemy." —Volr
+Mana Leech	USG	no	
+Mana Short	LEA	no	
+Master Decoy	TMP	yes	"A skilled decoy can throw your enemies off your trail. A master decoy can survive to do i
+Masticore	UDS	no	
+Meddling Mage	PLS	yes	Meddling mages chant so loudly that no one can get a spell in edgewise.
+Merchant Scroll	HML	yes	"There's no trade without trust." —Eron the Relentless
+Mesmeric Fiend	TOR	no	
+Mirri's Guile	TMP	yes	Hanna was astounded. Mirri read every leaf and wisp of breeze like a book of ancient lore.
+Misdirection	MMQ	no	
+Mishra's Factory	ATQ	no	
+Mishra's Helix	USG	yes	The helix was the finest example of Mishra's campaign strategy: if he couldn't have Argoth
+Mistform Mask	ONS	yes	Trust, the fifth myth of reality: Every truth holds the seed of betrayal.
+Mobile Fort	USG	no	
+Mobilization	ONS	yes	Newcomers to Otaria find themselves at the bottom of the heap. In the pits, they at least 
+Mogg Fanatic	TMP	yes	"I got it! I got it! I—"
+Mogg Flunkies	STH	yes	They'll attack whatever's in front of them—as long as you tell them where that is.
+Mogg Raider	TMP	yes	The evisceration of one mogg always cheers up the rest.
+Mogg Salvage	NEM	yes	Three moggs, one treasure, too bad.
+Molimo, Maro-Sorcerer	INV	yes	"The world calls and I answer."
+Mons's Goblin Raiders	LEA	yes	The intricate dynamics of Rundvelt Goblin affairs are often confused with anarchy. The cha
+Morphling	USG	no	
+Mother of Runes	ULG	yes	"My family protects all families."
+Mourning	INV	yes	Barrin waited for the nausea to pass or for Urza to say something else. He waited in vain.
+Mox Diamond	STH	no	
+Mtenda Lion	MIR	yes	"The lion drank that lake right up! In thanks, he gave Siti the power to speak with lions 
+Multani's Acolyte	ULG	no	
+Mystic Might	ICE	no	
+Nantuko Shade	TOR	yes	"If the Nantuko only knew what awaits them beyond death, they would abandon all they hold 
+Naturalize	ONS	yes	"From here, let the world be reborn."
+Necratog	WTH	yes	The necratog can always dig up a meal.
+Nevinyrral's Disk	LEA	no	
+Nimble Mongoose	ODY	yes	Faster than a cobra's bite.
+No Mercy	ULG	yes	"We had years to prepare, while they had mere minutes." —Kerrick, sleeper agent
+Noxious Field	PCY	yes	Ultimately, it became a three-way battle: the land attacked both armies.
+Null Rod	WTH	yes	Gerrard: "But it doesn't *do* anything!" Hanna: "No—it *does* nothing."
+Oath of Druids	EXO	no	
+Obliterate	INV	yes	For his family, Barrin made a funeral pyre of Tolaria.
+Odylic Wraith	WTH	yes	By the time you've seen it, you won't remember that you did.
+Opal Archangel	USG	no	
+Opalescence	UDS	no	
+Opposition	UDS	yes	"Urza says he's sane. Perhaps, but measures of sanity among planeswalkers are hard to come
+Opt	INV	yes	"We need alternatives, Hanna," yelled Gerrard. "Now!"
+Ordered Migration	INV	yes	"Birds reach all parts of the world," said Barrin. "They will make excellent scouts."
+Orim's Chant	PLS	no	
+Overload	INV	no	
+Pacifism	MIR	yes	For the first time in his life, Grakk felt a little warm and fuzzy inside.
+Parallax Dementia	NEM	no	
+Parallax Wave	NEM	no	
+Pariah	USG	yes	"It is *not* sad," Radiant chided the lesser angel. "It is right. Every society must have 
+Penumbra Bobcat	APC	yes	This cat has two lives and it's hunting for more.
+Perish	TMP	yes	"There will come a time when the voices of soil and seedling will sing only laments." —Ora
+Pernicious Deed	APC	yes	"Yawgmoth," Freyalise whispered as she set the bomb, "now you will pay for your treachery.
+Phantom Nishoba	JUD	no	
+Phyrexian Arena	APC	yes	An audience of one with the malice of thousands.
+Phyrexian Dreadnought	MIR	no	
+Phyrexian Furnace	WTH	no	
+Phyrexian Grimoire	TMP	yes	Every page cost a life; every secret cost a thousand more.
+Phyrexian Negator	UDS	yes	They exist to cease.
+Pit Trap	ICE	yes	"These traps are truly a symbol of great cruelty and sinister cunning." —Sorine Relicbane,
+Planar Birth	USG	yes	"From womb of nothingness sprang this place of beauty, purity, and hope realized." —*Song 
+Planar Void	USG	yes	"Planeswalking isn't about walking. It's about falling and screaming." —Xantcha, Phyrexian
+Plated Spider	UDS	yes	Most spiders wait patiently for their prey to arrive. Most spiders aren't forty feet tall.
+Polluted Delta	ONS	no	
+Polluted Mire	USG	no	
+Portent	ICE	no	
+Powder Keg	UDS	no	
+Power Taint	USG	no	
+Pox	ICE	no	
+Price of Glory	ODY	yes	"True strength lies in action. Let the weak react to me." —Kamahl, pit fighter
+Price of Progress	EXO	yes	Man versus nature is not a fair fight.
+Pride of Lions	S99	no	
+Priest of Titania	USG	yes	Titania rewards all those who honor the forest by making them a living part of it.
+Primal Whisperer	LGN	no	
+Private Research	UDS	no	
+Protective Sphere	INV	no	
+Proteus Machine	SCG	no	
+Psychatog	ODY	no	
+Pyroblast	ICE	yes	"Just the thing for those pesky water mages." —Jaya Ballard, Task Mage
+Pyroclasm	ICE	yes	"Leaves more room for the big ones to fight in, you know." —Jaya Ballard, Task Mage
+Pyrokinesis	ALL	yes	"Anybody want some . . . *toast*?" —Jaya Ballard, Task Mage
+Quirion Dryad	PLS	yes	"Never underestimate the ability of natural forces to adapt to unnatural influences." —Mol
+Quirion Ranger	VIS	yes	"Respect the earth, for it will one day be your shield and another day your blanket." —Lie
+Raging Gorilla	VIS	yes	"Every temper tantrum makes another angry gorilla." —Femeref children's myth
+Rancor	ULG	yes	Hatred outlives the hateful.
+Rathi Assassin	NEM	no	
+Rathi Dragon	TMP	yes	Wrap the flame as twine Kingdoms will be thine.
+Rathi Intimidator	NEM	no	
+Raven Familiar	ULG	no	
+Ravenous Baloth	ONS	yes	"All we know about the Krosan Forest we have learned from those few who made it out alive.
+Razortooth Rats	WTH	yes	"Men and rats both hunger: we for our playthings; they, for us." —Crovax
+Reanimate	TMP	yes	"You will learn to earn death." —Volrath
+Reaping the Rewards	EXO	no	
+Rebel Informer	PCY	yes	The problem with mercenaries is that if you can buy their loyalty, others can too.
+Recoup	ODY	no	
+Recurring Nightmare	EXO	yes	"I am confined by sleep and defined by nightmare." —Crovax
+Red Elemental Blast	LEA	no	
+Red Mana Battery	LEG	no	
+Reflect Damage	MIR	yes	From you to me, so me to you. —Femeref children's taunt
+Relic Ward	VIS	yes	Asmira's prayers alone should have freed Mangara from the amber prison . . .
+Replenish	UDS	yes	Treasures, trinkets, trash—the relics of the past are brought forth again.
+Resistance Fighter	VIS	yes	"My soldiers fought without hesitation, died without doubt." —Sidar Jabari
+Reviving Vapors	INV	no	
+Ring of Gix	ULG	yes	Not every cage is made of bars.
+Rishadan Port	MMQ	yes	Rishada is the gateway to free trade—but the key will cost you.
+Roar of the Wurm	ODY	no	
+Rogue Elephant	WTH	yes	"When are trees like grass?" —*The One Thousand Questions*
+Roots of Life	MIR	no	
+Rushing River	PLS	no	
+Sacred Ground	STH	yes	"That which knows itself cannot be shaped to another's will." —Oracle *en*-Vec
+Salt Flats	TMP	no	
+Samite Archer	INV	yes	"I can preserve ten lives by taking one."
+Saprazzan Skerry	MMQ	no	
+Sarcomancy	TMP	no	
+Scarred Puma	INV	yes	It's not eager to lose the *other* eye.
+Scattershot	SCG	no	
+Scent of Nightshade	UDS	no	
+Seal of Cleansing	NEM	yes	"I am the purifier, the light that clears all shadows." —Seal inscription
+Seal of Doom	NEM	yes	"I am the banisher, the ill will that snuffs the final candle." —Seal inscription
+Seal of Fire	NEM	yes	"I am the romancer, the passion that consumes the flesh." —Seal inscription
+Second Thoughts	ODY	yes	It suddenly dawned on Jorin that farming was quite a noble profession.
+Seizures	ICE	yes	"Sheathe your sword, warrior, lest ye fall on it when stricken." —Lim-Dûl, the Necromancer
+Serra's Sanctum	USG	yes	A fragile cocoon of dreaming will.
+Serrated Biskelion	WTH	yes	"Whereas I was created to protect, the biskelion was created to destroy." —Karn, silver go
+Seton, Krosan Protector	ODY	yes	"Survival of the fittest is not only the law of the pits, it is the law of nature. That is
+Shade's Breath	ONS	yes	The grim business of the Coliseum casts long shadows.
+Shepherd of Rot	ONS	yes	"My priests swore loyalty to the Cabal not until death, but beyond it." —Cabal Patriarch
+Shield Bearer	ICE	yes	"You have almost completed your four years, my son. Soon you shall be a Skyknight." —Arna 
+Shield of the Ages	ICE	yes	"This shield is a true rarity: an artifact whose purpose is obvious." —Arcum Dagsson, Sold
+Shock	STH	yes	Lightning tethers souls to the world. —Kor saying
+Show and Tell	USG	yes	At the academy, "show and tell" too often becomes "run and hide."
+Siege-Gang Commander	SCG	no	
+Silver Drake	PLS	no	
+Silver Erne	ICE	yes	"I've seen a larger Erne knock a Giant to the ground and stay airborne. They move not with
+Silver Knight	SCG	yes	Otaria's last defense against the wave of chaos threatening to engulf it.
+Sirocco	MIR	yes	"Blow, fiery wind, / strip illusion from the eye. / Blow, fiery wind of truth." —Femeref c
+Skeletal Scrying	ODY	no	
+Skirk Commando	ONS	no	
+Skirk Prospector	ONS	yes	"I like goblins. They make funny little popping sounds when they die." —Braids, dementia s
+Skycloud Expanse	ODY	yes	From Otaria, the sun above meets the sea below at a glittering horizon.
+Skyshroud Behemoth	NEM	no	
+Skyshroud Falcon	STH	yes	The falcon slits the sky to let the light drip through. —Kor saying
+Smokestack	USG	no	
+Smother	ONS	yes	"I can't hear them scream, but at least I don't have to listen to them beg." —Phage the Un
+Snag	PCY	no	
+Snake Pit	MMQ	yes	If the ground is smooth, the way will be rough. —Deepwood saying
+Sneak Attack	USG	yes	"Nothin' beat surprise—'cept rock."
+Snowblind	ICE	no	
+Snuff Out	MMQ	yes	Squee watched his Kyren cousins fall with a mixture of sympathy and relief.
+Soldevi Machinist	ICE	yes	"Perhaps this time the power of the artificers shall be used wisely." —Arcum Dagsson, Sold
+Soldevi Sage	ALL	yes	"To hide the truth is more than folly—it is fatal." —Sorine Relicbane, Soldevi Heretic
+Soldevi Sentry	ALL	yes	"A dreadful invention. What ease is there under the watchful eye of cold steel?" —Sorine R
+Solitary Confinement	JUD	no	
+Soltari Priest	TMP	yes	"In Rath," the priest said, "there is even greater need for prayer."
+Spellshock	EXO	yes	A snap of fingers, a snap of teeth.
+Sphere of Resistance	EXO	yes	A sphere pushes equally in all directions.
+Spike Feeder	STH	no	
+Spinal Embrace	INV	no	
+Spirit of the Night	MIR	no	
+Spiritmonger	APC	no	
+Sporogenesis	USG	no	
+Squee, Goblin Nabob	MMQ	yes	"General?!" Tahngarth roared. "General *nuisance*, maybe."
+Stampede Driver	NEM	yes	"The thunder of hooves is music to my ears."
+Standstill	ODY	yes	"Take your time."
+Stasis	LEA	no	
+Steamclaw	ODY	yes	"There's dead, and then there's *dead* dead." —Steamclaw driver
+Sterling Grove	INV	no	
+Stifle	SCG	yes	"If I wanted your opinion, I'd have told you what it was." —Pemmin, Riptide survivor
+Stone Rain	LEA	no	
+Stunted Growth	ICE	no	
+Suffocation	ALL	no	
+Sulfuric Vortex	SCG	no	
+Sulfurous Springs	ICE	no	
+Survival of the Fittest	EXO	no	
+Sustenance	MMQ	yes	Like the dryads, the forest itself willingly gives up some of its life for the sake of the
+Swirling Sandstorm	JUD	yes	As dust swept out, vultures swept in.
+Sword of the Chosen	STH	yes	One shard of Selenia yet remained.
+Swords to Plowshares	LEA	no	
+Sylvan Library	LEG	no	
+Tainted Well	INV	yes	"No, *you* get the water. I ain't thirsty." —Squee
+Tangle Wire	NEM	no	
+Tariff	WTH	no	
+Tattoo Ward	ODY	no	
+Teferi's Isle	MIR	yes	The three wizards knew only that this isle held a great mystery—and that patience alone wo
+Teferi's Response	INV	no	
+Temporary Insanity	TOR	no	
+Terravore	ODY	no	
+Thawing Glaciers	ALL	no	
+Thoughtleech	ICE	yes	"A resourceful mage has many sources of information. The best one is your foe." —Zur the E
+Thran Foundry	UDS	yes	"What we do not use up, we use again." —Urza
+Thrive	PCY	yes	"We wait and watch, and as we prepare for war, we grow strong."
+Thunder of Hooves	ONS	no	
+Thunderscape Battlemage	PLS	no	
+Tooth of Ramos	MMQ	yes	Ramos smiled, and there was day.
+Tormod's Crypt	DRK	yes	The dark opening seemed to breathe the cold, damp air of the dead earth in a steady rhythm
+Torture Chamber	TMP	no	
+Totem Speaker	LGN	yes	"Elves and beasts are tied together, and I am the knot that binds them."
+Towering Baloth	ONS	yes	The Mirari twisted all that lived in the Krosan Forest into gross mockeries of their forme
+Tragic Poet	ULG	yes	"I would weep, but my tears have been stolen; I would shout, but my voice has been taken. 
+Tranquility	LEA	no	
+Treetop Village	ULG	no	
+Trenching Steed	PCY	yes	The Keldons took several of the steeds as trophies of war. They'd never seen such a light 
+Tribal Golem	ONS	no	
+Troubled Healer	PCY	yes	"Which is worse: nothing to defend, or no one to defend it?"
+Trumpet Blast	UDS	yes	Keldon warriors don't need signals to tell them when to attack, but when to stop.
+Tsabo's Web	INV	no	
+Undertaker	MMQ	yes	The weight of death is heavy but not immovable.
+Undiscovered Paradise	VIS	yes	Jolrael's choice of homes was far better than her choice of allies.
+Unerring Sling	MIR	no	
+Unifying Theory	ODY	yes	Scribbles of a lunatic and formulas of a genius are often indistinguishable.
+Unstable Hulk	LGN	no	
+Upwelling	SCG	yes	Once again, Kamahl felt the full force of the Mirari's pull, but he had learned much since
+Urza's Bauble	ICE	no	
+Urza's Rage	INV	no	
+Vampire Hounds	EXO	yes	The hounds' barks are a horrifying chorus of screams, moans, and whispers.
+Veldt	ICE	no	
+Venomous Vines	JUD	yes	"True strength comes from within. The false promise of unnatural power only incurs Krosa's
+Verdant Force	TMP	yes	Burl, scurf, and bower Birth fern and flower.
+Verdant Succession	ODY	no	
+Veteran Explorer	WTH	no	
+Veteran's Voice	ALL	yes	"Good soldiers rely first upon their training, then upon their instincts." —King Darien of
+Vibrating Sphere	ICE	yes	"Unearthly and invisible fibers emanate from this sphere, entangling all who draw near." —
+Vigilant Drake	ULG	yes	Awake and awing in the blink of an eye.
+Vindicate	APC	yes	"Don't mourn for me. This is my destiny." —Gerrard
+Vision Charm	VIS	no	
+Vodalian Zombie	INV	yes	"Every last one of you will become my servant. It's a shame you won't live to see the iron
+Volcanic Hammer	POR	yes	Cast the weight as though it were a die, to see a rival's fate.
+Volrath's Shapeshifter	STH	no	
+Wall of Diffusion	TMP	yes	"The injury was being caught between this world and our own; the insult was to find walls 
+Warmth	TMP	yes	"Flame grows gentle with but a little distance." —Orim, Samite healer
+Warping Wurm	MIR	yes	Even wurms start out small.
+Wasteland	TMP	yes	"The land promises nothing and keeps its promise." —Oracle *en*-Vec
+Waterfront Bouncer	MMQ	yes	Closing time comes earlier to some than to others.
+Wave of Indifference	ONS	yes	"Darius?" "Yeah?" "There's a goblin sneaking up on you." "So?" "Just sayin'."
+Werebear	ODY	yes	He exercises his right to bear arms.
+Whipcorder	ONS	yes	His bolas whirl like galaxies, but it's his enemies who see stars.
+Wild Elephant	MIR	yes	"I will tell my father's stories . . . . How the elephants trampled the leopard cub, and i
+Wild Growth	LEA	no	
+Wild Mongrel	ODY	yes	It teaches *you* to play dead.
+Wildfire Emissary	MIR	yes	"The efreet is a striding storm with a voice that crackles like fire." —Qhattib, Vizier of
+Will-o'-the-Wisp	LEA	yes	"About, about in reel and rout The death-fires danced at night; The water, like a witch's 
+Windborn Muse	LGN	yes	"Her voice is justice, clear and relentless." —Akroma, angelic avenger
+Windswept Heath	ONS	no	
+Winter Orb	LEA	no	
+Wirewood Channeler	LGN	yes	"Your words are meaningless. The rustling of leaves is the only language that makes any se
+Wirewood Elf	ONS	yes	"The land belongs to nature as far as our eyes can see. The higher we climb, the more we c
+Wirewood Herald	ONS	yes	The goblins laughed as the elf ran away, until more came back.
+Wirewood Symbiote	SCG	yes	It drinks fatigue.
+Withered Wretch	LGN	yes	Once it consecrated the dead. Now it desecrates them.
+Wonder	JUD	yes	"The awestruck birds gazed at Wonder. Slowly, timidly, they rose into the air." —*Scroll o
+Wooded Foothills	ONS	no	
+Words of Wind	ONS	yes	"Be logical in all things. Do not allow instinct or passion to cloud your mind." —*Volume 
+Words of Wisdom	ODY	yes	Knowledge can't be kept in a bottle or sealed in a box. It yearns to be spread and shared.
+Wormfang Drake	JUD	no	
+Worn Powerstone	USG	no	
+Worship	USG	yes	"Believe in the ideal, not the idol." —Serra
+Wrath of God	LEA	no	
+Yavimaya Elder	UDS	no	
+Zebra Unicorn	MIR	yes	"I'll capture gentle zebras / for your steeds and fill the stable with every kind of unico
