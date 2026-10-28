@@ -1,0 +1,25 @@
+name: probe
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: MTGJSON
+        run: |
+          curl -sS -o UDS.json -w "UDS %{http_code} %{size_download}\n" https://mtgjson.com/api/v5/UDS.json
+          python3 -c "import json;d=json.load(open('UDS.json'))['data'];c=[x for x in d['cards'] if x['name']=='Opalescence'][0];print({k:c.get(k) for k in ['name','manaValue','colors','types','rarity','artist','legalities','setCode','manaCost','type']})"
+      - name: MTGO decklists
+        run: |
+          curl -sS -A "Mozilla/5.0" -o list.html -w "list %{http_code} %{size_download}\n" "https://www.mtgo.com/decklists"
+          grep -o 'href="/decklist/[^"]*premodern[^"]*"' list.html | head -5 || true
+          grep -o '/decklist/[a-z0-9-]*' list.html | sort -u | head -15
+          curl -sS -A "Mozilla/5.0" -o y.html -w "year %{http_code} %{size_download}\n" "https://www.mtgo.com/decklists/2026/10"
+          grep -o '/decklist/premodern[a-z0-9-]*' y.html | sort -u | head -10
+      - name: One premodern decklist page
+        run: |
+          u=$(curl -sS -A "Mozilla/5.0" "https://www.mtgo.com/decklists/2026/10" | grep -o '/decklist/premodern[a-z0-9-]*' | head -1)
+          echo "url $u"
+          curl -sS -A "Mozilla/5.0" -o d.html "https://www.mtgo.com$u"
+          wc -c d.html
+          grep -o 'window.MTGO.decklists.data = .\{0,300\}' d.html | head -c 600; echo
+          grep -o '"card_name":"[^"]*"' d.html | head -5
