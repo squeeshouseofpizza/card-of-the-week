@@ -8,26 +8,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Probe
-        run: |
-          set +e +o pipefail
-          exec > probe.txt 2>&1
-          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-          curl -sSL -A "$UA" -H "Accept-Language: en-US" -b "CONSENT=YES+1" -o yt.html -w "yt %{http_code} %{size_download}\n" "https://www.youtube.com/@SqueesHouseofPizza/playlists"
-          echo "canonical: $(grep -o '<link rel="canonical" href="[^"]*"' yt.html | head -1)"
-          echo "externalId: $(grep -o '"externalId":"[^"]*"' yt.html | head -1)"
-          grep -o '"playlistId":"[^"]*"' yt.html | sort -u | head -15
-          python3 - <<'PY'
-import re,json
-h=open('yt.html',encoding='utf-8',errors='replace').read()
-for m in re.finditer(r'"playlistId":"(PL[^"]+)".{0,800}?"text":"([^"]{1,80})"',h):
-    print(m.group(1),'|',m.group(2))
-PY
-          cid=$(grep -o '"externalId":"UC[^"]*"' yt.html | head -1 | cut -d'"' -f4)
-          curl -sSL -A "$UA" -o ytf.xml -w "channel feed %{http_code}\n" "https://www.youtube.com/feeds/videos.xml?channel_id=$cid"
-          grep -o '<title>[^<]*</title>' ytf.xml | head -20
+        run: python3 build/probe_search.py "Fact or Fiction" "Replenish" "Psychatog" "Parallax Wave" "Opalescence" "Stifle" "Phyrexian Dreadnought" "Goblin Lackey" "Survival of the Fittest" "Oath of Druids" "Stasis" "Terravore" "Armageddon" "Enchantress's Presence" "Argothian Enchantress" "Gush" "Swords to Plowshares" "Mishra's Factory" > probe.txt 2>&1 || true
       - name: Save
         if: always()
         run: |
           git config user.name probe-bot; git config user.email probe@users.noreply.github.com
           git checkout --orphan probe-output; git rm -rq --cached . || true
-          git add probe.txt; git commit -qm probe; git push -f origin probe-output
+          git add -f probe.txt; git commit -qm probe; git push -f origin probe-output
