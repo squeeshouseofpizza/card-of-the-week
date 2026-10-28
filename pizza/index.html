@@ -23,7 +23,6 @@ html.framed body{background:transparent;color-scheme:dark}
 [hidden]{display:none!important}
 body{margin:0;background:var(--ground);color:var(--cream);font-family:var(--body);font-size:17px;line-height:1.5}
 .wrap{max-width:560px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
-.topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px}
 .auth{display:flex;justify-content:flex-end;align-items:center;gap:10px;font-size:14px;color:var(--muted);flex-wrap:wrap}
 .auth img{width:22px;height:22px;border-radius:50%}
 .auth b{color:var(--cream);font-weight:500}
@@ -44,6 +43,9 @@ h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,7vw,38px);mar
 .stat canvas{width:28px;height:28px}
 .stage{position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--panel)}
 #game{display:block;width:100%;height:auto;touch-action:none;cursor:crosshair}
+.snd{position:absolute;top:8px;right:8px;z-index:2;display:flex;align-items:center;gap:6px;background:rgba(23,18,12,.78);color:var(--cream);border:1px solid var(--line);border-radius:999px;padding:5px 11px 5px 8px;font-family:var(--body);font-size:14px;cursor:pointer}
+.snd:hover{border-color:var(--gold)}.snd:focus-visible{outline:2px solid var(--gold-lite);outline-offset:2px}
+.snd svg{width:18px;height:18px;flex:none}
 .over{position:absolute;inset:0;background:rgba(18,13,8,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center}
 .over h2{font-family:var(--display);font-size:26px;margin:0;color:var(--gold-lite)}
 .over .big{font-family:var(--mono);font-size:34px}
@@ -82,7 +84,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
 </head>
 <body>
 <div class="wrap">
-  <div class="topbar"><button class="linkbtn" id="mute" type="button" aria-pressed="true">Sound on</button><div class="auth" id="auth"></div></div>
+  <div class="auth" id="auth"></div>
   <header>
     <div class="eyebrow">Squee's House of Pizza</div>
     <h1>Pizza Drop</h1>
@@ -91,7 +93,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
 
   <details id="help">
     <summary>How to play</summary>
-    <p>Move to aim and tap or click to drop. On a keyboard, use the arrow keys and space.</p>
+    <p>Move to aim and tap or click to drop. On a keyboard, use the arrow keys and space. The speaker button in the corner of the box switches sound between off, low and high.</p>
     <p>Two matching toppings merge into the next one up. The merge order is under the box. The signature chili is the hard one to make. Two whole pizzas clear for a big bonus.</p>
     <p>If anything sits above the dashed line for two seconds, the game ends.</p>
     <p>Sign in with Discord to put your best score on this week's board. It resets every Wednesday at 9am Eastern.</p>
@@ -104,6 +106,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   </div>
 
   <div class="stage" id="stage">
+    <button class="snd" id="snd" type="button"></button>
     <canvas id="game" width="480" height="680" aria-label="Pizza box. Move to aim, tap or click to drop."></canvas>
     <div class="over" id="over" hidden>
       <h2 id="overTitle">The box overflowed</h2>
@@ -237,16 +240,20 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   let biggest,chain,lastMerge,shake,banner;
 
   // ---------- sound ----------
-  let AC=null,muted=store.get('pizzadrop.muted',false);
-  function ac(){if(muted)return null;try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume()}catch(e){AC=null}return AC}
-  function tone(f0,f1,dur,vol,type){const a=ac();if(!a)return;const t=a.currentTime,o=a.createOscillator(),g=a.createGain();
+  const VOL=[0,.35,1],VNAME=['Off','Low','High'];
+  let AC=null,vol=store.get('pizzadrop.vol',1);if(!(vol in VOL))vol=1;
+  function ac(){if(!vol)return null;try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume()}catch(e){AC=null}return AC}
+  function tone(f0,f1,dur,v,type){const a=ac();if(!a)return;const t=a.currentTime,o=a.createOscillator(),g=a.createGain();
     o.type=type||'sine';o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f1,t+dur);
-    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v*VOL[vol],t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
     o.connect(g).connect(a.destination);o.start(t);o.stop(t+dur+.02)}
   function popSound(lvl,chain){const f=520*Math.pow(.86,lvl)*Math.pow(1.06,Math.min(chain-1,8));tone(f*1.6,f,.13,.22);if(lvl>=6)tone(f*.5,f*.35,.35,.18,'triangle')}
   function bigSound(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,f*1.01,.22,.16,'triangle'),i*90))}
   function dropSound(){tone(180,90,.08,.08)}
-  function setMute(m){muted=m;store.set('pizzadrop.muted',m);$('mute').textContent=m?'Sound off':'Sound on';$('mute').setAttribute('aria-pressed',String(!m))}
+  function setVol(v){vol=v;store.set('pizzadrop.vol',v);
+    const waves=v===0?'<path d="M16 9l5 6M21 9l-5 6"/>':v===1?'<path d="M15.5 9.5a3.5 3.5 0 0 1 0 5"/>':'<path d="M15.5 9.5a3.5 3.5 0 0 1 0 5"/><path d="M18 7a7 7 0 0 1 0 10"/>';
+    $('snd').innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/>'+waves+'</svg><span>'+VNAME[v]+'</span>';
+    $('snd').setAttribute('aria-label','Sound: '+VNAME[v]+'. Tap to change.');$('snd').title='Sound: '+VNAME[v]}
 
   function rng(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
   function pick(){const r=rand();return r<.3?0:r<.55?1:r<.75?2:r<.9?3:4}
@@ -357,7 +364,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       ctx.fillStyle=banner.big?'#f0c674':'#fff3d6';ctx.fillText(banner.txt,W/2,y);ctx.globalAlpha=1}}
   }
 
-  $('mute').addEventListener('click',()=>setMute(!muted));setMute(muted);
+  $('snd').addEventListener('click',()=>{setVol((vol+1)%3);if(vol)popSound(3,1)});setVol(vol);
   // ---------- input ----------
   function toWorld(e){const r=cv.getBoundingClientRect();return (e.clientX-r.left)*W/r.width}
   cv.addEventListener('pointermove',e=>{aimX=toWorld(e)});
