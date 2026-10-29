@@ -140,6 +140,10 @@ table.lb{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;f
 .note{margin:0;font-size:14px;color:var(--muted);text-align:center}
 .backlink{align-self:flex-start}
 .status{text-align:center;margin:0;font-size:16px;color:var(--ink)}
+.pre{background:var(--felt);border:1px solid var(--card-edge);border-radius:12px;padding:20px 16px;text-align:center;display:flex;flex-direction:column;gap:8px}
+.pre .big{font-family:var(--display);font-size:clamp(18px,5vw,22px);line-height:1.3;color:var(--gold-lite)}
+.pre .cd{font-family:var(--mono);font-size:18px}
+.pre .sub{color:var(--muted);font-size:15px}
 .authrow{display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;font-size:15px;color:var(--muted)}
 .authrow img{width:24px;height:24px;border-radius:50%}
 .err{color:var(--wrong);text-align:center;margin:0;font-size:15px}
@@ -169,6 +173,7 @@ table.lb{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;f
     </div>
     <p class="tagline">Five cards about the podcast. Say which ones really happened on the show.</p>
     <p class="when" id="when">New pile every Monday at 9am Eastern. One try a week.</p>
+    <section class="pre" id="pre" hidden><div class="eyebrow">Coming soon</div><div class="big" id="prebig"></div><div class="cd" id="precd"></div><p class="sub" style="margin:0">Until then, here's a practice pile. It doesn't count.</p></section>
     <p class="status" id="status" hidden></p>
     <button class="btn play" id="play" type="button" hidden>Play</button>
     <details class="how">
@@ -271,12 +276,16 @@ table.lb{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;f
     if(!S.cards||!S.cards.length){st.hidden=false;st.textContent='No pile this week. Next one Monday at 9am Eastern.';return}
     const P=S.week<0;$('seal').hidden=false;
     $('seal').innerHTML=P?'Practice':'Week<b></b>';if(!P)$('seal').querySelector('b').textContent=S.week;
-    const n=S.answers.length,live=etDay(S.launch);
-    play.hidden=false;st.hidden=false;
-    if(S.done){play.textContent='See your results';st.textContent=P?`You’ve played the practice pile. Week 1 goes live ${live} at 9am Eastern.`:`You’ve played Week ${S.week}. Next pile ${etDay(S.next)} at 9am Eastern.`}
-    else{play.textContent=n?`Keep going (card ${n+1} of ${S.cards.length})`:(P?'Play the practice pile':'Play');
-      if(P)st.textContent=`Practice pile. It doesn’t count. Week 1 goes live ${live} at 9am Eastern.`;else st.hidden=true}
+    const n=S.answers.length,pre=P&&S.launch>Date.now();
+    play.hidden=false;st.hidden=true;$('pre').hidden=!pre;
+    if(pre){$('prebig').textContent=`Week 1 starts ${new Date(S.launch).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'long',month:'short',day:'numeric'})} at 9am Eastern`;startCountdown()}
+    if(S.done){play.textContent='See your results';if(!P){st.hidden=false;st.textContent=`You’ve played Week ${S.week}. Next pile ${etDay(S.next)} at 9am Eastern.`}else if(pre){st.hidden=false;st.textContent='You’ve played the practice pile.'}}
+    else play.textContent=n?`Keep going (card ${n+1} of ${S.cards.length})`:(P?'Play the practice pile':'Play');
   }
+  // Pre-launch countdown. When it hits zero the page loads Week 1 by itself.
+  let cdTimer=null;
+  function fmtLeft(ms){const m=Math.max(0,Math.ceil(ms/6e4)),d=Math.floor(m/1440),h=Math.floor(m%1440/60),mm=m%60;return(d?d+'d ':'')+h+'h '+String(mm).padStart(2,'0')+'m'}
+  function startCountdown(){if(cdTimer)return;const up=()=>{const left=S.launch-Date.now();$('precd').textContent=fmtLeft(left);if(left<=0){clearInterval(cdTimer);cdTimer=null;if(!$('cover').hidden)setTimeout(()=>location.reload(),1500+Math.random()*20000)}};up();cdTimer=setInterval(up,15000)}
   $('play').onclick=()=>{if(S.done)return results();startGame()};
   $('openBoard').onclick=()=>{show(['boardPage']);mountBoard('boardSlot1');renderAuth('auth1')};
   $('closeBoard').onclick=()=>{show(['cover'])};
