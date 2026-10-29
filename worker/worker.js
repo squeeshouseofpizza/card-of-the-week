@@ -382,7 +382,7 @@ export default {
       }
       if (path === '/auth/callback') {
         const nonce = url.searchParams.get('state') || '', code = url.searchParams.get('code') || '';
-        const page = (msg) => new Response(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Guess the Card</title><body style="font:17px Georgia,serif;background:#17120c;color:#efe6d2;display:grid;place-items:center;min-height:90vh;text-align:center;padding:16px"><p>${msg}</p><script>setTimeout(()=>window.close(),1200)</script>`, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+        const page = (msg) => new Response(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>S.H.O.P. sign-in</title><body style="font:17px Georgia,serif;background:#17120c;color:#efe6d2;display:grid;place-items:center;min-height:90vh;text-align:center;padding:16px"><p>${msg}</p><script>setTimeout(()=>window.close(),1200)</script>`, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
         const login = await env.DB.prepare('SELECT * FROM logins WHERE nonce = ? AND expires_at > ?').bind(nonce, Date.now()).first();
         if (!login || !code) return page('That sign-in link expired. Close this window and try again.');
         const tr = await fetch('https://discord.com/api/oauth2/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
