@@ -73,6 +73,11 @@ details{border:1px solid var(--line);border-radius:8px;padding:10px 14px;color:v
 summary{cursor:pointer;font-family:var(--display);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
 details p{margin:8px 0}
 .board-lb{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.lbhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.seg{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.seg button{background:transparent;border:0;color:var(--muted);font:inherit;font-size:14px;padding:5px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--gold);color:#1a1309}
+.seg button:focus-visible{outline:2px solid var(--gold-lite);outline-offset:-2px}
 .board-lb h2{font-family:var(--display);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0;font-weight:500}
 .lb{width:100%;border-collapse:collapse;font-size:15px}
 .lb td{padding:6px 4px;border-top:1px solid rgba(214,163,74,.12)}
@@ -133,7 +138,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
 
 
   <section class="board-lb" id="lbwrap" hidden>
-    <h2>This week's high scores</h2>
+    <div class="lbhead"><h2>High scores</h2><div class="seg" role="group" aria-label="Which scores"><button type="button" id="rWeek" aria-pressed="true">This week</button><button type="button" id="rAll" aria-pressed="false">All-time</button></div></div>
     <table class="lb"><tbody id="lb"></tbody></table>
     <p class="note" id="lbnote"></p>
   </section>
@@ -362,8 +367,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     if(!stamp){stamp=document.createElement('canvas');stamp.width=W;stamp.height=H;const sc=stamp.getContext('2d'),cy=TOP+(FLOOR-TOP)*.55;
       sc.translate(W/2,cy);sc.rotate(-.06);sc.strokeStyle='rgba(120,40,28,.22)';sc.fillStyle='rgba(120,40,28,.22)';sc.lineWidth=3;
       sc.beginPath();sc.arc(0,0,118,0,Math.PI*2);sc.stroke();sc.lineWidth=1.5;sc.beginPath();sc.arc(0,0,108,0,Math.PI*2);sc.stroke();
-      sc.textAlign='center';sc.font='700 40px Cinzel,Georgia,serif';sc.fillText('S.H.O.P.',0,-14);
-      sc.font='700 17px Cinzel,Georgia,serif';sc.fillText('HOUSE OF PIZZA',0,22);sc.font='600 12px Cinzel,Georgia,serif';sc.fillText('HOT · FRESH · LEGAL',0,56)}
+      sc.textAlign='center';sc.font='700 46px Cinzel,Georgia,serif';sc.fillText('S.H.O.P.',0,4);sc.font='600 12px Cinzel,Georgia,serif';sc.fillText('HOT · FRESH · LEGAL',0,44)}
     ctx.drawImage(stamp,0,0);
     ctx.strokeStyle='rgba(90,58,24,.16)';ctx.lineWidth=1;
     for(let y=TOP;y<FLOOR;y+=26){ctx.beginPath();ctx.moveTo(WALL,y);ctx.lineTo(W-WALL,y);ctx.stroke()}
@@ -468,7 +472,9 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     const r=await fetch(API+path,Object.assign({},opts,{headers:h}));const j=await r.json().catch(()=>({}));
     if(!r.ok){const e=new Error(j.error||'HTTP '+r.status);e.code=j.error;throw e}return j;
   }
-  let ME=null,WEEK_OF='';
+  let ME=null,WEEK_OF='',RANGE='week';
+  function setRange(r){RANGE=r;$('rWeek').setAttribute('aria-pressed',String(r==='week'));$('rAll').setAttribute('aria-pressed',String(r==='all'));loadBoard()}
+  $('rWeek').addEventListener('click',()=>setRange('week'));$('rAll').addEventListener('click',()=>setRange('all'));
   async function loadMe(){ME=null;if(token()){try{const m=await api('/me');if(m.name)ME=m;else store.del('shopweekly.token')}catch(e){}}renderAuth()}
   function renderAuth(){
     const a=$('auth');a.textContent='';
@@ -485,12 +491,14 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   }
   async function loadBoard(){
     try{
-      const b=await api('/pizza/board');const tb=$('lb');
-      if(b.since)WEEK_OF=new Date(b.since).toLocaleDateString('en-US',{month:'short',day:'numeric',timeZone:'America/New_York'});tb.textContent='';$('lbwrap').hidden=false;
-      if(!b.top.length){$('lbnote').textContent='No scores yet this week.'+(ME?'':' Sign in with Discord to get on it.');return}
+      const b=await api('/pizza/board'+(RANGE==='all'?'?range=all':''));const tb=$('lb');
+      const day=t=>new Date(t).toLocaleDateString('en-US',{month:'short',day:'numeric',timeZone:'America/New_York'});
+      if(b.since&&RANGE==='week')WEEK_OF=new Date(b.since).toLocaleDateString('en-US',{month:'short',day:'numeric',timeZone:'America/New_York'});tb.textContent='';$('lbwrap').hidden=false;
+      const signin=ME?'':' Sign in with Discord to get on it.';
+      if(!b.top.length){$('lbnote').textContent=RANGE==='all'?(Date.now()<b.launch?'All-time records start '+day(b.launch)+'. Scores before then are practice.':'No all-time scores yet.'+signin):'No scores yet this week.'+signin;return}
       const rows=b.top.slice();if(b.me&&!rows.some(r=>r.me))rows.push(b.me);
       rows.forEach(r=>{const tr=el('tr',r.me?'me':null);tr.appendChild(el('td','r',String(r.rank)));const n=el('td','n');if(r.avatar){const i=el('img');i.src=r.avatar;i.alt='';n.appendChild(i)}n.appendChild(el('span',null,r.name));tr.appendChild(n);tr.appendChild(el('td','s',r.score.toLocaleString()));tb.appendChild(tr)});
-      $('lbnote').textContent='Resets Wednesday at 9am Eastern.'+(ME?'':' Sign in with Discord to get on it.');
+      $('lbnote').textContent=(RANGE==='all'?'Each player\'s best score since '+day(b.launch)+'.':'Resets Wednesday at 9am Eastern.')+signin;
     }catch(e){$('lbwrap').hidden=true}
   }
 

@@ -282,12 +282,19 @@ export default {
         return J({ ok: true, best: best.score, rank: above.n + 1, gap: next ? next.score - best.score : null }, 200, origin);
       }
       if (path === '/pizza/board') {
-        const week = currentWeek();
-        const rows = (await env.DB.prepare(`SELECT p.discord_id, u.name, u.avatar, p.score FROM pizza_scores p JOIN users u ON u.discord_id = p.discord_id
+        const week = currentWeek(), all = url.searchParams.get('range') === 'all';
+        // All-time is each player's best weekly score from launch week on, so pre-launch test scores never count.
+        // Ties go to whoever got there first.
+        const rows = all
+          ? (await env.DB.prepare(`SELECT b.discord_id, u.name, u.avatar, b.score FROM (
+                SELECT discord_id, MAX(score) AS score, MIN(created_at) AS created_at FROM pizza_scores p
+                WHERE week >= 1 AND score = (SELECT MAX(score) FROM pizza_scores q WHERE q.discord_id = p.discord_id AND q.week >= 1)
+                GROUP BY discord_id) b JOIN users u ON u.discord_id = b.discord_id ORDER BY b.score DESC, b.created_at ASC`).all()).results
+          : (await env.DB.prepare(`SELECT p.discord_id, u.name, u.avatar, p.score FROM pizza_scores p JOIN users u ON u.discord_id = p.discord_id
             WHERE p.week = ? ORDER BY p.score DESC, p.created_at ASC`).bind(week).all()).results;
         const me = await user(req, env);
         const list = rows.map((r, i) => ({ rank: i + 1, name: r.name, avatar: r.avatar ? `https://cdn.discordapp.com/avatars/${r.discord_id}/${r.avatar}.png?size=64` : '', score: r.score, me: !!(me && me.discord_id === r.discord_id) }));
-        return J({ week, since: weekStart(week), total: list.length, top: list.slice(0, 25), me: list.find(r => r.me) || null }, 200, origin);
+        return J({ week, since: weekStart(week), launch: LAUNCH_MS, range: all ? 'all' : 'week', total: list.length, top: list.slice(0, 25), me: list.find(r => r.me) || null }, 200, origin);
       }
 
       // ----- Discord sign-in (popup + polling, so it works inside the Fourthwall iframe) -----
