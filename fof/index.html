@@ -96,7 +96,7 @@ pre.share{margin:0;background:var(--ground);border:1px solid var(--card-edge);bo
 .recap a{color:var(--gold-lite);font-size:14px}
 .again{justify-self:center}
 .foot{font-size:13px;color:var(--muted)}
-@media (prefers-reduced-motion:reduce){.card,.flip{transition:none}.card.flipped .flip{transform:none}.card.flipped .front{display:none}.back{transform:none}}
+@media (prefers-reduced-motion:reduce){.card,.flip{transition:none}.card.flipped .flip{transform:none}.back{display:none;transform:none}.card.flipped .front{display:none}.card.flipped .back{display:flex}}
 @media (max-width:380px){.deck{height:360px}.stmt{font-size:21px}}
 /* Cover: the podcast art as a game box lid, with a box side carrying the usual player count, card count and play time. */
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
@@ -162,11 +162,13 @@ html.framed body{background:transparent;color-scheme:dark}
 .err{color:var(--wrong);text-align:center;margin:0;font-size:15px}
 .lb td.nm{display:flex;align-items:center;gap:8px}
 .lb td.nm img{width:22px;height:22px;border-radius:50%}
+.live{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;text-align:center;font-size:15px;color:var(--ink);background:var(--felt);border:1px solid var(--gold);border-radius:10px;padding:10px 12px}
 .test{font-size:13px;color:var(--wrong);border:1px dashed var(--wrong);border-radius:8px;padding:6px 10px;text-align:center}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <div class="live" id="live" hidden><span id="liveTxt"></span><button class="copy" id="liveGo" type="button">Play it</button></div>
   <p class="test" id="testBanner" hidden>Test mode: you're playing the practice pile. It doesn't count.</p>
 
   <!-- Cover -->
@@ -260,7 +262,10 @@ html.framed body{background:transparent;color-scheme:dark}
   const $=id=>document.getElementById(id);
   const fmt=n=>n<0?'−'+(-n):String(n);
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+  // Values are kept in memory as well, so a browser that blocks storage in the Fourthwall frame keeps its sign-in and
+  // player id for the visit.
+  const MEM=new Map();
+  const store={get(k,d){try{const v=localStorage.getItem(k);if(v!==null)return v}catch(e){}return MEM.has(k)?MEM.get(k):d},set(k,v){MEM.set(k,v);try{localStorage.setItem(k,v)}catch(e){}},del(k){MEM.delete(k);try{localStorage.removeItem(k)}catch(e){}}};
   function clientId(){let c=store.get('fof.client','');if(!/^[A-Za-z0-9_-]{8,64}$/.test(c)){c=Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('');store.set('fof.client',c)}return c}
   const CLIENT=clientId();
   const token=()=>store.get('shopweekly.token','');
@@ -275,7 +280,9 @@ html.framed body{background:transparent;color-scheme:dark}
   if(window.parent!==window){const post=()=>parent.postMessage({fofGame:true,height:Math.ceil(document.body.getBoundingClientRect().height)},'*');new ResizeObserver(post).observe(document.body);addEventListener('load',post)}
   if(TEST)$('testBanner').hidden=false;
 
-  let S=null,ME=null,i=0,pick=null,locked=false,range='week';
+  let S=null,ME=null,i=0,pick=null,locked=false,range='week',pickedAt=0;
+  // The server's clock, not the phone's: a phone a minute fast shouldn't decide when a new pile is live.
+  let OFF=0;const srv=()=>Date.now()+OFF;const setClock=j=>{if(j&&j.now)OFF=j.now-Date.now()};
   const card=$('card');
   const etDay=ms=>new Date(ms).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'long',month:'long',day:'numeric'});
 
@@ -288,20 +295,36 @@ html.framed body{background:transparent;color-scheme:dark}
     if(!S.cards||!S.cards.length){st.hidden=false;st.textContent='No pile this week. Next one Monday at 9am Eastern.';return}
     const P=S.week<0;$('seal').hidden=false;
     $('seal').innerHTML=P?'Practice':'Week<b></b>';if(!P)$('seal').querySelector('b').textContent=S.week;
-    const n=S.answers.length,pre=P&&S.launch>Date.now();
+    const n=S.answers.length,pre=P&&S.launch>srv();
     play.hidden=false;st.hidden=true;$('pre').hidden=!pre;
     if(pre){$('prebig').textContent=`Week 1 starts ${new Date(S.launch).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'long',month:'short',day:'numeric'})} at 9am Eastern`;startCountdown()}
     if(S.done){play.textContent='See your results';if(!P){st.hidden=false;st.textContent=`You’ve played Week ${S.week}. Next pile ${etDay(S.next)} at 9am Eastern.`}else if(pre){st.hidden=false;st.textContent='You’ve played the practice pile.'}}
     else play.textContent=n?`Keep going (card ${n+1} of ${S.cards.length})`:(P?'Play the practice pile':'Play');
   }
-  // Pre-launch countdown. When it hits zero the page loads Week 1 by itself.
+  // Pre-launch countdown.
   let cdTimer=null;
   function fmtLeft(ms){const m=Math.max(0,Math.ceil(ms/6e4)),d=Math.floor(m/1440),h=Math.floor(m%1440/60),mm=m%60;return(d?d+'d ':'')+h+'h '+String(mm).padStart(2,'0')+'m'}
-  function startCountdown(){if(cdTimer)return;const up=()=>{const left=S.launch-Date.now();$('precd').textContent=fmtLeft(left);if(left<=0){clearInterval(cdTimer);cdTimer=null;if(!$('cover').hidden)setTimeout(()=>location.reload(),1500+Math.random()*20000)}};up();cdTimer=setInterval(up,15000)}
+  function startCountdown(){if(cdTimer)return;const up=()=>{const left=S.launch-srv();$('precd').textContent=fmtLeft(left);if(left<=0){clearInterval(cdTimer);cdTimer=null}};up();cdTimer=setInterval(up,15000)}
+  // When the next pile goes live (Week 1 at launch, then every Monday), the page notices on any screen: it asks the
+  // server, then reloads if you're on the box, or shows a "Play it" bar if you're mid-pile or on your results.
+  let watching=false;
+  function nextAt(){if(!S)return 0;if(S.week<0)return TEST?0:S.launch;return S.week>0?S.next:0}
+  async function checkLive(){
+    const at=nextAt();if(!at||srv()<at||watching)return;watching=true;
+    try{const m=await api('/fof/meta');setClock(m);
+      if(m.week>Math.max(0,S.week)){
+        if(!$('cover').hidden&&!locked)return location.reload();
+        $('liveTxt').textContent=m.week===1&&S.week<0?'Week 1 is live.':`Week ${m.week} is live.`;$('live').hidden=false;return}
+    }catch(e){}
+    watching=false;
+  }
+  $('liveGo').onclick=()=>location.reload();
+  setInterval(checkLive,20000+Math.random()*10000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkLive()});
   $('play').onclick=()=>{if(S.done)return results();startGame()};
 
   async function load(){
-    try{S=await api('/fof/week?'+q({client:CLIENT}))}catch(e){S=null;$('status').hidden=false;$('status').textContent='Couldn’t load the game. Refresh to try again.';return}
+    try{S=await api('/fof/week?'+q({client:CLIENT}));setClock(S)}catch(e){S=null;$('status').hidden=false;$('status').textContent='Couldn’t load the game. Refresh to try again.';return}
     renderCover();mountBoard('boardSlot0');renderAuth('auth0');
   }
 
@@ -316,22 +339,29 @@ html.framed body{background:transparent;color-scheme:dark}
   }
   function signIn(){
     const nonce=Array.from(crypto.getRandomValues(new Uint8Array(18)),x=>x.toString(16).padStart(2,'0')).join('');
-    const w=window.open(API+'/auth/login?nonce='+nonce,'cotw-login','width=520,height=780');if(!w)return;
+    const w=window.open(API+'/auth/login?nonce='+nonce,'cotw-login','width=520,height=780');
+    if(!w){document.querySelectorAll('.authrow').forEach(a=>{if(a.offsetParent!==null){const p=document.createElement('p');p.className='note';p.textContent='Allow pop-ups for this page to sign in with Discord.';a.appendChild(p)}});return}
     let n=0;const iv=setInterval(async()=>{
       if(++n>180){clearInterval(iv);return}
       try{const r=await api('/auth/claim?nonce='+nonce);if(r.token){clearInterval(iv);store.set('shopweekly.token',r.token);await loadMe();
         // Loading the week again moves a pile played before signing in onto the account.
-        try{S=await api('/fof/week?'+q({client:CLIENT}))}catch(e){}
+        try{S=await api('/fof/week?'+q({client:CLIENT}));setClock(S)}catch(e){}
+        // If this account already played this week, its pile is the one that counts, so redraw from it.
+        if(!$('results').hidden)return results();
+        if(!$('table').hidden&&!locked&&!pick&&$('next').hidden){if(S.done)return results();i=S.answers.length;totals();deal()}
         ['auth0','auth2'].forEach(renderAuth);refreshBoards();renderCover()}}catch(e){}
     },1000);
   }
 
   // ---------- leaderboard ----------
   const slots=new Set();
-  function refreshBoards(){slots.forEach(mountBoard)}
+  const boardReq={};
+  function refreshBoards(){slots.forEach(s=>{const el=$(s);if(el&&el.offsetParent!==null)mountBoard(s)})}
   async function mountBoard(slot){
     slots.add(slot);const el=$(slot);if(!el)return;
-    let b;try{b=await api('/fof/board?'+q({range}))}catch(e){el.innerHTML='<div class="board"><h2>Leaderboard</h2><p class="cap">Couldn’t load the board.</p></div>';return}
+    const my=boardReq[slot]=(boardReq[slot]||0)+1,want=range;
+    let b;try{b=await api('/fof/board?'+q({range:want}))}catch(e){if(my!==boardReq[slot])return;el.innerHTML='<div class="board"><h2>Leaderboard</h2><p class="cap">Couldn’t load the board.</p></div>';return}
+    if(my!==boardReq[slot]||want!==range)return;
     const wk=S&&S.week>0?'Week '+S.week:(S&&S.week<0?'Practice':'');
     let cap;
     if(range==='week'){
@@ -342,8 +372,8 @@ html.framed body{background:transparent;color-scheme:dark}
     }else{
       cap=b.me?`You’re #${b.me.rank} all-time`+(b.ahead?`, ${b.ahead.gap} point${b.ahead.gap===1?'':'s'} behind #${b.ahead.rank}.`:'.'):(b.total?`${b.total} player${b.total===1?'':'s'} so far.`:'No one on the all-time board yet.');
     }
-    const rows=[];let last=0;
-    for(const r of b.rows){if(r.rank>last+1&&rows.length)rows.push('<tr class="gap"><td colspan="4">⋯</td></tr>');last=r.rank;
+    const rows=[];let last=-1;
+    for(const r of b.rows){if(r.pos>last+1&&rows.length)rows.push('<tr class="gap"><td colspan="4">⋯</td></tr>');last=r.pos;
       const av=r.avatar?`<img src="${r.avatar}" alt="" loading="lazy">`:'';
       rows.push(`<tr class="${r.me?'me':''}"><td>${r.rank}</td><td class="nm">${av}<span></span></td><td>${fmt(r.points)}</td><td>${range==='week'?r.right:r.weeks}</td></tr>`)}
     el.innerHTML=`<div class="board"><h2>Leaderboard</h2>
@@ -379,7 +409,7 @@ html.framed body{background:transparent;color-scheme:dark}
   }
   function lean(x){const k=Math.min(1,Math.abs(x)/90);$('leanFact').style.opacity=x<0?k:0;$('leanFic').style.opacity=x>0?k:0}
   function choose(a){
-    if(locked)return;pick=a;
+    if(locked)return;pick=a;pickedAt=performance.now();
     card.style.transform=`translateX(${a==='fact'?-28:28}px) rotate(${a==='fact'?-3:3}deg)`;lean(a==='fact'?-90:90);
     $('pick').hidden=true;$('sure').hidden=false;$('sureq').textContent=`${a==='fact'?'Fact':'Fiction'}. How sure?`;
     document.querySelector('.chip').focus({preventScroll:true});
@@ -443,6 +473,7 @@ html.framed body{background:transparent;color-scheme:dark}
         <div><div class="big">${fmt(pts)} points</div><p>${right} of ${S.cards.length} right</p></div></div>
       <pre class="share" id="share"></pre>
       <button class="copy" id="copy" type="button">Copy result</button>
+      ${S.kept?'<p class="note">This Discord account already played this week, so that pile is the one that counts.</p>':''}
       <div id="boardSlot2"></div>
       <div class="authrow" id="auth2"></div>
       <span class="label">Hear every answer</span>
@@ -466,7 +497,7 @@ html.framed body{background:transparent;color-scheme:dark}
   const end=()=>{if(sx==null)return;card.classList.remove('dragging');sx=null;if(Math.abs(dx)>80)choose(dx<0?'fact':'fiction');else{card.style.transform='';lean(0)}};
   card.addEventListener('pointerup',end);card.addEventListener('pointercancel',end);
   $('bFact').onclick=()=>choose('fact');$('bFic').onclick=()=>choose('fiction');$('undo').onclick=undo;
-  document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>commit(+b.dataset.c));
+  document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{if(performance.now()-pickedAt<400)return;commit(+b.dataset.c)});
   $('next').onclick=next;
   addEventListener('keydown',e=>{if($('table').hidden)return;
     if(!pick&&!locked){if(e.key==='ArrowLeft')choose('fact');else if(e.key==='ArrowRight')choose('fiction')}

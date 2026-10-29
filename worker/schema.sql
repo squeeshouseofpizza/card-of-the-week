@@ -14,3 +14,9 @@ CREATE TABLE pizza_runs (week INTEGER NOT NULL, score INTEGER NOT NULL, ms INTEG
 CREATE TABLE fof_answers (week INTEGER NOT NULL, card INTEGER NOT NULL, player TEXT NOT NULL, discord_id TEXT, sid TEXT NOT NULL, pick INTEGER NOT NULL, sure INTEGER NOT NULL, ok INTEGER NOT NULL, points INTEGER NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (week, card, player));
 CREATE INDEX fof_answers_player ON fof_answers (week, player);
 CREATE INDEX fof_answers_sid ON fof_answers (sid);
+-- Fact or Fiction summary tables. The Worker creates these itself (worker/fof.js, schema()) and fills them once from
+-- fof_answers, so they don't need to be run by hand; listed here for reference.
+CREATE TABLE IF NOT EXISTS fof_counts (week INTEGER NOT NULL, card INTEGER NOT NULL, n INTEGER NOT NULL, f INTEGER NOT NULL, ok INTEGER NOT NULL, PRIMARY KEY (week, card));
+CREATE TABLE IF NOT EXISTS fof_scores (week INTEGER NOT NULL, discord_id TEXT NOT NULL, points INTEGER NOT NULL, nright INTEGER NOT NULL, okmask INTEGER NOT NULL, done_at INTEGER NOT NULL, PRIMARY KEY (week, discord_id));
+CREATE INDEX IF NOT EXISTS fof_scores_id ON fof_scores (discord_id, week);
+CREATE TABLE IF NOT EXISTS fof_meta (k TEXT PRIMARY KEY, v TEXT);
