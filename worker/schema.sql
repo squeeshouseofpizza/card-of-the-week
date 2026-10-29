@@ -9,3 +9,8 @@ CREATE TABLE overrides (week INTEGER PRIMARY KEY, card TEXT NOT NULL);
 -- Pizza Drop: each player's best score per week.
 CREATE TABLE pizza_scores (week INTEGER NOT NULL, discord_id TEXT NOT NULL, score INTEGER NOT NULL, ms INTEGER NOT NULL, merges INTEGER NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (week, discord_id));
 CREATE TABLE pizza_runs (week INTEGER NOT NULL, score INTEGER NOT NULL, ms INTEGER NOT NULL, drops INTEGER NOT NULL, merges INTEGER NOT NULL, top INTEGER NOT NULL, created_at INTEGER NOT NULL);
+-- Fact or Fiction: The Game: one row per card answered. player is d:<discord id> or c:<browser id>; pick 1 = Fact, 0 = Fiction;
+-- sure 1 = "I'm sure"; sid is the statement's id, kept for lifetime stats when a statement comes back in a later week.
+CREATE TABLE fof_answers (week INTEGER NOT NULL, card INTEGER NOT NULL, player TEXT NOT NULL, discord_id TEXT, sid TEXT NOT NULL, pick INTEGER NOT NULL, sure INTEGER NOT NULL, ok INTEGER NOT NULL, points INTEGER NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (week, card, player));
+CREATE INDEX fof_answers_player ON fof_answers (week, player);
+CREATE INDEX fof_answers_sid ON fof_answers (sid);
