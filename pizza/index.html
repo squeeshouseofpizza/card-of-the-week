@@ -152,7 +152,10 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   const API='https://card-of-the-week.squeeshouseofpizza.workers.dev';
   const SHARE_URL='squeeshouseofpizza.com/pages/pizza-drop';
   const $=id=>document.getElementById(id);
-  const store={get(k,f){try{const v=localStorage.getItem(k);return v?JSON.parse(v):f}catch(e){return f}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+  // Storage can be blocked inside the Fourthwall frame (third-party storage settings, some private windows). Keep a
+  // copy in memory so sign-in and a pending score still work for the rest of the visit.
+  const MEM=new Map();
+  const store={get(k,f){try{const v=localStorage.getItem(k);if(v)return JSON.parse(v)}catch(e){}return MEM.has(k)?MEM.get(k):f},set(k,v){MEM.set(k,v);try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){MEM.delete(k);try{localStorage.removeItem(k)}catch(e){}}};
   function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
   if(window.parent!==window){const post=()=>parent.postMessage({pizzaDrop:true,height:document.documentElement.scrollHeight},'*');new ResizeObserver(post).observe(document.body);addEventListener('load',post)}
 
@@ -254,7 +257,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   const {Engine,Bodies,Composite,Events,Body}=Matter;
   const cv=$('game'),ctx=cv.getContext('2d');
   const chef=new Image();chef.src='assets/chef.png';let stamp=null;document.fonts&&document.fonts.ready.then(()=>{stamp=null});
-  let engine,bodies,score,merges,drops,aimX,next,current,coolUntil,started,over,overSince,pops,startTime,rand,running=false;
+  let engine,bodies,score,merges,drops,aimX,next,current,coolUntil,started,over,overSince,pops,startTime,rand,running=false,simT=0;
   let biggest,chain,lastMerge,shake,banner,confetti=[],startEver,hop=0;
 
   // ---------- sound ----------
@@ -291,7 +294,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       Bodies.rectangle(WALL-40,H/2,80,H*2,wallOpt),
       Bodies.rectangle(W-WALL+40,H/2,80,H*2,wallOpt)]);
     bodies=new Set();score=0;merges=0;drops=0;aimX=W/2;rand=rng(Date.now());current=pick();next=pick();
-    coolUntil=0;over=false;overSince=null;pops=[];startTime=null;started=false;biggest=-1;chain=0;lastMerge=0;shake=0;banner=null;confetti=[];startEver=everBig;
+    coolUntil=0;over=false;overSince=null;simT=0;pops=[];startTime=null;started=false;biggest=-1;chain=0;lastMerge=0;shake=0;banner=null;confetti=[];startEver=everBig;
     Events.on(engine,'collisionStart',collide);Events.on(engine,'collisionActive',collide);
     $('over').hidden=true;updateHud();showNext();running=true;
   }
@@ -307,7 +310,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   function addTopping(lvl,x,y,vx,vy){
     const t=T[lvl];
     const body=Bodies.circle(x,y,t.r,{restitution:.12,friction:.12,frictionAir:.004,density:.0016});
-    body.lvl=lvl;body.born=performance.now();body.grow=0;Body.setVelocity(body,{x:vx||0,y:vy||0});
+    body.lvl=lvl;body.born=simT;body.grow=0;Body.setVelocity(body,{x:vx||0,y:vy||0});
     Composite.add(engine.world,body);bodies.add(body);return body;
   }
   function resolveMerges(){
@@ -320,7 +323,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       if(lvl===PIZZA){score+=PIZZA_CLEAR;pops.push({x,y,r:T[PIZZA].r,t:now,txt:'+'+PIZZA_CLEAR,big:true,lvl:10});shake=Math.max(shake,16);bigSound();burst(x,y,90);
         if(!everDouble){everDouble=true;store.set('pizzadrop.double',true);renderChain();banner={sub:'First ever',txt:'Double pizza!',t:now,big:true,long:true}}else banner={txt:'Double pizza!',t:now,big:true}}
       else{const n=lvl+1;score+=T[n].pts;addTopping(n,x,y,(a.velocity.x+b.velocity.x)/2,Math.min(a.velocity.y,b.velocity.y)/2).grow=now;
-        pops.push({x,y,r:T[n].r,t:now,txt:'+'+T[n].pts+(chain>1?'  ×'+chain:''),big:n>=PIZZA-1,lvl:n});popSound(n,chain);
+        pops.push({x,y,r:T[n].r,t:now,txt:'+'+T[n].pts+(chain>1?' · chain '+chain:''),big:n>=PIZZA-1,lvl:n});popSound(n,chain);
         if(n>=6)shake=Math.max(shake,n-3);if(n>=5)hop=now;
         if(n>everBig){everBig=n;biggest=Math.max(biggest,n);store.set('pizzadrop.biggest',n);renderChain(n);
           banner={sub:'First ever',txt:T[n].name+'!',t:now,big:true,long:true};shake=Math.max(shake,10);bigSound();burst(x,y,n>=PIZZA-1?90:55)}
@@ -349,10 +352,12 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     requestAnimationFrame(frame);
     if(running&&!over){
       acc+=Math.min(100,now-last);
-      while(acc>=1000/60){Engine.update(engine,1000/60);resolveMerges();acc-=1000/60}
+      // The overflow grace and topping ages run on simulated time (physics steps), not the wall clock, so locking
+      // the phone or switching apps mid-countdown can't end the game the moment you come back.
+      while(acc>=1000/60){Engine.update(engine,1000/60);simT+=1000/60;resolveMerges();acc-=1000/60}
       let above=false;
-      for(const b of bodies){if(now-b.born>1200&&b.position.y-T[b.lvl].r<LINE&&Math.abs(b.velocity.y)<1.2){above=true;break}}
-      if(above){overSince=overSince||now;if(now-overSince>GRACE)endGame()}else overSince=null;
+      for(const b of bodies){if(simT-b.born>1200&&b.position.y-T[b.lvl].r<LINE&&Math.abs(b.velocity.y)<1.2){above=true;break}}
+      if(above){overSince=overSince||simT;if(simT-overSince>GRACE)endGame()}else overSince=null;
     }
     last=now;draw(now);
   }
@@ -373,7 +378,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     for(let y=TOP;y<FLOOR;y+=26){ctx.beginPath();ctx.moveTo(WALL,y);ctx.lineTo(W-WALL,y);ctx.stroke()}
     ctx.fillStyle='#6d4a27';ctx.fillRect(0,TOP-30,WALL,H);ctx.fillRect(W-WALL,TOP-30,WALL,H);ctx.fillRect(0,FLOOR,W,H-FLOOR);
     // danger line
-    const warn=overSince?Math.min(1,(now-overSince)/GRACE):0;
+    const warn=overSince?Math.min(1,(simT-overSince)/GRACE):0;
     if(warn){ctx.fillStyle=`rgba(200,60,40,${.10+.08*Math.sin(now/90)})`;ctx.fillRect(WALL,TOP-30,W-2*WALL,LINE-TOP+30)}
     // chef + held topping
     const r=T[current].r,hx=Math.max(WALL+r,Math.min(W-WALL-r,aimX));
@@ -391,7 +396,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     ctx.setLineDash([8,8]);ctx.lineWidth=2;ctx.strokeStyle=warn?`rgba(224,90,60,${.6+.4*Math.sin(now/90)})`:'rgba(239,230,210,.55)';
     ctx.beginPath();ctx.moveTo(WALL,LINE);ctx.lineTo(W-WALL,LINE);ctx.stroke();ctx.setLineDash([]);
     if(warn){ctx.fillStyle='#e05a3c';ctx.fillRect(WALL,LINE-5,(W-2*WALL)*(1-warn),4);
-      const txt='Overflowing · '+Math.ceil((GRACE-(now-overSince))/1000);ctx.font='700 17px Cinzel,Georgia,serif';ctx.textAlign='center';
+      const txt='Overflowing · '+Math.max(1,Math.ceil((GRACE-(simT-overSince))/1000));ctx.font='700 17px Cinzel,Georgia,serif';ctx.textAlign='center';
       const tw=ctx.measureText(txt).width+28;ctx.fillStyle='rgba(23,18,12,.88)';ctx.beginPath();ctx.roundRect?ctx.roundRect(W/2-tw/2,LINE+10,tw,30,15):ctx.rect(W/2-tw/2,LINE+10,tw,30);ctx.fill();
       ctx.strokeStyle='#e05a3c';ctx.lineWidth=1.5;ctx.stroke();ctx.fillStyle='#ffd9cc';ctx.fillText(txt,W/2,LINE+31)}
     // first-game hints
@@ -431,7 +436,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
 
   // ---------- end of game ----------
   async function endGame(){
-    over=true;running=false;overSince=null;
+    over=true;running=false;overSince=null;overAt=performance.now();
     const ms=startTime?Date.now()-startTime:0;
     const prevBest=store.get('pizzadrop.best',0);
     if(score>prevBest)store.set('pizzadrop.best',score);
@@ -459,7 +464,9 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   // A score finished before signing in still counts if you sign in within 30 minutes.
   function claimPending(){const p=store.get('pizzadrop.pending',null);store.del('pizzadrop.pending');
     if(p&&token()&&Date.now()-p.at<30*60e3){delete p.at;submitScore(p,'')}}
-  $('again').addEventListener('click',()=>{store.del('pizzadrop.pending');newGame()});
+  // Ignore Play again for a moment after game over, so a tap meant for the last drop doesn't wipe the result.
+  let overAt=0;
+  $('again').addEventListener('click',()=>{if(performance.now()-overAt<700)return;store.del('pizzadrop.pending');newGame()});
   $('copy').addEventListener('click',()=>{const t=$('share').textContent,b=$('copy');
     const sel=()=>{const r=document.createRange();r.selectNodeContents($('share'));const s=getSelection();s.removeAllRanges();s.addRange(r)};
     copyText(t).then(()=>{b.textContent='Copied';setTimeout(()=>b.textContent='Copy score',1500)}).catch(sel)});
@@ -496,9 +503,11 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       try{const r=await api('/auth/claim?nonce='+nonce);if(r.token){clearInterval(iv);store.set('shopweekly.token',r.token);await loadMe();loadBoard();claimPending();return}}catch(e){}
       if(tries>90)clearInterval(iv)},2000);
   }
+  let boardReq=0;
   async function loadBoard(){
+    const mine=++boardReq;
     try{
-      const b=await api('/pizza/board'+(RANGE==='all'?'?range=all':''));const tb=$('lb');
+      const b=await api('/pizza/board'+(RANGE==='all'?'?range=all':''));if(mine!==boardReq)return;const tb=$('lb');
       const day=t=>new Date(t).toLocaleDateString('en-US',{month:'short',day:'numeric',timeZone:'America/New_York'});
       if(b.since&&RANGE==='week')WEEK_OF=new Date(b.since).toLocaleDateString('en-US',{month:'short',day:'numeric',timeZone:'America/New_York'});tb.textContent='';$('lbwrap').hidden=false;
       const signin=ME?'':' Sign in with Discord to get on it.';
@@ -510,7 +519,8 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   }
 
   newGame();requestAnimationFrame(frame);
-  loadMe().then(loadBoard);
+  // A score finished signed out also counts if the player signed in somewhere else (Guess the Card) and came back.
+  loadMe().then(()=>{loadBoard();if(token())claimPending()});
 })();
 </script>
 </body>
