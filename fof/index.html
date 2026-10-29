@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Fact or Fiction: The Game · S.H.O.P.</title>
 <meta name="description" content="Five cards a week about the Fact or Fiction podcast. Say which ones really happened on the show.">
+<script>if(window.parent!==window)document.documentElement.classList.add('framed')</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap">
@@ -139,6 +140,10 @@ table.lb{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;f
 .discord{display:flex;align-items:center;justify-content:center;gap:8px;border-radius:10px;border:1px solid #5865f2;background:#5865f2;color:#fff;font:inherit;font-size:16px;padding:10px 14px;cursor:pointer}
 .note{margin:0;font-size:14px;color:var(--muted);text-align:center}
 .backlink{align-self:flex-start}
+/* Inside the Fourthwall frame the page is see-through so the section's background shows. A dark color-scheme on the
+   framed page would make the browser paint the frame opaque, so the root stays light and only the body is dark. */
+html.framed{color-scheme:light;background:transparent}
+html.framed body{background:transparent;color-scheme:dark}
 .status{text-align:center;margin:0;font-size:16px;color:var(--ink)}
 .pre{background:var(--felt);border:1px solid var(--card-edge);border-radius:12px;padding:20px 16px;text-align:center;display:flex;flex-direction:column;gap:8px}
 .pre .big{font-family:var(--display);font-size:clamp(18px,5vw,22px);line-height:1.3;color:var(--gold-lite)}
