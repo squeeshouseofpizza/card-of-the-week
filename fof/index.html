@@ -383,8 +383,8 @@ table.lb{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;f
     const fact=a.a==='fact';
     const quote=a.note?`<blockquote class="quote"><span class="label">From the crew</span>${esc(a.note)}</blockquote>`
       :`<blockquote class="quote"><span class="label">What was said${a.who?' · '+esc(a.who):''}</span>${esc(a.quote)}</blockquote>`;
-    const crowd=a.crowd?`<div class="crowd"><span>${a.crowd.fact}% said Fact · ${100-a.crowd.fact}% said Fiction</span><div class="bar"><i style="width:${a.crowd.fact}%"></i></div></div>`
-      :'<div class="crowd"><span>The crowd split shows once five people have answered.</span></div>';
+    // How other players answered. Hidden until five people have answered this card, so one player's pick isn't exposed.
+    const crowd=a.crowd?`<div class="crowd"><span>Other players: ${a.crowd.fact}% said Fact, ${100-a.crowd.fact}% said Fiction</span><div class="bar"><i style="width:${a.crowd.fact}%"></i></div></div>`:'';
     return `<div class="cardtop"><span>Card ${k+1} of ${S.cards.length}</span><span class="ep">${esc(a.label)}</span></div>
       <div class="stamp">${fact?'Fact':'Fiction'}</div>
       <p class="verdict ${a.ok?'r':'w'}"><span class="mark">${a.ok?'✓':'✕'}</span>${a.ok?'Right':'Missed'} · <b>${a.points>0?'+':''}${fmt(a.points)}</b> <span style="color:var(--muted);font-size:14px">(${a.sure?'I’m sure':'Lock it in'})</span></p>
