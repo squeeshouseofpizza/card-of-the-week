@@ -495,10 +495,10 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       const day=t=>new Date(t).toLocaleDateString('en-US',{month:'short',day:'numeric',timeZone:'America/New_York'});
       if(b.since&&RANGE==='week')WEEK_OF=new Date(b.since).toLocaleDateString('en-US',{month:'short',day:'numeric',timeZone:'America/New_York'});tb.textContent='';$('lbwrap').hidden=false;
       const signin=ME?'':' Sign in with Discord to get on it.';
-      if(!b.top.length){$('lbnote').textContent=RANGE==='all'?(Date.now()<b.launch?'All-time records start '+day(b.launch)+'. Scores before then are practice.':'No all-time scores yet.'+signin):'No scores yet this week.'+signin;return}
+      if(!b.top.length){$('lbnote').textContent=(RANGE==='all'?'No scores yet.':'No scores yet this week.')+signin;return}
       const rows=b.top.slice();if(b.me&&!rows.some(r=>r.me))rows.push(b.me);
       rows.forEach(r=>{const tr=el('tr',r.me?'me':null);tr.appendChild(el('td','r',String(r.rank)));const n=el('td','n');if(r.avatar){const i=el('img');i.src=r.avatar;i.alt='';n.appendChild(i)}n.appendChild(el('span',null,r.name));tr.appendChild(n);tr.appendChild(el('td','s',r.score.toLocaleString()));tb.appendChild(tr)});
-      $('lbnote').textContent=(RANGE==='all'?'Each player\'s best score since '+day(b.launch)+'.':'Resets Wednesday at 9am Eastern.')+signin;
+      $('lbnote').textContent=(RANGE==='all'?'Each player\'s best score ever.':'Resets Wednesday at 9am Eastern.')+signin;
     }catch(e){$('lbwrap').hidden=true}
   }
 
