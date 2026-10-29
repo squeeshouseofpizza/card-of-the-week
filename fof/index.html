@@ -185,13 +185,8 @@ table.lb{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;f
         <li>Sign in with Discord after you play to put your score on the board.</li>
       </ol>
     </details>
-    <div class="links"><button class="linkbtn" id="openBoard" type="button">Leaderboard</button></div>
-  </section>
-
-  <section id="boardPage" hidden>
-    <button class="linkbtn backlink" id="closeBoard" type="button">← Back</button>
-    <div id="boardSlot1"></div>
-    <div class="authrow" id="auth1"></div>
+    <div id="boardSlot0"></div>
+    <div class="authrow" id="auth0"></div>
   </section>
 
   <section id="game" hidden>
@@ -268,7 +263,7 @@ table.lb{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;f
   const etDay=ms=>new Date(ms).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'long',month:'long',day:'numeric'});
 
   // ---------- screens ----------
-  function show(ids){['cover','boardPage','game','table','results'].forEach(s=>$(s).hidden=!ids.includes(s));$('pips').hidden=!ids.includes('table');scrollTo(0,0)}
+  function show(ids){['cover','game','table','results'].forEach(s=>$(s).hidden=!ids.includes(s));$('pips').hidden=!ids.includes('table');scrollTo(0,0)}
   function renderCover(){
     const st=$('status'),play=$('play');st.hidden=true;play.hidden=true;$('seal').hidden=true;
     if(!S){st.hidden=false;st.textContent='Loading this week’s pile…';return}
@@ -287,12 +282,10 @@ table.lb{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;f
   function fmtLeft(ms){const m=Math.max(0,Math.ceil(ms/6e4)),d=Math.floor(m/1440),h=Math.floor(m%1440/60),mm=m%60;return(d?d+'d ':'')+h+'h '+String(mm).padStart(2,'0')+'m'}
   function startCountdown(){if(cdTimer)return;const up=()=>{const left=S.launch-Date.now();$('precd').textContent=fmtLeft(left);if(left<=0){clearInterval(cdTimer);cdTimer=null;if(!$('cover').hidden)setTimeout(()=>location.reload(),1500+Math.random()*20000)}};up();cdTimer=setInterval(up,15000)}
   $('play').onclick=()=>{if(S.done)return results();startGame()};
-  $('openBoard').onclick=()=>{show(['boardPage']);mountBoard('boardSlot1');renderAuth('auth1')};
-  $('closeBoard').onclick=()=>{show(['cover'])};
 
   async function load(){
     try{S=await api('/fof/week?'+q({client:CLIENT}))}catch(e){S=null;$('status').hidden=false;$('status').textContent='Couldn’t load the game. Refresh to try again.';return}
-    renderCover();
+    renderCover();mountBoard('boardSlot0');renderAuth('auth0');
   }
 
   // ---------- auth ----------
@@ -312,7 +305,7 @@ table.lb{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;f
       try{const r=await api('/auth/claim?nonce='+nonce);if(r.token){clearInterval(iv);store.set('shopweekly.token',r.token);await loadMe();
         // Loading the week again moves a pile played before signing in onto the account.
         try{S=await api('/fof/week?'+q({client:CLIENT}))}catch(e){}
-        ['auth1','auth2'].forEach(renderAuth);refreshBoards();renderCover()}}catch(e){}
+        ['auth0','auth2'].forEach(renderAuth);refreshBoards();renderCover()}}catch(e){}
     },1000);
   }
 
@@ -441,7 +434,7 @@ table.lb{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;f
       <button class="btn again" id="toCover" type="button">Back to the box</button>`;
     $('share').textContent=share;
     $('copy').onclick=()=>copyText(share).then(()=>{$('copy').textContent='Copied'},()=>{$('copy').textContent='Select the text above to copy'});
-    $('toCover').onclick=()=>{renderCover();show(['cover'])};
+    $('toCover').onclick=()=>{renderCover();show(['cover']);mountBoard('boardSlot0');renderAuth('auth0')};
     mountBoard('boardSlot2');renderAuth('auth2');
     if(!reduce&&right===S.cards.length&&!store.get('fof.party.'+S.week,'')){store.set('fof.party.'+S.week,'1');confetti()}
   }
