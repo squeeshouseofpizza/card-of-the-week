@@ -1,4 +1,5 @@
-import { fofRoute } from './fof.js';
+import { fofRoute, openSealed } from './fof.js';
+import GTC from './gtc-bank.js';
 
 // Card of the Week game server: a Cloudflare Worker with a D1 database bound as DB.
 //
@@ -58,13 +59,23 @@ const intList = v => String(v || '').split(',').map(s => parseInt(s, 10)).filter
 function schedule(env) { return intList(env.SCHEDULE); }
 // Real weeks count up from the start of the schedule; preview and test weeks (-1..-6) count down from the end.
 // A row in the overrides table replaces a week's scheduled card (Brian's hand-picked weeks; week -1 is the preview).
+// The schedule, deep cuts and picked weeks come from gtc-bank.js (built from shop-hq docs/gtc/schedule.json, so
+// changes are a push, not a dashboard edit). The older SCHEDULE / DEEP_CUTS secrets are only a fallback.
+let GTC_PLAIN = null;
+async function gtc(env) {
+  if (GTC_PLAIN) return GTC_PLAIN;
+  try { GTC_PLAIN = await openSealed(env, GTC); return GTC_PLAIN; } catch (e) { return { schedule: [], deep: [], overrides: {} }; }
+}
 async function answerIndex(env, week) {
+  const G = await gtc(env);
+  // Order: a week picked in schedule.json, then a row in the D1 overrides table, then a deep cut, then the schedule.
+  if (G.overrides && Number.isInteger(G.overrides[week])) return G.overrides[week];
   if (week > 0 || week === -1) {
     const o = await env.DB.prepare('SELECT card FROM overrides WHERE week = ?').bind(week).first().catch(() => null);
     if (o && BYNAME.has(String(o.card).toLowerCase())) return BYNAME.get(String(o.card).toLowerCase());
   }
-  if (isDeep(week)) { const d = intList(env.DEEP_CUTS); if (d.length) return d[Math.floor(week / DEEP_EVERY) % d.length]; }
-  const s = schedule(env); if (!s.length) return null;
+  if (isDeep(week)) { const d = G.deep.length ? G.deep : intList(env.DEEP_CUTS); if (d.length) return d[Math.floor(week / DEEP_EVERY) % d.length]; }
+  const s = G.schedule.length ? G.schedule : schedule(env); if (!s.length) return null;
   return week > 0 ? s[(week - 1) % s.length] : s[s.length - 1 - ((-week - 1) % s.length)];
 }
 
