@@ -390,6 +390,12 @@ details p{margin:8px 0}
     const rows=ST.fb.map(fb=>fb.map(c=>c[0]==='H'?'🟩':c[0]==='N'?'🟨':'⬛').join(''));
     return'S.H.O.P. Guess the Card '+weekLabel(cur)+' '+(ST.won?ST.guesses.length:'X')+'/'+MAXG+'\n'+rows.join('\n')+'\n'+SHARE_URL;
   }
+  function copyText(t){ // works inside the Fourthwall frame, where the newer clipboard API is blocked
+    const ta=document.createElement('textarea');ta.value=t;ta.setAttribute('readonly','');ta.style.cssText='position:fixed;top:0;left:0;opacity:0;pointer-events:none';
+    document.body.appendChild(ta);ta.select();ta.setSelectionRange(0,t.length);let ok=false;try{ok=document.execCommand('copy')}catch(e){}ta.remove();
+    if(ok)return Promise.resolve();
+    return navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(t):Promise.reject();
+  }
   function selectPre(pre){const r=document.createRange();r.selectNodeContents(pre);const s=getSelection();s.removeAllRanges();s.addRange(r)}
   let tick=null;
 
@@ -417,7 +423,7 @@ details p{margin:8px 0}
     const pre=el('pre','share',shareText());m.appendChild(pre);
     const act=el('div','actions');const copy=el('button','btn','Copy result');copy.type='button';
     copy.addEventListener('click',()=>{const t=shareText(),done=()=>{copy.textContent='Copied';setTimeout(()=>copy.textContent='Copy result',1600)};
-      if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(done).catch(()=>selectPre(pre));else selectPre(pre)});
+      copyText(t).then(done).catch(()=>selectPre(pre))});
     act.appendChild(copy);
     const q=encodeURIComponent(a.name.split(' // ')[0]);
     const yt=el('a','btn ghost','Find it in our videos');yt.href='https://www.youtube.com/@SqueesHouseofPizza/search?query='+q;yt.target='_blank';yt.rel='noopener';act.appendChild(yt);
