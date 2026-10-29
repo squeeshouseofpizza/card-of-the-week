@@ -26,6 +26,7 @@ html.framed body{background:transparent;color-scheme:dark}
 .pre{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px;text-align:center;display:flex;flex-direction:column;gap:8px}
 .pre .big{font-family:var(--display);font-size:24px;color:var(--gold-lite)}
 .pre .cd{font-family:var(--mono);font-size:18px}
+.livebar{display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;border:1px solid var(--gold);border-radius:10px;padding:10px 12px;margin:0 0 12px;background:var(--panel)}
 .testbar{border:1px dashed var(--gold-dim);color:var(--gold-lite);font-size:14px;padding:8px 12px;border-radius:6px;text-align:center}
 footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:4px}
 footer a{color:var(--gold)}
@@ -240,12 +241,16 @@ details p{margin:8px 0}
   const PIPC={W:'#f3ecd2',U:'#8fb7d8',B:'#a99bb5',R:'#d98563',G:'#8db577'};
   const FRAME={W:'#e8e0c4',U:'#7fa8c9',B:'#7d6f86',R:'#c4694a',G:'#7d9e6a',M:'#cdb26a',C:'#a59a87'};
   const $=id=>document.getElementById(id);
-  const store={get(k,f){try{const v=localStorage.getItem(k);return v?JSON.parse(v):f}catch(e){return f}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+  // Values are kept in memory as well, so a browser that blocks storage in the Fourthwall frame (Chrome Incognito, for
+  // one) keeps the same player id and sign-in for the visit instead of starting a new game on every guess.
+  const MEM=new Map();
+  const store={get(k,f){try{const v=localStorage.getItem(k);if(v)return JSON.parse(v)}catch(e){}return MEM.has(k)?MEM.get(k):f},set(k,v){MEM.set(k,v);try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){MEM.delete(k);try{localStorage.removeItem(k)}catch(e){}}};
   const K=TEST?'shoptest.':'shopweekly.';
   function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
   function fail(msg){const b=$('errbar');b.textContent=msg;b.hidden=false}
+  function unfail(){$('errbar').hidden=true}
 
-  if(window.parent!==window){document.documentElement.classList.add('framed');const post=()=>parent.postMessage({cardOfTheWeek:true,height:document.documentElement.scrollHeight},'*');new ResizeObserver(post).observe(document.body);addEventListener('load',post)}
+  if(window.parent!==window){document.documentElement.classList.add('framed');const wrap=document.querySelector('.wrap');const post=()=>parent.postMessage({cardOfTheWeek:true,height:Math.ceil(wrap.getBoundingClientRect().bottom+scrollY)},'*');new ResizeObserver(post).observe(wrap);addEventListener('load',post)}
   if(TEST)$('testbar').hidden=false;
 
   const hcb=$('hc');
@@ -271,6 +276,8 @@ details p{margin:8px 0}
   }catch(e){fail(API?'The game isn\'t loading right now. Try again in a minute.':'The game isn\'t connected yet.');return}
   byName=new Map(DATA.cards.map(c=>[c[0].toLowerCase(),c]));
   const NOW=TEST?-2:META.week;
+  // Countdowns use the server's clock, so a phone that's a minute fast doesn't jump the gun.
+  const OFF=META.now?META.now-Date.now():0,srv=()=>Date.now()+OFF;
 
   // ---------- helpers ----------
   const setInfo=i=>DATA.sets[i];
@@ -310,11 +317,12 @@ details p{margin:8px 0}
     const nonce=Array.from(crypto.getRandomValues(new Uint8Array(18)),x=>x.toString(16).padStart(2,'0')).join('');
     const w=window.open(API+'/auth/login?nonce='+nonce,'cotw-login','width=520,height=780');
     if(!w){fail('Your browser blocked the sign-in window. Allow pop-ups for this page and try again.');return}
+    unfail();
     const a=$('auth');a.classList.add('busy');
     let tries=0;const iv=setInterval(async()=>{
       tries++;
       try{const r=await api('/auth/claim?nonce='+nonce);if(r.token){clearInterval(iv);store.set('shopweekly.token',r.token);a.classList.remove('busy');await loadMe();refresh();return}}catch(e){}
-      if(tries>90||(w.closed&&tries>3&&tries%5===0&&tries>20)){clearInterval(iv);a.classList.remove('busy')}
+      if(tries>90){clearInterval(iv);a.classList.remove('busy')}
     },2000);
   }
 
@@ -336,7 +344,7 @@ details p{margin:8px 0}
     const board=$('board');board.querySelectorAll('.row,.empty').forEach(e=>e.remove());
     ST.guesses.forEach((n,i)=>{
       const card=byName.get(n.toLowerCase()),fb=ST.fb[i],row=el('div','row'+(animateLast&&i===ST.guesses.length-1?' enter':''));
-      const win=fb.every(x=>x==='H');
+      const win=ST.won&&i===ST.guesses.length-1;  // another card can match on every column without being the answer
       row.appendChild(el('div','tile name'+(win?' win':''),card[0]));
       tiles(card,fb).forEach(c=>{const t=el('div','tile '+c.cls);if(c.cls)t.appendChild(el('span','mk',c.cls==='hit'?'✓':'≈'));t.appendChild(el('span',null,c.txt));if(c.sub)t.appendChild(el('small',null,c.sub));
         t.setAttribute('aria-label',c.txt+(c.cls==='hit'?', exact':c.cls==='near'?', close':', no match')+(c.sub?', answer is '+c.sub.replace(/[←→↑↓]/g,'').trim():''));row.appendChild(t)});
@@ -365,11 +373,19 @@ details p{margin:8px 0}
     box.appendChild(col);
     const c=el('div','hint'+(misses>=ART_AT?'':' locked'));c.appendChild(el('span','k','Card art'));
     const ab=el('div','artbox'+(misses>=ART_AT?'':' lock'));
-    if(misses>=ART_AT&&h.art){const im=el('img');im.alt='Art from this week\'s card';im.src=h.art;ab.appendChild(im);c.appendChild(ab);c.appendChild(el('span','credit','Illus. '+(h.artist||'')+' · ©Wizards of the Coast'))}
+    if(misses>=ART_AT&&h.art){const im=el('img');im.alt='Art from this week\'s card';artURL(h.art).then(u=>{if(u)im.src=u;else ab.textContent='No art available'});ab.appendChild(im);c.appendChild(ab);c.appendChild(el('span','credit','Illus. '+(h.artist||'')+' · ©Wizards of the Coast'))}
     else{ab.textContent=misses>=ART_AT?'No art available':'Unlocks after '+ART_AT+' misses';c.appendChild(ab)}
     box.appendChild(c);
   }
 
+  // The art hint comes through the game server with your sign-in, so its address doesn't name the card.
+  const ARTS=new Map();
+  function artURL(path){
+    if(!path.startsWith('/'))return Promise.resolve(path);
+    const k=path+'|'+cur;if(!ARTS.has(k)){const h={};const t=token();if(t)h.Authorization='Bearer '+t;
+      ARTS.set(k,fetch(API+path+'&client='+encodeURIComponent(clientId()),{headers:h}).then(r=>r.ok?r.blob():null).then(b=>b?URL.createObjectURL(b):'').catch(()=>{ARTS.delete(k);return''}))}
+    return ARTS.get(k);
+  }
   function costPips(cost){
     const box=el('span','cost');
     (cost||'').match(/\{[^}]+\}/g)?.forEach(sym=>{sym=sym.slice(1,-1);const m=el('span','m',/^\d+$|^[XY]$/.test(sym)?sym:'');const col=sym.split('/')[0];m.style.background=PIPC[col]||'#c9c0ad';if(PIPC[col])m.title=COLN[col];box.appendChild(m)});
@@ -409,7 +425,7 @@ details p{margin:8px 0}
     m.appendChild(el('p','verdict'+(ST.won?'':' lose'),ST.won?(ST.guesses.length===1?'First try.':'Got it in '+ST.guesses.length+'.'):'It was '+a.name+'.'));
     if(ST.deep){const d=el('p','deep');d.appendChild(el('b',null,'Deep cut'));d.appendChild(document.createTextNode(ST.won?'Not many people would know that one.':'That one was obscure on purpose. Your streak is safe.'));m.appendChild(d)}
     if(!TEST){const nx=el('div','next');nx.appendChild(el('span',null,cur<0?'Week 1':'Next card'));const left=el('span',null,'');nx.appendChild(left);m.appendChild(nx);
-      const upd=()=>{left.textContent=fmtLeft((cur<0?META.launch:META.next)-Date.now())+' · Wed '+new Date(cur<0?META.launch:META.next).toLocaleDateString(undefined,{month:'short',day:'numeric'})+', 9am ET'};upd();tick=setInterval(upd,30000)}
+      const upd=()=>{left.textContent=fmtLeft((cur<0?META.launch:META.next)-srv())+' · Wed '+new Date(cur<0?META.launch:META.next).toLocaleDateString(undefined,{month:'short',day:'numeric'})+', 9am ET'};upd();tick=setInterval(upd,30000)}
     const statBox=el('div');m.appendChild(statBox);
     api('/stats?week='+cur).then(s=>{
       if(!s||!s.players){statBox.appendChild(el('p','note','Stats show up after five people finish.'));return}
@@ -462,6 +478,7 @@ details p{margin:8px 0}
 
   async function refresh(animate){
     try{ST=await api('/state?week='+cur+'&client='+clientId())}catch(e){fail('Your game didn\'t load. Refresh and try again.');return}
+    unfail();
     if(ST.done)finishStreak();
     render(!!animate);renderBoard();
   }
@@ -478,7 +495,11 @@ details p{margin:8px 0}
       $('guess').value='';closeSugg();
       if(ST.done){finishStreak();renderBoard()}
       render(true);if(!ST.done)$('guess').focus();
-    }catch(e){$('err').textContent=e.code==='week'?'That week is gone. Pick another one.':'That guess didn\'t go through. Try again.'}
+    }catch(e){
+      // The guess may have been saved even though the reply was lost, so reload the game from the server.
+      if(e.code==='week'){$('err').textContent='That week is gone. Pick another one.'}
+      else{await refresh(false);$('err').textContent=ST.guesses.some(x=>x.toLowerCase()===c[0].toLowerCase())?'':'That guess didn\'t go through. Try again.'}
+    }
     finally{sending=false;$('entry').classList.remove('busy')}
   }
 
@@ -505,11 +526,28 @@ details p{margin:8px 0}
   });
   $('guess').addEventListener('blur',()=>setTimeout(closeSugg,120));
 
+  // ---------- a new card going live while the page is open ----------
+  // Checked every 30 seconds and when the tab comes back. Reloads if you're not partway through a game;
+  // otherwise shows a bar so you can finish first.
+  let liveShown=false;
+  async function checkLive(){
+    if(TEST||liveShown)return;
+    const at=NOW<1?META.launch:META.next;if(srv()<at)return;
+    try{const m=await api('/meta');if(!(m.week>Math.max(NOW,0)))return;
+      if(!sending&&(ST.done||!ST.guesses.length||cur!==NOW))return location.reload();
+      liveShown=true;const b=el('div','livebar');b.appendChild(el('span',null,'A new card is live.'));const go=el('button','btn','Play it');go.type='button';go.addEventListener('click',()=>location.reload());b.appendChild(go);
+      $('game').parentNode.insertBefore(b,$('game'));
+    }catch(e){}
+  }
+  setInterval(checkLive,30000+Math.random()*15000);
+  {const at=NOW<1?META.launch:META.next,ms=at-srv()+2000+Math.random()*15000;if(!TEST&&ms<2**31-1)setTimeout(checkLive,Math.max(0,ms))}
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkLive()});
+
   // ---------- start ----------
   await loadMe();renderBanner();
   const PREVIEW=NOW<1&&!TEST;
   if(PREVIEW){
-    $('pre').hidden=false;let rl=false;const up=()=>{const left=META.launch-Date.now();$('precd').textContent=fmtLeft(left);if(left<=0&&!rl){rl=true;setTimeout(()=>location.reload(),1500+Math.random()*20000)}};up();setInterval(up,15000);
+    $('pre').hidden=false;const up=()=>{const left=META.launch-srv();$('precd').textContent=fmtLeft(left);if(left<=0)setTimeout(checkLive,1500+Math.random()*20000)};up();setInterval(up,15000);
     cur=-1;$('day').hidden=true;document.querySelector('.bar span:nth-child(3)').hidden=true;
     $('game').hidden=false;refresh(false);return;
   }
