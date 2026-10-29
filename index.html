@@ -509,7 +509,7 @@ details p{margin:8px 0}
   await loadMe();renderBanner();
   const PREVIEW=NOW<1&&!TEST;
   if(PREVIEW){
-    $('pre').hidden=false;const up=()=>{$('precd').textContent=fmtLeft(META.launch-Date.now())};up();setInterval(up,30000);
+    $('pre').hidden=false;let rl=false;const up=()=>{const left=META.launch-Date.now();$('precd').textContent=fmtLeft(left);if(left<=0&&!rl){rl=true;setTimeout(()=>location.reload(),1500+Math.random()*20000)}};up();setInterval(up,15000);
     cur=-1;$('day').hidden=true;document.querySelector('.bar span:nth-child(3)').hidden=true;
     $('game').hidden=false;refresh(false);return;
   }
