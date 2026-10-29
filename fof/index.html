@@ -101,14 +101,21 @@ pre.share{margin:0;background:var(--ground);border:1px solid var(--card-edge);bo
 /* Cover: the podcast art as a game box lid, with a box side carrying the usual player count, card count and play time. */
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .cover{display:flex;flex-direction:column;gap:18px;align-items:stretch}
-.box{position:relative;width:min(100%,430px);margin:10px auto 0;filter:drop-shadow(0 22px 26px rgba(0,0,0,.6))}
-.lid{position:relative;padding:9px 9px 12px;border-radius:12px;background:linear-gradient(160deg,#4a3720,#2a1e11 55%,#1d150c);border:1px solid #7a5c32}
-.lid img{display:block;width:100%;height:auto;aspect-ratio:1;border-radius:6px;border:1px solid rgba(214,163,74,.6);background:#2a2016}
+/* The cover as a game box, drawn the way box mockups are: the lid flat and undistorted, with the right side and the
+   top drawn as slanted panels behind it so it reads as a box with depth. */
+.box{--dx:26px;--dy:16px;position:relative;width:min(calc(100% - 44px),390px);margin:calc(14px + var(--dy)) auto 10px;transform:translateX(calc(var(--dx) / -2))}
+.box::after{content:"";position:absolute;left:2%;right:-8%;bottom:-20px;height:40px;background:radial-gradient(closest-side,rgba(0,0,0,.65),rgba(0,0,0,0));z-index:-1}
+.b3{position:relative}
+.lid{position:relative;z-index:2;padding:9px 9px 12px;border-radius:3px;background:linear-gradient(160deg,#4a3720,#2a1e11 55%,#1d150c);border:1px solid #7a5c32}
+.spine{position:absolute;z-index:1;top:0;bottom:0;left:100%;width:var(--dx);transform-origin:left top;transform:skewY(-31.6deg);background:linear-gradient(90deg,#24190e,#140d07);border:1px solid #6b5230;border-left:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.spine span{writing-mode:vertical-rl;font-family:var(--display);font-weight:700;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);white-space:nowrap;transform:skewY(31.6deg)}
+.topface{position:absolute;z-index:1;left:0;right:0;bottom:100%;height:var(--dy);transform-origin:left bottom;transform:skewX(-58.4deg);background:linear-gradient(#6a5030,#45331d);border:1px solid #8a6a3a;border-bottom:0}
+.lid img{display:block;width:100%;height:auto;aspect-ratio:1;border-radius:3px;border:1px solid rgba(214,163,74,.6);background:#2a2016}
 .plaque{display:block;margin:10px auto 0;width:max-content;max-width:100%;font-family:var(--display);font-weight:700;font-size:clamp(17px,5vw,21px);letter-spacing:.34em;padding:6px 14px 6px 20px;color:#f1e3c2;background:linear-gradient(#4f3a22,#2c1f12);border:2px solid #b8893d;border-radius:6px;box-shadow:inset 0 0 0 2px #1f160c,0 2px 0 #120d07}
-.side{display:grid;grid-template-columns:repeat(3,1fr);margin:0 10px;padding:10px 6px 9px;background:linear-gradient(#251a0f,#160f08);border:1px solid #6b5230;border-top:0;border-radius:0 0 9px 9px;transform:perspective(520px) rotateX(-26deg);transform-origin:top center}
-.side span{display:flex;flex-direction:column;align-items:center;gap:3px;font-family:var(--display);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-lite)}
-.side svg{width:20px;height:20px;stroke:var(--gold);fill:none;stroke-width:1.6}
-.seal{position:absolute;top:-12px;right:-10px;width:76px;height:76px;border-radius:50%;display:grid;place-content:center;text-align:center;font-family:var(--display);font-weight:700;font-size:11px;letter-spacing:.14em;line-height:1;color:#2a1c08;background:radial-gradient(circle at 35% 30%,#f6d687,#cf9a3a 58%,#9c6f22);box-shadow:0 4px 10px rgba(0,0,0,.5),inset 0 0 0 4px rgba(255,240,200,.25);transform:rotate(12deg)}
+.specs{display:flex;justify-content:center;gap:clamp(18px,7vw,40px)}
+.specs span{display:flex;align-items:center;gap:6px;font-family:var(--display);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-lite)}
+.specs svg{width:18px;height:18px;stroke:var(--gold);fill:none;stroke-width:1.6}
+.seal{position:absolute;z-index:3;top:-12px;right:-10px;width:76px;height:76px;border-radius:50%;display:grid;place-content:center;text-align:center;font-family:var(--display);font-weight:700;font-size:11px;letter-spacing:.14em;line-height:1;color:#2a1c08;background:radial-gradient(circle at 35% 30%,#f6d687,#cf9a3a 58%,#9c6f22);box-shadow:0 4px 10px rgba(0,0,0,.5),inset 0 0 0 4px rgba(255,240,200,.25);transform:rotate(12deg)}
 .seal b{display:block;font-size:26px;letter-spacing:0;margin-top:2px}
 .seal:not(:has(b)){font-size:10.5px;letter-spacing:.1em}
 .tagline{text-align:center;margin:4px 0 0;font-size:18px;color:var(--ink)}
@@ -165,16 +172,20 @@ html.framed body{background:transparent;color-scheme:dark}
   <section class="cover" id="cover">
     <h1 class="sr">Fact or Fiction: The Game</h1>
     <div class="box">
-      <div class="lid">
-        <img src="cover.jpg" width="900" height="900" alt="Fact or Fiction podcast cover: the goblin chef at the pizza oven">
-        <span class="plaque">The Game</span>
-      </div>
-      <div class="side" aria-label="1 player, 5 cards, about 2 minutes">
-        <span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>1 player</span>
-        <span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="11" height="15" rx="2"/><path d="M9 3h9a2 2 0 0 1 2 2v13"/></svg>5 cards</span>
-        <span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></svg>2 minutes</span>
+      <div class="b3">
+        <div class="lid">
+          <img src="cover.jpg" width="900" height="900" alt="Fact or Fiction podcast cover: the goblin chef at the pizza oven">
+          <span class="plaque">The Game</span>
+        </div>
+        <div class="spine" aria-hidden="true"><span>Fact or Fiction · The Game</span></div>
+        <div class="topface" aria-hidden="true"></div>
       </div>
       <div class="seal" id="seal" aria-hidden="true" hidden>Week<b id="sealWk"></b></div>
+    </div>
+    <div class="specs" aria-label="1 player, 5 cards, about 2 minutes">
+      <span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>1 player</span>
+      <span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="11" height="15" rx="2"/><path d="M9 3h9a2 2 0 0 1 2 2v13"/></svg>5 cards</span>
+      <span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></svg>2 minutes</span>
     </div>
     <p class="tagline">Five cards about the podcast. Say which ones really happened on the show.</p>
     <p class="when" id="when">New pile every Monday at 9am Eastern. One try a week.</p>
