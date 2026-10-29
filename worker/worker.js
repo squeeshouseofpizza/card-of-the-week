@@ -3,11 +3,11 @@ import GTC from './gtc-bank.js';
 
 // Card of the Week game server: a Cloudflare Worker with a D1 database bound as DB.
 //
-// It holds the weekly answers (the SCHEDULE secret), checks every guess so the answer never reaches
+// It reads the weekly answers from gtc-bank.js (encrypted), checks every guess so the answer never reaches
 // the browser before you finish, handles Discord sign-in, and serves community stats and the leaderboard.
 //
-// Secrets (Settings > Variables and Secrets): SCHEDULE, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, and FOF_KEY for
-// Fact or Fiction: The Game (see fof.js).
+// Secrets (Settings > Variables and Secrets): DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, and FOF_KEY, which opens both
+// gtc-bank.js and Fact or Fiction's fof-bank.js (see fof.js). The old SCHEDULE and DEEP_CUTS secrets are no longer read.
 
 const GAME_ORIGIN = 'https://squeeshouseofpizza.github.io';
 const CARDS_URL = GAME_ORIGIN + '/card-of-the-week/data/cards.json';
@@ -16,7 +16,7 @@ const DROP_HOUR = 9;                    // new card every Wednesday at 9am Easte
 const TZ = 'America/New_York';
 const MAX_GUESSES = 6, ARCHIVE = 4, ARTIST_AT = 3, FLAVOR_AT = 4, ART_AT = 5, TEST_WEEKS = 6;  // week -1 is the public preview, -2..-6 are ?test cards
 const MIN_STATS_PLAYERS = 5;
-// Deep cut weeks: an obscure card about twice a year (weeks 13, 39, 65, ...), drawn from the DEEP_CUTS secret.
+// Deep cut weeks: an obscure card about twice a year (weeks 13, 39, 65, ...), from the deep cuts list in gtc-bank.js.
 const DEEP_EVERY = 26, DEEP_OFFSET = 13;
 const isDeep = w => w > 0 && w % DEEP_EVERY === DEEP_OFFSET;
 const SESSION_DAYS = 180;
@@ -55,28 +55,33 @@ async function cards() {
   BYNAME = new Map(CARDS.cards.map((c, i) => [c[0].toLowerCase(), i]));
   return CARDS;
 }
-const intList = v => String(v || '').split(',').map(s => parseInt(s, 10)).filter(n => Number.isInteger(n));
-function schedule(env) { return intList(env.SCHEDULE); }
-// Real weeks count up from the start of the schedule; preview and test weeks (-1..-6) count down from the end.
-// A row in the overrides table replaces a week's scheduled card (Brian's hand-picked weeks; week -1 is the preview).
-// The schedule, deep cuts and picked weeks come from gtc-bank.js (built from shop-hq docs/gtc/schedule.json, so
-// changes are a push, not a dashboard edit). The older SCHEDULE / DEEP_CUTS secrets are only a fallback.
-let GTC_PLAIN = null;
+// Real weeks count up from the start of the schedule; ?test weeks (-2..-6) come from the bank's own test list.
+// The schedule, deep cuts, picked weeks and test cards come from gtc-bank.js, built from shop-hq docs/gtc/schedule.json,
+// so changes are a push, not a dashboard edit. The bank names cards rather than pointing at positions in cards.json,
+// so rebuilding the card list can't silently change an answer. If the bank won't open, guessing stops with an error
+// rather than scoring anyone against a different answer.
+let GTC_PLAIN = null, GTC_FAIL = 0;
 async function gtc(env) {
   if (GTC_PLAIN) return GTC_PLAIN;
-  try { GTC_PLAIN = await openSealed(env, GTC); return GTC_PLAIN; } catch (e) { return { schedule: [], deep: [], overrides: {} }; }
+  if (Date.now() - GTC_FAIL < 60e3) throw new Error('Guess the Card schedule did not open');
+  try { GTC_PLAIN = await openSealed(env, GTC); return GTC_PLAIN; } catch (e) { GTC_FAIL = Date.now(); throw new Error('Guess the Card schedule did not open'); }
+}
+function answerName(G, week) {
+  // Order: a week picked in schedule.json, then a test card, then a deep cut, then the schedule.
+  if (G.overrides && G.overrides[week] != null) return G.overrides[week];
+  if (week < -1 && G.test && G.test.length) return G.test[(-week - 2) % G.test.length];
+  if (isDeep(week) && G.deep.length) return G.deep[Math.floor(week / DEEP_EVERY) % G.deep.length];
+  const s = G.schedule; if (!s.length) return null;
+  return week > 0 ? s[(week - 1) % s.length] : s[s.length - 1 - ((-week - 1) % s.length)];
 }
 async function answerIndex(env, week) {
-  const G = await gtc(env);
-  // Order: a week picked in schedule.json, then a row in the D1 overrides table, then a deep cut, then the schedule.
-  if (G.overrides && Number.isInteger(G.overrides[week])) return G.overrides[week];
-  if (week > 0 || week === -1) {
-    const o = await env.DB.prepare('SELECT card FROM overrides WHERE week = ?').bind(week).first().catch(() => null);
-    if (o && BYNAME.has(String(o.card).toLowerCase())) return BYNAME.get(String(o.card).toLowerCase());
-  }
-  if (isDeep(week)) { const d = G.deep.length ? G.deep : intList(env.DEEP_CUTS); if (d.length) return d[Math.floor(week / DEEP_EVERY) % d.length]; }
-  const s = G.schedule.length ? G.schedule : schedule(env); if (!s.length) return null;
-  return week > 0 ? s[(week - 1) % s.length] : s[s.length - 1 - ((-week - 1) % s.length)];
+  const G = await gtc(env), n = answerName(G, week);
+  if (n === null || n === undefined) return null;
+  if (typeof n === 'number') return n;   // banks built before Oct 29 2026 stored positions
+  await cards();
+  const i = BYNAME.get(String(n).toLowerCase());
+  if (i === undefined) throw new Error(`Answer card "${n}" is missing from cards.json`);
+  return i;
 }
 
 // ---------- feedback ----------
@@ -139,6 +144,7 @@ async function user(req, env) {
 }
 
 function weekAllowed(week, now) {
+  if (!Number.isInteger(week)) return false;
   if (week < 0) return week >= -TEST_WEEKS;
   return Number.isInteger(week) && week >= 1 && week <= now && week >= now - ARCHIVE;
 }
@@ -171,7 +177,8 @@ async function stateFor(env, D, week, row) {
     out.hints = {};
     if (misses >= ARTIST_AT) out.hints.artist = s ? s.artist : '';
     if (misses >= FLAVOR_AT) out.hints.flavor = s ? s.flavor : '';
-    if (misses >= ART_AT && s) out.hints.art = s.crop;
+    // The art goes through this Worker: Scryfall's image address contains the card's id, which would give the answer away.
+    if (misses >= ART_AT && s && s.crop) out.hints.art = '/art?week=' + week;
     if (out.done) out.answer = { index: ai, ...(s || { name: D.cards[ai][0] }) };
   }
   return out;
@@ -191,6 +198,15 @@ async function boardCache(key, ttl, fn) {
 }
 function forgetBoards(week) { BOARD_MEMO.delete('pz-all'); BOARD_MEMO.delete('pz-week' + week); }
 
+// Guess the Card's stats and leaderboard are cached per Worker instance too (60 and 20 seconds); the signed-in
+// player's own leaderboard row is always read fresh.
+const GTC_MEMO = new Map();
+async function memo(key, ttl, fn) {
+  const hit = GTC_MEMO.get(key);
+  if (hit && Date.now() - hit.at < ttl * 1000) return hit.v;
+  const v = await fn(); GTC_MEMO.set(key, { at: Date.now(), v }); return v;
+}
+
 // ---------- routes ----------
 export default {
   async fetch(req, env) {
@@ -208,7 +224,7 @@ export default {
         const retired = now - ARCHIVE - 1;
         let r = null;
         if (retired >= 1) { const D = await cards(); const i = await answerIndex(env, retired); const s = await scry(D.cards[i][0]); r = { week: retired, name: D.cards[i][0], artist: s ? s.artist : '', crop: s ? s.crop : '' }; }
-        return J({ week: now, launch: LAUNCH_MS, next: weekStart(Math.max(now, 0) + 1), retired: r, archive: ARCHIVE }, 200, origin);
+        return J({ week: now, now: Date.now(), launch: LAUNCH_MS, next: weekStart(Math.max(now, 0) + 1), retired: r, archive: ARCHIVE }, 200, origin);
       }
 
       if (path === '/state' && req.method === 'GET') {
@@ -241,22 +257,40 @@ export default {
         if (guesses.some(g => g.toLowerCase() === name.toLowerCase())) return J({ error: 'repeat' }, 400, origin);
         guesses.push(name);
         const won = gi === ai ? 1 : 0, done = won || guesses.length >= MAX_GUESSES ? 1 : 0;
+        // Written only if nothing changed since the read, so two tabs (or a double submit) can't overwrite each other.
+        let w;
         if (!row) {
-          await env.DB.prepare('INSERT INTO plays (week, player, discord_id, started_at, finished_at, guesses, won, done) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+          w = await env.DB.prepare('INSERT OR IGNORE INTO plays (week, player, discord_id, started_at, finished_at, guesses, won, done) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
             .bind(week, pk.key, pk.u ? pk.u.discord_id : null, t, done ? t : null, JSON.stringify(guesses), won, done).run();
         } else {
-          await env.DB.prepare('UPDATE plays SET guesses = ?, won = ?, done = ?, finished_at = ? WHERE week = ? AND player = ? AND done = 0')
-            .bind(JSON.stringify(guesses), won, done, done ? t : null, week, pk.key).run();
+          w = await env.DB.prepare('UPDATE plays SET guesses = ?, won = ?, done = ?, finished_at = ? WHERE week = ? AND player = ? AND done = 0 AND guesses = ?')
+            .bind(JSON.stringify(guesses), won, done, done ? t : null, week, pk.key, row.guesses).run();
         }
+        const wrote = !w || !w.meta || w.meta.changes === undefined || w.meta.changes > 0;
         row = await env.DB.prepare('SELECT * FROM plays WHERE week = ? AND player = ?').bind(week, pk.key).first();
-        return J(await stateFor(env, D, week, row), 200, origin);
+        if (wrote && done) { GTC_MEMO.delete('lb' + week); GTC_MEMO.delete('st' + week); }
+        return J(await stateFor(env, D, week, row), wrote ? 200 : 409, origin);
       }
 
+      if (path === '/art' && req.method === 'GET') {
+        const week = parseInt(url.searchParams.get('week'), 10);
+        if (!weekAllowed(week, now)) return J({ error: 'week' }, 400, origin);
+        const pk = await playerKey(req, env, week, url.searchParams.get('client'));
+        if (!pk) return J({ error: 'client' }, 400, origin);
+        const row = await env.DB.prepare('SELECT guesses, won, done FROM plays WHERE week = ? AND player = ?').bind(week, pk.key).first();
+        const g = row ? JSON.parse(row.guesses).length : 0, misses = row && row.won ? g - 1 : g;
+        if (!(row && row.done) && misses < ART_AT) return J({ error: 'locked' }, 403, origin);
+        const D = await cards(), s = await scry(D.cards[await answerIndex(env, week)][0]);
+        if (!s || !s.crop) return J({ error: 'none' }, 404, origin);
+        const img = await fetch(s.crop, { cf: { cacheTtl: 86400 } });
+        if (!img.ok) return J({ error: 'art' }, 502, origin);
+        return new Response(img.body, { headers: { 'Content-Type': img.headers.get('Content-Type') || 'image/jpeg', 'Cache-Control': 'private, max-age=3600', ...cors(origin) } });
+      }
       if (path === '/stats') {
         const week = parseInt(url.searchParams.get('week'), 10);
         if (!weekAllowed(week, now) && !(week >= 1 && week <= now)) return J({ error: 'week' }, 400, origin);
         const lo = week < 0 ? 0 : weekStart(week), hi = week < 0 ? 9e15 : weekStart(week + 1);
-        const rows = (await env.DB.prepare('SELECT guesses, won FROM plays WHERE week = ? AND done = 1 AND started_at >= ? AND started_at < ?').bind(week, lo, hi).all()).results;
+        const rows = await memo('st' + week, 60, async () => (await env.DB.prepare('SELECT guesses, won FROM plays WHERE week = ? AND done = 1 AND started_at >= ? AND started_at < ?').bind(week, lo, hi).all()).results);
         if (rows.length < MIN_STATS_PLAYERS) return J({ players: 0 }, 200, origin, { 'Cache-Control': 'public, max-age=60' });
         const dist = Array(MAX_GUESSES).fill(0), firsts = new Map();
         let solved = 0;
@@ -274,12 +308,16 @@ export default {
         const week = parseInt(url.searchParams.get('week'), 10);
         if (!((week < 0 && week >= -TEST_WEEKS) || (week >= 1 && week <= now))) return J({ error: 'week' }, 400, origin);
         const lo = week < 0 ? 0 : weekStart(week), hi = week < 0 ? 9e15 : weekStart(week + 1);
-        const rows = (await env.DB.prepare(
-          `SELECT u.discord_id, u.name, u.avatar, json_array_length(p.guesses) AS guesses, (p.finished_at - p.started_at) AS ms, p.finished_at
+        const LB = `SELECT u.discord_id, u.name, u.avatar, json_array_length(p.guesses) AS guesses, (p.finished_at - p.started_at) AS ms, p.finished_at
              FROM plays p JOIN users u ON u.discord_id = p.discord_id
-            WHERE p.week = ? AND p.won = 1 AND p.player LIKE 'd:%' AND p.started_at >= ? AND p.started_at < ?
-            ORDER BY guesses ASC, ms ASC, p.finished_at ASC`).bind(week, lo, hi).all()).results;
+            WHERE p.week = ? AND p.done = 1 AND p.won = 1 AND p.player LIKE 'd:%' AND p.started_at >= ? AND p.started_at < ?`;
+        let rows = await memo('lb' + week, 20, async () => (await env.DB.prepare(LB + ' ORDER BY guesses ASC, ms ASC, p.finished_at ASC').bind(week, lo, hi).all()).results);
         const me = await user(req, env);
+        if (me) {
+          const mine = await env.DB.prepare(LB + ' AND p.player = ?').bind(week, lo, hi, 'd:' + me.discord_id).first();
+          rows = rows.filter(r => r.discord_id !== me.discord_id);
+          if (mine) { rows.push(mine); rows.sort((a, b) => a.guesses - b.guesses || a.ms - b.ms || a.finished_at - b.finished_at); }
+        }
         const list = rows.map((r, i) => ({ rank: i + 1, name: r.name, avatar: r.avatar ? `https://cdn.discordapp.com/avatars/${r.discord_id}/${r.avatar}.png?size=64` : '', guesses: r.guesses, seconds: Math.round(r.ms / 1000), me: !!(me && me.discord_id === r.discord_id) }));
         const mine = list.find(r => r.me) || null;
         return J({ week, total: list.length, top: list.slice(0, 25), me: mine }, 200, origin);
@@ -335,8 +373,11 @@ export default {
       if (path === '/auth/login') {
         const nonce = url.searchParams.get('nonce') || '';
         if (!/^[A-Za-z0-9_-]{16,64}$/.test(nonce)) return new Response('Bad sign-in link.', { status: 400 });
+        await env.DB.prepare('DELETE FROM logins WHERE expires_at < ?').bind(Date.now()).run();
         await env.DB.prepare('INSERT OR REPLACE INTO logins (nonce, token, expires_at) VALUES (?, NULL, ?)').bind(nonce, Date.now() + 10 * 60e3).run();
-        const q = new URLSearchParams({ client_id: env.DISCORD_CLIENT_ID, response_type: 'code', redirect_uri: url.origin + '/auth/callback', scope: 'identify', state: nonce, prompt: 'none' });
+        // Discord always shows its Authorize screen. Skipping it for returning users (prompt=none) let a link someone
+        // else made sign you in with one click and hand them the session.
+        const q = new URLSearchParams({ client_id: env.DISCORD_CLIENT_ID, response_type: 'code', redirect_uri: url.origin + '/auth/callback', scope: 'identify', state: nonce });
         return Response.redirect('https://discord.com/oauth2/authorize?' + q, 302);
       }
       if (path === '/auth/callback') {
