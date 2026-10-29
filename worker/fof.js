@@ -55,76 +55,99 @@ function pile(B, week) {
 const front = c => ({ s: c.s, ep: c.ep, label: c.label });
 const back = c => ({ a: c.a, quote: c.quote, who: c.who, real: c.real, note: c.note, link: c.link, label: c.label });
 
+// ---------- tables ----------
+// Two summary tables keep reads flat as players grow (D1 bills rows read, and the free plan stops at 5 million a
+// day across all three games): fof_counts holds each card's running answer totals for the crowd split and rarity,
+// and fof_scores holds one row per signed-in player per finished pile for the boards. The Worker creates them
+// itself and fills them once from fof_answers, so nothing has to be run in the D1 console.
+let SCHEMA = null;
+function schema(env) {
+  if (!SCHEMA) SCHEMA = (async () => {
+    for (const q of [
+      'CREATE TABLE IF NOT EXISTS fof_counts (week INTEGER NOT NULL, card INTEGER NOT NULL, n INTEGER NOT NULL, f INTEGER NOT NULL, ok INTEGER NOT NULL, PRIMARY KEY (week, card))',
+      'CREATE TABLE IF NOT EXISTS fof_scores (week INTEGER NOT NULL, discord_id TEXT NOT NULL, points INTEGER NOT NULL, nright INTEGER NOT NULL, okmask INTEGER NOT NULL, done_at INTEGER NOT NULL, PRIMARY KEY (week, discord_id))',
+      'CREATE INDEX IF NOT EXISTS fof_scores_id ON fof_scores (discord_id, week)',
+      'CREATE TABLE IF NOT EXISTS fof_meta (k TEXT PRIMARY KEY, v TEXT)'
+    ]) await env.DB.prepare(q).run();
+    if (!await env.DB.prepare("SELECT 1 FROM fof_meta WHERE k = 'filled'").first()) {
+      // A recount, so running it twice (two Worker instances starting at once) gives the same result.
+      await env.DB.prepare(`INSERT INTO fof_counts (week, card, n, f, ok) SELECT week, card, COUNT(*), SUM(pick), SUM(ok) FROM fof_answers WHERE 1
+          GROUP BY week, card ON CONFLICT (week, card) DO UPDATE SET n = excluded.n, f = excluded.f, ok = excluded.ok`).run();
+      await env.DB.prepare(`INSERT OR IGNORE INTO fof_scores (week, discord_id, points, nright, okmask, done_at)
+          SELECT week, MAX(discord_id), SUM(points), SUM(ok), SUM(ok << card), MAX(created_at) FROM fof_answers
+          WHERE player LIKE 'd:%' AND discord_id IS NOT NULL GROUP BY week, player HAVING COUNT(*) = ${CARDS}`).run();
+      await env.DB.prepare("INSERT OR IGNORE INTO fof_meta (k, v) VALUES ('filled', ?)").bind(String(Date.now())).run();
+    }
+  })().catch(e => { SCHEMA = null; throw e; });
+  return SCHEMA;
+}
+
 // ---------- helpers ----------
 const okClient = c => typeof c === 'string' && /^[A-Za-z0-9_-]{8,64}$/.test(c);
-async function player(req, env, h, week, client) {
+const changed = r => !r || !r.meta || r.meta.changes === undefined ? 1 : r.meta.changes;
+// Records a finished pile for a signed-in player (no-op until all five are answered, or if it's already recorded).
+async function finish(env, week, id, n) {
+  const r = await env.DB.prepare(`INSERT OR IGNORE INTO fof_scores (week, discord_id, points, nright, okmask, done_at)
+      SELECT ?, ?, SUM(points), SUM(ok), SUM(ok << card), MAX(created_at) FROM fof_answers WHERE week = ? AND player = ? GROUP BY player HAVING COUNT(*) = ?`)
+    .bind(week, id, week, 'd:' + id, n).run();
+  if (changed(r)) forget(week);
+}
+async function player(req, env, h, week, client, n) {
   const u = await h.user(req, env);
   if (u) {
     const key = 'd:' + u.discord_id;
     // A pile started before signing in on this browser moves to the account, unless the account already played this week.
     if (okClient(client)) {
       const has = await env.DB.prepare('SELECT 1 FROM fof_answers WHERE week = ? AND player = ? LIMIT 1').bind(week, key).first();
-      if (!has) await env.DB.prepare('UPDATE fof_answers SET player = ?, discord_id = ? WHERE week = ? AND player = ?').bind(key, u.discord_id, week, 'c:' + client).run();
+      if (!has) {
+        const r = await env.DB.prepare('UPDATE fof_answers SET player = ?, discord_id = ? WHERE week = ? AND player = ?').bind(key, u.discord_id, week, 'c:' + client).run();
+        if (changed(r)) await finish(env, week, u.discord_id, n);
+      } else {
+        // The account already has its own pile this week; tell the page if this browser had a different one.
+        const other = await env.DB.prepare('SELECT 1 FROM fof_answers WHERE week = ? AND player = ? LIMIT 1').bind(week, 'c:' + client).first();
+        if (other) return { key, u, kept: true };
+      }
     }
     return { key, u };
   }
   return okClient(client) ? { key: 'c:' + client, u: null } : null;
 }
-async function crowd(env, week, card) {
-  const r = await env.DB.prepare('SELECT COUNT(*) AS n, SUM(pick) AS f FROM fof_answers WHERE week = ? AND card = ?').bind(week, card).first();
-  return r && r.n >= MIN_CROWD ? { n: r.n, fact: Math.round(100 * (r.f || 0) / r.n) } : null;
+async function counts(env, week) {
+  const rs = (await env.DB.prepare('SELECT card, n, f, ok FROM fof_counts WHERE week = ?').bind(week).all()).results;
+  const m = new Map(); rs.forEach(r => m.set(r.card, r)); return m;
 }
+const crowdOf = r => r && r.n >= MIN_CROWD ? { n: r.n, fact: Math.round(100 * (r.f || 0) / r.n) } : null;
 async function stateFor(env, B, week, pk) {
   const cards = pile(B, week);
   const rows = (await env.DB.prepare('SELECT card, pick, sure, ok, points FROM fof_answers WHERE week = ? AND player = ? ORDER BY card').bind(week, pk.key).all()).results;
-  const answers = [];
-  for (const r of rows) answers.push({ i: r.card, pick: r.pick ? 'fact' : 'fiction', sure: r.sure, ok: !!r.ok, points: r.points, ...back(cards[r.card]), crowd: await crowd(env, week, r.card) });
-  return { week, launch: fofWeekStart(1), next: week > 0 ? fofWeekStart(week + 1) : fofWeekStart(Math.max(1, fofWeek() + 1)), cards: cards.map(front), answers, done: answers.length === cards.length };
+  const cs = rows.length ? await counts(env, week) : new Map();
+  const answers = rows.map(r => ({ i: r.card, pick: r.pick ? 'fact' : 'fiction', sure: r.sure, ok: !!r.ok, points: r.points, ...back(cards[r.card]), crowd: crowdOf(cs.get(r.card)) }));
+  return { week, now: Date.now(), launch: fofWeekStart(1), next: week > 0 ? fofWeekStart(week + 1) : fofWeekStart(Math.max(1, fofWeek() + 1)), cards: cards.map(front), answers, done: answers.length === cards.length, kept: !!pk.kept };
 }
 
-// Weekly standings: players signed in with Discord who answered every card. Points first; ties go to whoever was
-// right on the cards most players missed (rarity); a tie on both shares the place.
-// Board results are cached briefly, so a busy week doesn't re-read every answer on every page load (D1 bills rows
-// read). Weekly: 20 seconds. All-time: 5 minutes, since it only changes when someone finishes a week.
+// ---------- boards ----------
+// Weekly: signed-in players who answered every card. Points first; ties go to whoever was right on the cards most
+// players missed (rarity); a tie on both shares the place. All-time: total points over finished weeks.
+// The shared part of each board is cached briefly in each Worker instance (20 seconds weekly, 5 minutes all-time;
+// Cloudflare's shared cache does nothing on a workers.dev address). The signed-in player's own row is always read
+// fresh and merged in, so finishing a pile shows up straight away on every instance.
 const MEMO = new Map();
 async function cached(key, ttl, fn) {
   const hit = MEMO.get(key);
   if (hit && Date.now() - hit.at < ttl * 1000) return hit.v;
-  const req = new Request('https://fof-cache.internal/' + key);
-  const cache = typeof caches !== 'undefined' ? caches.default : null;
-  if (cache) { const r = await cache.match(req); if (r) { const v = await r.json(); MEMO.set(key, { at: Date.now(), v }); return v; } }
   const v = await fn();
   MEMO.set(key, { at: Date.now(), v });
-  if (cache) await cache.put(req, new Response(JSON.stringify(v), { headers: { 'Cache-Control': 'max-age=' + ttl } }));
   return v;
 }
-async function weekBoard(env, week, n) {
-  const rows = (await env.DB.prepare('SELECT player, card, ok, points FROM fof_answers WHERE week = ?').bind(week).all()).results;
-  const per = new Map(), share = Array(n).fill(0).map(() => [0, 0]);
-  for (const r of rows) {
-    share[r.card][0]++; if (r.ok) share[r.card][1]++;
-    if (!per.has(r.player)) per.set(r.player, []);
-    per.get(r.player).push(r);
-  }
-  const list = [];
-  for (const [p, rs] of per) {
-    if (!p.startsWith('d:') || rs.length !== n) continue;
-    const pts = rs.reduce((s, r) => s + r.points, 0), right = rs.filter(r => r.ok).length;
-    const rar = rs.reduce((s, r) => s + (r.ok ? 1 - share[r.card][1] / share[r.card][0] : 0), 0);
-    list.push({ id: p.slice(2), points: pts, right, rar: Math.round(rar * 1000) });
-  }
-  list.sort((a, b) => b.points - a.points || b.rar - a.rar);
-  return list;
-}
-async function allBoard(env, now) {
-  const rows = (await env.DB.prepare(`SELECT discord_id AS id, SUM(points) AS points, COUNT(*) AS weeks FROM (
-      SELECT discord_id, week, SUM(points) AS points FROM fof_answers WHERE week >= 1 AND week <= ? AND discord_id IS NOT NULL AND player LIKE 'd:%'
-      GROUP BY discord_id, week HAVING COUNT(*) = ?) GROUP BY discord_id`).bind(now, CARDS).all()).results;
-  return rows.map(r => ({ id: r.id, points: r.points, weeks: r.weeks, rar: 0 })).sort((a, b) => b.points - a.points);
+function forget(week) { MEMO.delete('week' + week); for (const k of MEMO.keys()) if (k.startsWith('all-')) MEMO.delete(k); }
+function rarity(r, cs, n) {
+  let x = 0;
+  for (let c = 0; c < n; c++) if (r.okmask & (1 << c)) { const k = cs.get(c); if (k && k.n) x += 1 - k.ok / k.n; }
+  return Math.round(x * 1000);
 }
 function rankList(list) {
   let rank = 0;
-  list.forEach((r, i) => { if (i === 0 || r.points !== list[i - 1].points || r.rar !== list[i - 1].rar) rank = i + 1; r.rank = rank; });
+  list.forEach((r, i) => { if (i === 0 || r.points !== list[i - 1].points || r.rar !== list[i - 1].rar) rank = i + 1; r.rank = rank; r.pos = i; });
   return list;
 }
 
@@ -135,14 +158,15 @@ export async function fofRoute(req, env, url, origin, h) {
   const practice = now === 0 || url.searchParams.get('test') === '1';
 
   if (path === '/fof/meta') {
-    return h.J({ week: now, launch: fofWeekStart(1), next: fofWeekStart(now + 1) }, 200, origin);
+    return h.J({ week: now, now: Date.now(), launch: fofWeekStart(1), next: fofWeekStart(now + 1) }, 200, origin);
   }
+  await schema(env);
 
   if (path === '/fof/week' && req.method === 'GET') {
     const week = practice ? PRACTICE : now;
-    const B = await bank(env);
-    if (!pile(B, week)) return h.J({ week, cards: [], next: fofWeekStart(week + 1) }, 200, origin);
-    const pk = await player(req, env, h, week, url.searchParams.get('client'));
+    const B = await bank(env), cards = pile(B, week);
+    if (!cards) return h.J({ week, now: Date.now(), cards: [], launch: fofWeekStart(1), next: fofWeekStart(week + 1) }, 200, origin);
+    const pk = await player(req, env, h, week, url.searchParams.get('client'), cards.length);
     if (!pk) return h.J({ error: 'client' }, 400, origin);
     return h.J(await stateFor(env, B, week, pk), 200, origin);
   }
@@ -155,58 +179,64 @@ export async function fofRoute(req, env, url, origin, h) {
     const B = await bank(env), cards = pile(B, week);
     const i = Number(b.i), sure = Number(b.sure);
     if (!cards || !Number.isInteger(i) || i < 0 || i >= cards.length || !['fact', 'fiction'].includes(b.pick) || ![0, 1].includes(sure)) return h.J({ error: 'invalid' }, 400, origin);
-    const pk = await player(req, env, h, week, b.client);
+    const pk = await player(req, env, h, week, b.client, cards.length);
     if (!pk) return h.J({ error: 'client' }, 400, origin);
     // Cards go in order, one answer each.
     const done = await env.DB.prepare('SELECT COUNT(*) AS n FROM fof_answers WHERE week = ? AND player = ?').bind(week, pk.key).first();
     if (done.n !== i) return h.J(await stateFor(env, B, week, pk), 409, origin);
-    const c = cards[i], ok = (b.pick === c.a) ? 1 : 0, points = POINTS[sure][ok ? 0 : 1];
-    await env.DB.prepare('INSERT OR IGNORE INTO fof_answers (week, card, player, discord_id, sid, pick, sure, ok, points, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(week, i, pk.key, pk.u ? pk.u.discord_id : null, c.id, b.pick === 'fact' ? 1 : 0, sure, ok, points, Date.now()).run();
-    return h.J({ i, pick: b.pick, sure, ok: !!ok, points, ...back(c), crowd: await crowd(env, week, i) }, 200, origin);
+    const c = cards[i], ok = (b.pick === c.a) ? 1 : 0, points = POINTS[sure][ok ? 0 : 1], fact = b.pick === 'fact' ? 1 : 0;
+    const ins = await env.DB.prepare('INSERT OR IGNORE INTO fof_answers (week, card, player, discord_id, sid, pick, sure, ok, points, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(week, i, pk.key, pk.u ? pk.u.discord_id : null, c.id, fact, sure, ok, points, Date.now()).run();
+    // Another tab answered this card a moment earlier: send back what was actually saved.
+    if (!changed(ins)) return h.J(await stateFor(env, B, week, pk), 409, origin);
+    await env.DB.prepare(`INSERT INTO fof_counts (week, card, n, f, ok) VALUES (?, ?, 1, ?, ?)
+        ON CONFLICT (week, card) DO UPDATE SET n = n + 1, f = f + excluded.f, ok = ok + excluded.ok`).bind(week, i, fact, ok).run();
+    if (pk.u && i === cards.length - 1) await finish(env, week, pk.u.discord_id, cards.length);
+    const k = await env.DB.prepare('SELECT n, f FROM fof_counts WHERE week = ? AND card = ?').bind(week, i).first();
+    return h.J({ i, pick: b.pick, sure, ok: !!ok, points, ...back(c), crowd: crowdOf(k) }, 200, origin);
   }
 
   if (path === '/fof/board') {
     const all = url.searchParams.get('range') === 'all';
     const week = practice ? PRACTICE : now;
+    const me = await h.user(req, env);
     let list;
-    const me0 = await h.user(req, env);
     if (all) {
-      list = await cached('all-' + now, 300, () => allBoard(env, now));
-      if (me0 && !list.some(r => r.id === me0.discord_id)) {
-        // Only this week's pile can be newly finished; the (week, player) index keeps this to a few rows.
-        const done = now >= 1 ? await env.DB.prepare('SELECT COUNT(*) AS n FROM fof_answers WHERE week = ? AND player = ?').bind(now, 'd:' + me0.discord_id).first() : null;
-        if (done && done.n === CARDS) { list = await allBoard(env, now); MEMO.set('all-' + now, { at: Date.now(), v: list }); }
+      list = (await cached('all-' + now, 300, async () => (await env.DB.prepare(`SELECT discord_id AS id, SUM(points) AS points, COUNT(*) AS weeks
+          FROM fof_scores WHERE week >= 1 AND week <= ? GROUP BY discord_id`).bind(now).all()).results)).map(r => ({ ...r, rar: 0 }));
+      if (me) {
+        const mine = await env.DB.prepare('SELECT SUM(points) AS points, COUNT(*) AS weeks FROM fof_scores WHERE discord_id = ? AND week >= 1 AND week <= ?').bind(me.discord_id, now).first();
+        list = list.filter(r => r.id !== me.discord_id);
+        if (mine && mine.weeks) list.push({ id: me.discord_id, points: mine.points, weeks: mine.weeks, rar: 0 });
       }
     } else {
-      const B = await bank(env); const cards = pile(B, week);
-      list = cards ? await cached('week' + week, 20, () => weekBoard(env, week, cards.length)) : [];
-      // Someone who just finished shouldn't have to wait for the cache to see themselves.
-      if (cards && me0 && !list.some(r => r.id === me0.discord_id)) {
-        const n = await env.DB.prepare('SELECT COUNT(*) AS n FROM fof_answers WHERE week = ? AND player = ?').bind(week, 'd:' + me0.discord_id).first();
-        if (n && n.n === cards.length) { list = await weekBoard(env, week, cards.length); MEMO.set('week' + week, { at: Date.now(), v: list }); }
-      }
+      const B = await bank(env), cards = pile(B, week);
+      if (cards) {
+        const n = cards.length, cs = await counts(env, week);
+        list = await cached('week' + week, 20, async () => (await env.DB.prepare('SELECT discord_id AS id, points, nright, okmask FROM fof_scores WHERE week = ?').bind(week).all()).results);
+        if (me) {
+          const mine = await env.DB.prepare('SELECT discord_id AS id, points, nright, okmask FROM fof_scores WHERE week = ? AND discord_id = ?').bind(week, me.discord_id).first();
+          list = list.filter(r => r.id !== me.discord_id);
+          if (mine) list.push(mine);
+        }
+        list = list.map(r => ({ id: r.id, points: r.points, right: r.nright, rar: rarity(r, cs, n) }));
+      } else list = [];
     }
-    list = list.map(r => ({ ...r }));
+    list.sort((a, b) => b.points - a.points || b.rar - a.rar || (a.id < b.id ? -1 : 1));
     rankList(list);
-    const users = new Map();
-    const ids = list.slice(0, 200).map(r => r.id);
-    for (let k = 0; k < ids.length; k += 50) {
-      const chunk = ids.slice(k, k + 50);
-      const rs = (await env.DB.prepare(`SELECT discord_id, name, avatar FROM users WHERE discord_id IN (${chunk.map(() => '?').join(',')})`).bind(...chunk).all()).results;
-      rs.forEach(u => users.set(u.discord_id, u));
-    }
-    const me = me0;
-    const out = list.map(r => {
-      const u = users.get(r.id) || { name: 'Player' };
-      return { rank: r.rank, name: u.name, avatar: u.avatar ? `https://cdn.discordapp.com/avatars/${r.id}/${u.avatar}.png?size=64` : '', points: r.points, right: r.right, weeks: r.weeks, me: !!(me && me.discord_id === r.id) };
-    });
-    const mine = out.find(r => r.me) || null;
+    const mineRow = me ? list.find(r => r.id === me.discord_id) || null : null;
     let ahead = null;
-    if (mine && mine.rank > 1) { const a = out.filter(r => r.points > mine.points).pop(); if (a) ahead = { rank: a.rank, gap: a.points - mine.points }; }
-    // Top 10 plus the rows around you.
-    const keep = out.filter(r => r.rank <= 10 || (mine && Math.abs(out.indexOf(r) - out.indexOf(mine)) <= 1));
-    return h.J({ week, range: all ? 'all' : 'week', total: out.length, rows: keep, me: mine, ahead, signedIn: !!me }, 200, origin);
+    if (mineRow && mineRow.rank > 1) { const a = list.filter(r => r.points > mineRow.points).pop(); if (a) ahead = { rank: a.rank, gap: a.points - mineRow.points }; }
+    // Top 10 plus the rows around you. Names are looked up only for the rows sent.
+    const keep = list.filter(r => r.pos < 10 || (mineRow && Math.abs(r.pos - mineRow.pos) <= 1));
+    const users = new Map(), ids = keep.map(r => r.id);
+    if (ids.length) (await env.DB.prepare(`SELECT discord_id, name, avatar FROM users WHERE discord_id IN (${ids.map(() => '?').join(',')})`).bind(...ids).all()).results.forEach(u => users.set(u.discord_id, u));
+    const out = r => {
+      const u = users.get(r.id) || { name: 'Player' };
+      return { rank: r.rank, pos: r.pos, name: u.name, avatar: u.avatar ? `https://cdn.discordapp.com/avatars/${r.id}/${u.avatar}.png?size=64` : '', points: r.points, right: r.right, weeks: r.weeks, me: !!(me && me.discord_id === r.id) };
+    };
+    const rows = keep.map(out);
+    return h.J({ week, range: all ? 'all' : 'week', total: list.length, rows, me: rows.find(r => r.me) || null, ahead, signedIn: !!me }, 200, origin);
   }
 
   return null;
