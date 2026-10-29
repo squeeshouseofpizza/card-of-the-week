@@ -49,8 +49,10 @@ async function bank(env) {
   return PLAIN;
 }
 function pile(B, week) {
-  if (week === PRACTICE) return B.test || null;
-  return week >= 1 ? B.weeks[week - 1] || null : null;
+  const ids = week === PRACTICE ? B.test : week >= 1 ? B.weeks[week - 1] : null;
+  if (!ids) return null;
+  // Banks built since Oct 29 2026 (v2) store each statement once and list ids per week.
+  return B.cards ? ids.map(id => B.cards[id]) : ids;
 }
 const front = c => ({ s: c.s, ep: c.ep, label: c.label });
 const back = c => ({ a: c.a, quote: c.quote, who: c.who, real: c.real, note: c.note, link: c.link, label: c.label });
