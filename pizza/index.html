@@ -362,8 +362,8 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     if(!stamp){stamp=document.createElement('canvas');stamp.width=W;stamp.height=H;const sc=stamp.getContext('2d'),cy=TOP+(FLOOR-TOP)*.55;
       sc.translate(W/2,cy);sc.rotate(-.06);sc.strokeStyle='rgba(120,40,28,.22)';sc.fillStyle='rgba(120,40,28,.22)';sc.lineWidth=3;
       sc.beginPath();sc.arc(0,0,118,0,Math.PI*2);sc.stroke();sc.lineWidth=1.5;sc.beginPath();sc.arc(0,0,108,0,Math.PI*2);sc.stroke();
-      sc.textAlign='center';sc.font='700 25px Cinzel,Georgia,serif';sc.fillText("SQUEE'S",0,-28);sc.font='700 19px Cinzel,Georgia,serif';sc.fillText('HOUSE OF',0,0);
-      sc.font='700 31px Cinzel,Georgia,serif';sc.fillText('PIZZA',0,34);sc.font='600 12px Cinzel,Georgia,serif';sc.fillText('HOT · FRESH · LEGAL',0,62)}
+      sc.textAlign='center';sc.font='700 40px Cinzel,Georgia,serif';sc.fillText('S.H.O.P.',0,-14);
+      sc.font='700 17px Cinzel,Georgia,serif';sc.fillText('HOUSE OF PIZZA',0,22);sc.font='600 12px Cinzel,Georgia,serif';sc.fillText('HOT · FRESH · LEGAL',0,56)}
     ctx.drawImage(stamp,0,0);
     ctx.strokeStyle='rgba(90,58,24,.16)';ctx.lineWidth=1;
     for(let y=TOP;y<FLOOR;y+=26){ctx.beginPath();ctx.moveTo(WALL,y);ctx.lineTo(W-WALL,y);ctx.stroke()}
