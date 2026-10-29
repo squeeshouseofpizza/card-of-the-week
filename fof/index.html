@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Fact or Fiction: The Game · S.H.O.P.</title>
+<meta name="description" content="Five cards a week about the Fact or Fiction podcast. Say which ones really happened on the show.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap">
+<style>
+/* Layout: one column, a dealt card in the middle of a felt table, two piles below it like the card Fact or Fiction. Single dark look, the S.H.O.P. house style. */
+:root{
+  color-scheme:dark;
+  --ground:#17120c; --felt:#1f1810; --card:#2a2016; --card-edge:#4a3820;
+  --ink:#efe6d2; --muted:#a99873; --gold:#d6a34a; --gold-lite:#e6b862;
+  --right:#7fbf7a; --wrong:#e0785e; --fic:#7a3b2a;
+  --display:"Cinzel",Georgia,serif; --body:"EB Garamond",Georgia,serif; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5}
+.wrap{max-width:560px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
+.demo{font-size:13px;color:var(--muted);border:1px dashed var(--card-edge);border-radius:8px;padding:6px 10px;text-align:center}
+header{display:flex;flex-direction:column;gap:2px}
+.eyebrow{font-family:var(--display);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(30px,8vw,40px);margin:0;letter-spacing:.04em;line-height:1.05;text-wrap:balance}
+.sub{color:var(--muted);margin:0;font-size:16px}
+.pips{display:flex;gap:6px;justify-content:center}
+.pip{width:22px;height:6px;border-radius:3px;background:var(--card-edge)}
+.pip.on{background:var(--gold)}
+.pip.r{background:var(--right)} .pip.w{background:var(--wrong)}
+.table{position:relative;background:radial-gradient(ellipse 80% 60% at 50% 35%,rgba(214,163,74,.10),rgba(214,163,74,0) 70%),var(--felt);border:1px solid var(--card-edge);border-radius:14px;padding:18px 14px 16px;display:flex;flex-direction:column;gap:14px;overflow:hidden}
+.deck{position:relative;height:340px;perspective:1200px;transition:height .4s ease}
+.ghost{position:absolute;inset:8px 6px -6px;border-radius:14px;background:var(--card);border:1px solid var(--card-edge);transform:rotate(-2.5deg);opacity:.55}
+.ghost.g2{transform:rotate(2deg);inset:4px 10px -3px;opacity:.75}
+.card{position:absolute;inset:0;touch-action:pan-y;cursor:grab;user-select:none;-webkit-user-select:none;transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.card.dragging{transition:none;cursor:grabbing}
+.flip{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.3,.7,.2,1)}
+.card.flipped .flip{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:14px;background:linear-gradient(180deg,#30251a,var(--card));border:1px solid var(--card-edge);box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 0 0 5px var(--card),inset 0 0 0 6px rgba(214,163,74,.55);padding:20px 20px 18px;display:flex;flex-direction:column;gap:12px}
+.back{transform:rotateY(180deg);overflow-y:auto}
+.cardtop{display:flex;justify-content:space-between;align-items:center;gap:8px;font-family:var(--display);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.ep{border:1px solid rgba(214,163,74,.5);border-radius:999px;padding:2px 9px;color:var(--gold-lite);letter-spacing:.08em;white-space:nowrap}
+.stmt{flex:1;display:flex;align-items:center;margin:0;font-size:clamp(22px,6.2vw,27px);line-height:1.3;text-wrap:pretty}
+.hint{font-size:13.5px;color:var(--muted);text-align:center;margin:0}
+.lean{position:absolute;top:18px;font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.12em;padding:4px 10px;border:2px solid;border-radius:6px;opacity:0;pointer-events:none}
+.lean.fact{left:18px;color:var(--gold-lite);transform:rotate(-8deg)}
+.lean.fic{right:18px;color:#f0a38c;transform:rotate(8deg)}
+.stamp{align-self:center;font-family:var(--display);font-weight:700;font-size:30px;letter-spacing:.16em;padding:2px 16px;border:3px double var(--gold);color:var(--gold-lite);border-radius:6px;transform:rotate(-3deg)}
+.verdict{display:flex;align-items:center;justify-content:center;gap:8px;font-size:18px;margin:0}
+.verdict b{font-family:var(--mono);font-weight:600}
+.verdict.r{color:var(--right)} .verdict.w{color:var(--wrong)}
+.mark{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;font-family:var(--mono);font-size:14px;color:var(--ground)}
+.r .mark{background:var(--right)} .w .mark{background:var(--wrong)}
+.quote{margin:0;padding-left:12px;border-left:2px solid var(--gold);font-style:italic;font-size:16.5px}
+.label{font-family:var(--display);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);display:block;font-style:normal;margin-bottom:2px}
+.changed{margin:0;font-size:16px}
+.crowd{display:flex;flex-direction:column;gap:4px;font-size:13.5px;color:var(--muted)}
+.bar{height:8px;border-radius:4px;background:var(--card-edge);overflow:hidden;display:flex}
+.bar i{display:block;height:100%;background:var(--gold)}
+.hear{display:inline-flex;align-items:center;gap:6px;color:var(--gold-lite);font-size:15.5px;text-underline-offset:3px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:.12em;text-transform:uppercase;border-radius:10px;padding:14px 10px;min-height:52px;cursor:pointer;border:1px solid var(--card-edge);background:var(--card);color:var(--ink)}
+.btn.fact{background:var(--gold);color:#1a1309;border-color:var(--gold)}
+.btn.fic{background:var(--fic);color:var(--ink);border-color:var(--fic)}
+.btn.next{background:transparent;color:var(--gold-lite);border-color:var(--gold)}
+.btn:focus-visible,.chip:focus-visible,.copy:focus-visible,.hear:focus-visible{outline:2px solid var(--gold-lite);outline-offset:2px}
+.sure{display:flex;flex-direction:column;gap:8px}
+.sure p{margin:0;text-align:center;font-family:var(--display);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.chips{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.chip{display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:10px;border:1px solid var(--card-edge);background:var(--card);color:var(--ink);padding:9px 4px;cursor:pointer;font-family:var(--body);font-size:16px;min-height:56px}
+.chip small{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.chip.top{border-color:var(--gold)}
+.undo{background:none;border:0;color:var(--muted);font:inherit;font-size:14px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;justify-self:center}
+.next{width:100%}
+.piles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pile{border:1px dashed var(--card-edge);border-radius:10px;padding:8px 10px;min-height:66px;display:flex;flex-direction:column;gap:6px}
+.pile h3{margin:0;font-family:var(--display);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:500;display:flex;justify-content:space-between}
+.minis{display:flex;flex-wrap:wrap;gap:4px}
+.mini{width:18px;height:24px;border-radius:3px;background:var(--card);border:1px solid var(--card-edge);display:grid;place-items:center;font-family:var(--mono);font-size:11px}
+.mini.r{color:var(--right);border-color:var(--right)} .mini.w{color:var(--wrong);border-color:var(--wrong)}
+.score{display:flex;justify-content:space-between;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.score b{color:var(--ink);font-family:var(--mono)}
+/* results */
+.results{display:flex;flex-direction:column;gap:14px;align-items:stretch}
+.res-top{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center}
+.res-top img{width:96px;height:auto}
+.big{font-family:var(--mono);font-size:44px;line-height:1;color:var(--gold-lite)}
+.res-top p{margin:2px 0 0;color:var(--muted)}
+pre.share{margin:0;background:var(--ground);border:1px solid var(--card-edge);border-radius:8px;padding:10px 12px;font-family:var(--mono);font-size:13px;white-space:pre-wrap;user-select:all}
+.copy{justify-self:start;background:none;border:1px solid var(--gold);color:var(--gold-lite);border-radius:8px;padding:8px 14px;font-family:var(--display);font-size:13px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+.recap{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.recap li{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;font-size:15.5px;padding-bottom:8px;border-bottom:1px solid rgba(214,163,74,.15)}
+.recap a{color:var(--gold-lite);font-size:14px}
+.again{justify-self:center}
+.foot{font-size:13px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.card,.flip{transition:none}.card.flipped .flip{transform:none}.card.flipped .front{display:none}.back{transform:none}}
+@media (max-width:380px){.deck{height:360px}.stmt{font-size:21px}}
+/* Cover: the podcast art as a game box lid, with a box side carrying the usual player count, card count and play time. */
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.cover{display:flex;flex-direction:column;gap:18px;align-items:stretch}
+.box{position:relative;width:min(100%,430px);margin:10px auto 0;filter:drop-shadow(0 22px 26px rgba(0,0,0,.6))}
+.lid{position:relative;padding:9px 9px 12px;border-radius:12px;background:linear-gradient(160deg,#4a3720,#2a1e11 55%,#1d150c);border:1px solid #7a5c32}
+.lid img{display:block;width:100%;height:auto;aspect-ratio:1;border-radius:6px;border:1px solid rgba(214,163,74,.6);background:#2a2016}
+.plaque{display:block;margin:10px auto 0;width:max-content;max-width:100%;font-family:var(--display);font-weight:700;font-size:clamp(17px,5vw,21px);letter-spacing:.34em;padding:6px 14px 6px 20px;color:#f1e3c2;background:linear-gradient(#4f3a22,#2c1f12);border:2px solid #b8893d;border-radius:6px;box-shadow:inset 0 0 0 2px #1f160c,0 2px 0 #120d07}
+.side{display:grid;grid-template-columns:repeat(3,1fr);margin:0 10px;padding:10px 6px 9px;background:linear-gradient(#251a0f,#160f08);border:1px solid #6b5230;border-top:0;border-radius:0 0 9px 9px;transform:perspective(520px) rotateX(-26deg);transform-origin:top center}
+.side span{display:flex;flex-direction:column;align-items:center;gap:3px;font-family:var(--display);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-lite)}
+.side svg{width:20px;height:20px;stroke:var(--gold);fill:none;stroke-width:1.6}
+.seal{position:absolute;top:-12px;right:-10px;width:76px;height:76px;border-radius:50%;display:grid;place-content:center;text-align:center;font-family:var(--display);font-weight:700;font-size:11px;letter-spacing:.14em;line-height:1;color:#2a1c08;background:radial-gradient(circle at 35% 30%,#f6d687,#cf9a3a 58%,#9c6f22);box-shadow:0 4px 10px rgba(0,0,0,.5),inset 0 0 0 4px rgba(255,240,200,.25);transform:rotate(12deg)}
+.seal b{display:block;font-size:26px;letter-spacing:0;margin-top:2px}
+.seal:not(:has(b)){font-size:10.5px;letter-spacing:.1em}
+.tagline{text-align:center;margin:4px 0 0;font-size:18px;color:var(--ink)}
+.when{text-align:center;margin:0;font-size:14px;color:var(--muted)}
+.btn.play{background:var(--gold);color:#1a1309;border-color:var(--gold);font-size:17px;min-height:56px}
+.links{display:flex;justify-content:center;gap:22px}
+.linkbtn{background:none;border:0;color:var(--gold-lite);font:inherit;font-size:16px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:6px 2px}
+details.how{border:1px solid var(--card-edge);border-radius:10px;padding:10px 14px;background:var(--felt)}
+details.how summary{cursor:pointer;font-family:var(--display);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+details.how ol{margin:10px 0 2px;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+/* Small header during play */
+.minihead{display:flex;align-items:center;gap:12px}
+.minihead img{width:52px;height:52px;border-radius:6px;border:1px solid rgba(214,163,74,.6)}
+.minihead .t{font-family:var(--display);font-weight:700;font-size:18px;letter-spacing:.04em;line-height:1.15}
+/* Leaderboard */
+.board{display:flex;flex-direction:column;gap:10px;border:1px solid var(--card-edge);border-radius:12px;background:var(--felt);padding:14px}
+.board h2{margin:0;font-family:var(--display);font-size:16px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tab{border:1px solid var(--card-edge);background:var(--card);color:var(--muted);border-radius:8px;padding:8px;font-family:var(--display);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
+.tab[aria-pressed="true"]{border-color:var(--gold);color:var(--gold-lite)}
+.cap{margin:0;font-size:14px;color:var(--muted)}
+table.lb{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:16px}
+.lb th{font-family:var(--display);font-weight:500;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:right;padding:4px 6px;border-bottom:1px solid var(--card-edge)}
+.lb th:nth-child(2),.lb td:nth-child(2){text-align:left}
+.lb td{padding:6px;text-align:right;border-bottom:1px solid rgba(214,163,74,.12)}
+.lb td:first-child{color:var(--muted);width:2.6em}
+.lb tr.me td{background:rgba(214,163,74,.14);color:var(--gold-lite);font-weight:500}
+.lb tr.gap td{text-align:center;color:var(--muted);border-bottom:0;padding:2px}
+.discord{display:flex;align-items:center;justify-content:center;gap:8px;border-radius:10px;border:1px solid #5865f2;background:#5865f2;color:#fff;font:inherit;font-size:16px;padding:10px 14px;cursor:pointer}
+.note{margin:0;font-size:14px;color:var(--muted);text-align:center}
+.backlink{align-self:flex-start}
+.status{text-align:center;margin:0;font-size:16px;color:var(--ink)}
+.pre{background:var(--felt);border:1px solid var(--card-edge);border-radius:12px;padding:20px 16px;text-align:center;display:flex;flex-direction:column;gap:8px}
+.pre .big{font-family:var(--display);font-size:clamp(18px,5vw,22px);line-height:1.3;color:var(--gold-lite)}
+.pre .cd{font-family:var(--mono);font-size:18px}
+.pre .sub{color:var(--muted);font-size:15px}
+.authrow{display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;font-size:15px;color:var(--muted)}
+.authrow img{width:24px;height:24px;border-radius:50%}
+.err{color:var(--wrong);text-align:center;margin:0;font-size:15px}
+.lb td.nm{display:flex;align-items:center;gap:8px}
+.lb td.nm img{width:22px;height:22px;border-radius:50%}
+.test{font-size:13px;color:var(--wrong);border:1px dashed var(--wrong);border-radius:8px;padding:6px 10px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="test" id="testBanner" hidden>Test mode: you're playing the practice pile. It doesn't count.</p>
+
+  <!-- Cover -->
+  <section class="cover" id="cover">
+    <h1 class="sr">Fact or Fiction: The Game</h1>
+    <div class="box">
+      <div class="lid">
+        <img src="cover.jpg" width="900" height="900" alt="Fact or Fiction podcast cover: the goblin chef at the pizza oven">
+        <span class="plaque">The Game</span>
+      </div>
+      <div class="side" aria-label="1 player, 5 cards, about 2 minutes">
+        <span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>1 player</span>
+        <span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="11" height="15" rx="2"/><path d="M9 3h9a2 2 0 0 1 2 2v13"/></svg>5 cards</span>
+        <span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></svg>2 minutes</span>
+      </div>
+      <div class="seal" id="seal" aria-hidden="true" hidden>Week<b id="sealWk"></b></div>
+    </div>
+    <p class="tagline">Five cards about the podcast. Say which ones really happened on the show.</p>
+    <p class="when" id="when">New pile every Monday at 9am Eastern. One try a week.</p>
+    <section class="pre" id="pre" hidden><div class="eyebrow">Coming soon</div><div class="big" id="prebig"></div><div class="cd" id="precd"></div><p class="sub" style="margin:0">Until then, here's a practice pile. It doesn't count.</p></section>
+    <p class="status" id="status" hidden></p>
+    <button class="btn play" id="play" type="button" hidden>Play</button>
+    <details class="how">
+      <summary>How to play</summary>
+      <ol>
+        <li>Fact means it happened on the show. Fiction means it didn’t. Drag the card left for Fact or right for Fiction, or tap a button.</li>
+        <li>Then pick how sure you are. “Lock it in”: +1 if right, 0 if wrong. “I’m sure”: +2 if right, −2 if wrong. Only worth it if you’d be right 2 times in 3.</li>
+        <li>Each card flips to show what was really said, with a link to that moment in the episode.</li>
+        <li>Sign in with Discord after you play to put your score on the board.</li>
+      </ol>
+    </details>
+    <div id="boardSlot0"></div>
+    <div class="authrow" id="auth0"></div>
+  </section>
+
+  <section id="game" hidden>
+    <div class="minihead"><img src="cover-small.jpg" width="160" height="160" alt=""><div><div class="eyebrow" id="wkLabel"></div><div class="t">Fact or Fiction: The Game</div></div></div>
+  </section>
+  <div class="pips" id="pips" aria-label="Progress" hidden></div>
+
+  <section class="table" id="table" hidden>
+    <div class="deck" id="deck">
+      <div class="ghost"></div><div class="ghost g2"></div>
+      <div class="card" id="card" aria-live="polite">
+        <div class="flip">
+          <div class="face front">
+            <div class="cardtop"><span id="num"></span><span class="ep" id="ep"></span></div>
+            <p class="stmt" id="stmt"></p>
+            <p class="hint" id="hint">Drag left for Fact, right for Fiction</p>
+          </div>
+          <div class="face back" id="back"></div>
+        </div>
+        <span class="lean fic" id="leanFic">Fiction</span>
+        <span class="lean fact" id="leanFact">Fact</span>
+      </div>
+    </div>
+    <div class="actions" id="pick">
+      <button class="btn fact" id="bFact" type="button">← Fact</button>
+      <button class="btn fic" id="bFic" type="button">Fiction →</button>
+    </div>
+    <div class="sure" id="sure" hidden>
+      <p id="sureq">How sure?</p>
+      <div class="chips">
+        <button class="chip" type="button" data-c="0">Lock it in<small>+1 right · 0 wrong</small></button>
+        <button class="chip top" type="button" data-c="1">I’m sure<small>+2 right · −2 wrong</small></button>
+      </div>
+      <button class="undo" id="undo" type="button">Change my pick</button>
+    </div>
+    <p class="err" id="err" hidden></p>
+    <button class="btn next" id="next" type="button" hidden>Next card</button>
+    <div class="piles">
+      <div class="pile"><h3>Fact pile <span id="cFact">0</span></h3><div class="minis" id="mFact"></div></div>
+      <div class="pile"><h3>Fiction pile <span id="cFic">0</span></h3><div class="minis" id="mFic"></div></div>
+    </div>
+    <div class="score"><span>Right <b id="sRight">0</b></span><span>Points <b id="sPts">0</b></span></div>
+  </section>
+
+  <section class="results" id="results" hidden></section>
+  <p class="foot">Fact or Fiction: The Game by S.H.O.P. Statements come from the Fact or Fiction podcast. Unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards.</p>
+</div>
+
+<script>
+(function(){
+  const API='https://card-of-the-week.squeeshouseofpizza.workers.dev';
+  const TEST=new URLSearchParams(location.search).get('test')==='1';
+  const SHARE_URL='squeeshouseofpizza.com/pages/fact-or-fiction-the-game';
+  const $=id=>document.getElementById(id);
+  const fmt=n=>n<0?'−'+(-n):String(n);
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+  function clientId(){let c=store.get('fof.client','');if(!/^[A-Za-z0-9_-]{8,64}$/.test(c)){c=Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('');store.set('fof.client',c)}return c}
+  const CLIENT=clientId();
+  const token=()=>store.get('shopweekly.token','');
+  async function api(path,opts={}){
+    const h=Object.assign({},opts.headers||{});const t=token();if(t)h.Authorization='Bearer '+t;
+    const r=await fetch(API+path,Object.assign({},opts,{headers:h}));const j=await r.json().catch(()=>({}));
+    if(!r.ok&&r.status!==409)throw Object.assign(new Error(j.error||('HTTP '+r.status)),{status:r.status,body:j});
+    return Object.assign(j,{_status:r.status});
+  }
+  const q=(o)=>Object.entries(Object.assign(o,TEST?{test:'1'}:{})).map(([k,v])=>k+'='+encodeURIComponent(v)).join('&');
+  // Grow the Fourthwall frame to fit.
+  if(window.parent!==window){const post=()=>parent.postMessage({fofGame:true,height:Math.ceil(document.body.getBoundingClientRect().height)},'*');new ResizeObserver(post).observe(document.body);addEventListener('load',post)}
+  if(TEST)$('testBanner').hidden=false;
+
+  let S=null,ME=null,i=0,pick=null,locked=false,range='week';
+  const card=$('card');
+  const etDay=ms=>new Date(ms).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'long',month:'long',day:'numeric'});
+
+  // ---------- screens ----------
+  function show(ids){['cover','game','table','results'].forEach(s=>$(s).hidden=!ids.includes(s));$('pips').hidden=!ids.includes('table');scrollTo(0,0)}
+  function renderCover(){
+    const st=$('status'),play=$('play');st.hidden=true;play.hidden=true;$('seal').hidden=true;
+    if(!S){st.hidden=false;st.textContent='Loading this week’s pile…';return}
+    if(S.week===0){st.hidden=false;st.textContent=`First pile ${etDay(S.opens)} at 9am Eastern.`;return}
+    if(!S.cards||!S.cards.length){st.hidden=false;st.textContent='No pile this week. Next one Monday at 9am Eastern.';return}
+    const P=S.week<0;$('seal').hidden=false;
+    $('seal').innerHTML=P?'Practice':'Week<b></b>';if(!P)$('seal').querySelector('b').textContent=S.week;
+    const n=S.answers.length,pre=P&&S.launch>Date.now();
+    play.hidden=false;st.hidden=true;$('pre').hidden=!pre;
+    if(pre){$('prebig').textContent=`Week 1 starts ${new Date(S.launch).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'long',month:'short',day:'numeric'})} at 9am Eastern`;startCountdown()}
+    if(S.done){play.textContent='See your results';if(!P){st.hidden=false;st.textContent=`You’ve played Week ${S.week}. Next pile ${etDay(S.next)} at 9am Eastern.`}else if(pre){st.hidden=false;st.textContent='You’ve played the practice pile.'}}
+    else play.textContent=n?`Keep going (card ${n+1} of ${S.cards.length})`:(P?'Play the practice pile':'Play');
+  }
+  // Pre-launch countdown. When it hits zero the page loads Week 1 by itself.
+  let cdTimer=null;
+  function fmtLeft(ms){const m=Math.max(0,Math.ceil(ms/6e4)),d=Math.floor(m/1440),h=Math.floor(m%1440/60),mm=m%60;return(d?d+'d ':'')+h+'h '+String(mm).padStart(2,'0')+'m'}
+  function startCountdown(){if(cdTimer)return;const up=()=>{const left=S.launch-Date.now();$('precd').textContent=fmtLeft(left);if(left<=0){clearInterval(cdTimer);cdTimer=null;if(!$('cover').hidden)setTimeout(()=>location.reload(),1500+Math.random()*20000)}};up();cdTimer=setInterval(up,15000)}
+  $('play').onclick=()=>{if(S.done)return results();startGame()};
+
+  async function load(){
+    try{S=await api('/fof/week?'+q({client:CLIENT}))}catch(e){S=null;$('status').hidden=false;$('status').textContent='Couldn’t load the game. Refresh to try again.';return}
+    renderCover();mountBoard('boardSlot0');renderAuth('auth0');
+  }
+
+  // ---------- auth ----------
+  async function loadMe(){ME=null;if(token()){try{const m=await api('/me');if(m.name)ME=m;else store.del('shopweekly.token')}catch(e){}}}
+  function renderAuth(slot){
+    const a=$(slot);if(!a)return;a.innerHTML='';
+    if(ME){const s=document.createElement('span');s.textContent='Signed in as '+ME.name+'.';a.appendChild(s);
+      const o=document.createElement('button');o.className='linkbtn';o.type='button';o.textContent='Sign out';
+      o.onclick=async()=>{try{await api('/auth/logout',{method:'POST'})}catch(e){}store.del('shopweekly.token');ME=null;renderAuth(slot);refreshBoards()};a.appendChild(o)}
+    else{const b=document.createElement('button');b.className='discord';b.type='button';b.textContent=S&&S.done?'Sign in with Discord to save your score':'Sign in with Discord';b.onclick=signIn;a.appendChild(b)}
+  }
+  function signIn(){
+    const nonce=Array.from(crypto.getRandomValues(new Uint8Array(18)),x=>x.toString(16).padStart(2,'0')).join('');
+    const w=window.open(API+'/auth/login?nonce='+nonce,'cotw-login','width=520,height=780');if(!w)return;
+    let n=0;const iv=setInterval(async()=>{
+      if(++n>180){clearInterval(iv);return}
+      try{const r=await api('/auth/claim?nonce='+nonce);if(r.token){clearInterval(iv);store.set('shopweekly.token',r.token);await loadMe();
+        // Loading the week again moves a pile played before signing in onto the account.
+        try{S=await api('/fof/week?'+q({client:CLIENT}))}catch(e){}
+        ['auth0','auth2'].forEach(renderAuth);refreshBoards();renderCover()}}catch(e){}
+    },1000);
+  }
+
+  // ---------- leaderboard ----------
+  const slots=new Set();
+  function refreshBoards(){slots.forEach(mountBoard)}
+  async function mountBoard(slot){
+    slots.add(slot);const el=$(slot);if(!el)return;
+    let b;try{b=await api('/fof/board?'+q({range}))}catch(e){el.innerHTML='<div class="board"><h2>Leaderboard</h2><p class="cap">Couldn’t load the board.</p></div>';return}
+    const wk=S&&S.week>0?'Week '+S.week:(S&&S.week<0?'Practice':'');
+    let cap;
+    if(range==='week'){
+      if(b.me)cap=`You’re #${b.me.rank} of ${b.total} this week`+(b.ahead?`, ${b.ahead.gap} point${b.ahead.gap===1?'':'s'} behind #${b.ahead.rank}.`:'.');
+      else if(!b.total)cap='No one on the board yet this week.';
+      else cap=`${b.total} player${b.total===1?'':'s'} on the board this week.`;
+      if(!b.me)cap+=(S&&S.done?(ME?'':' Sign in with Discord to get on it.'):' Play and sign in with Discord to get on it.');
+    }else{
+      cap=b.me?`You’re #${b.me.rank} all-time`+(b.ahead?`, ${b.ahead.gap} point${b.ahead.gap===1?'':'s'} behind #${b.ahead.rank}.`:'.'):(b.total?`${b.total} player${b.total===1?'':'s'} so far.`:'No one on the all-time board yet.');
+    }
+    const rows=[];let last=0;
+    for(const r of b.rows){if(r.rank>last+1&&rows.length)rows.push('<tr class="gap"><td colspan="4">⋯</td></tr>');last=r.rank;
+      const av=r.avatar?`<img src="${r.avatar}" alt="" loading="lazy">`:'';
+      rows.push(`<tr class="${r.me?'me':''}"><td>${r.rank}</td><td class="nm">${av}<span></span></td><td>${fmt(r.points)}</td><td>${range==='week'?r.right:r.weeks}</td></tr>`)}
+    el.innerHTML=`<div class="board"><h2>Leaderboard</h2>
+      <div class="tabs"><button class="tab" type="button" data-r="week" aria-pressed="${range==='week'}">${wk||'This week'}</button><button class="tab" type="button" data-r="all" aria-pressed="${range==='all'}">All-time</button></div>
+      <p class="cap"></p>
+      ${b.rows.length?`<table class="lb"><thead><tr><th>#</th><th>Player</th><th>Points</th><th>${range==='week'?'Right':'Weeks'}</th></tr></thead><tbody>${rows.join('')}</tbody></table>`:''}
+      <p class="cap">${range==='week'?'Resets Monday at 9am Eastern. Ties go to whoever was right on the cards most players missed.':'Total points from every week you’ve played.'}</p></div>`;
+    el.querySelector('.cap').textContent=cap;
+    // Names come from Discord; set them as text so nothing in a name can run as markup.
+    const spans=el.querySelectorAll('td.nm span');b.rows.forEach((r,k)=>{if(spans[k])spans[k].textContent=r.name});
+    el.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{range=t.dataset.r;refreshBoards()});
+  }
+
+  // ---------- play ----------
+  function pips(){$('pips').innerHTML=S.cards.map((_,k)=>{const a=S.answers[k];return `<span class="pip ${a?(a.ok?'r':'w'):k===i?'on':''}"></span>`}).join('')}
+  function totals(){
+    ['mFact','mFic'].forEach(id=>$(id).innerHTML='');
+    S.answers.forEach(a=>{const m=document.createElement('span');m.className='mini '+(a.ok?'r':'w');m.textContent=a.ok?'✓':'✕';(a.pick==='fact'?$('mFact'):$('mFic')).appendChild(m)});
+    $('cFact').textContent=$('mFact').children.length;$('cFic').textContent=$('mFic').children.length;
+    $('sRight').textContent=S.answers.filter(a=>a.ok).length;$('sPts').textContent=fmt(S.answers.reduce((s,a)=>s+a.points,0));
+  }
+  function startGame(){
+    i=S.answers.length;$('wkLabel').textContent=S.week>0?'Week '+S.week:'Practice pile';
+    show(['game','table']);totals();deal();
+  }
+  function deal(){
+    const c=S.cards[i];pick=null;locked=false;$('err').hidden=true;
+    card.classList.remove('flipped');card.style.transform='';$('deck').style.height='';
+    $('num').textContent=`Card ${i+1} of ${S.cards.length}`;$('ep').textContent=c.label;$('stmt').textContent=c.s;
+    $('hint').hidden=i>0;$('pick').hidden=false;$('sure').hidden=true;$('next').hidden=true;
+    lean(0);pips();
+    if(!reduce)card.animate([{transform:'translateY(-30px) rotate(-4deg)',opacity:0},{transform:'none',opacity:1}],{duration:380,easing:'cubic-bezier(.2,.8,.2,1)'});
+  }
+  function lean(x){const k=Math.min(1,Math.abs(x)/90);$('leanFact').style.opacity=x<0?k:0;$('leanFic').style.opacity=x>0?k:0}
+  function choose(a){
+    if(locked)return;pick=a;
+    card.style.transform=`translateX(${a==='fact'?-28:28}px) rotate(${a==='fact'?-3:3}deg)`;lean(a==='fact'?-90:90);
+    $('pick').hidden=true;$('sure').hidden=false;$('sureq').textContent=`${a==='fact'?'Fact':'Fiction'}. How sure?`;
+    document.querySelector('.chip').focus({preventScroll:true});
+  }
+  function undo(){if(locked)return;pick=null;card.style.transform='';lean(0);$('pick').hidden=false;$('sure').hidden=true}
+  async function commit(c){
+    if(!pick||locked)return;locked=true;$('sure').hidden=true;
+    const t0=Date.now();let r;
+    try{r=await api('/fof/answer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({week:S.week,i,pick,sure:c,client:CLIENT,test:TEST})})}
+    catch(e){locked=false;$('sure').hidden=false;$('err').hidden=false;$('err').textContent='That didn’t go through. Check your connection and try again.';return}
+    if(r._status===409){ // a new pile went live, or this card was already answered on another tab
+      if(r.week!==undefined&&r.cards){S=r;if(S.done)return results();i=S.answers.length;totals();return deal()}
+      $('err').hidden=false;$('err').textContent='A new pile just went live. Refresh to play it.';return}
+    S.answers.push(r);
+    setTimeout(()=>reveal(r),Math.max(0,(reduce?0:700)-(Date.now()-t0)));
+  }
+  function revealHTML(a,k){
+    const fact=a.a==='fact';
+    const quote=a.note?`<blockquote class="quote"><span class="label">From the crew</span>${esc(a.note)}</blockquote>`
+      :`<blockquote class="quote"><span class="label">What was said${a.who?' · '+esc(a.who):''}</span>${esc(a.quote)}</blockquote>`;
+    const crowd=a.crowd?`<div class="crowd"><span>${a.crowd.fact}% said Fact · ${100-a.crowd.fact}% said Fiction</span><div class="bar"><i style="width:${a.crowd.fact}%"></i></div></div>`
+      :'<div class="crowd"><span>The crowd split shows once five people have answered.</span></div>';
+    return `<div class="cardtop"><span>Card ${k+1} of ${S.cards.length}</span><span class="ep">${esc(a.label)}</span></div>
+      <div class="stamp">${fact?'Fact':'Fiction'}</div>
+      <p class="verdict ${a.ok?'r':'w'}"><span class="mark">${a.ok?'✓':'✕'}</span>${a.ok?'Right':'Missed'} · <b>${a.points>0?'+':''}${fmt(a.points)}</b> <span style="color:var(--muted);font-size:14px">(${a.sure?'I’m sure':'Lock it in'})</span></p>
+      ${quote}
+      ${fact?'':`<p class="changed"><span class="label">What really happened</span>${esc(a.real)}</p>`}
+      ${crowd}
+      ${linkHTML(a)}`;
+  }
+  function linkHTML(a){if(!a.link)return'';const at=S.cards[a.i]&&S.cards[a.i].ep>0;return `<a class="hear" href="${esc(a.link)}" target="_blank" rel="noopener">▶ ${at?'Hear it: '+esc(a.label.split(' · ')[0])+linkTime(a):'Watch it on YouTube'}</a>`}
+  function linkTime(a){const m=String(a.link).match(/[?&]t=(\d+)/);if(!m)return'';const s=+m[1];const h=Math.floor(s/3600),mm=Math.floor(s%3600/60),ss=s%60;return ' at '+(h?h+':'+String(mm).padStart(2,'0'):mm)+':'+String(ss).padStart(2,'0')}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+  function reveal(a){
+    $('back').innerHTML=revealHTML(a,i);
+    card.style.transform='';card.classList.add('flipped');lean(0);
+    $('deck').style.height=Math.max(340,$('back').scrollHeight+2)+'px';
+    totals();pips();
+    if(!reduce&&a.ok&&a.sure)card.animate([{transform:'scale(1)'},{transform:'scale(1.03)'},{transform:'scale(1)'}],{duration:380,delay:600});
+    $('next').hidden=false;$('next').textContent=i===S.cards.length-1?'See results':'Next card';
+    setTimeout(()=>$('next').focus({preventScroll:true}),reduce?0:650);
+  }
+  function next(){if(i<S.cards.length-1){i++;deal()}else{S.done=true;results()}}
+
+  // ---------- results ----------
+  function copyText(t){
+    const ta=document.createElement('textarea');ta.value=t;ta.setAttribute('readonly','');ta.style.cssText='position:fixed;top:0;left:0;opacity:0;pointer-events:none';
+    document.body.appendChild(ta);ta.select();ta.setSelectionRange(0,t.length);let ok=false;try{ok=document.execCommand('copy')}catch(e){}ta.remove();
+    if(ok)return Promise.resolve();
+    return navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(t):Promise.reject();
+  }
+  function results(){
+    const A=S.answers,right=A.filter(a=>a.ok).length,pts=A.reduce((s,a)=>s+a.points,0);
+    const grid=A.map(a=>a.ok?'🟩':'🟥').join('');
+    const share=`Fact or Fiction: The Game · ${S.week>0?'Week '+S.week:'Practice pile'}\n${right}/${S.cards.length} right · ${fmt(pts)} points\n${grid}\n${SHARE_URL}`;
+    $('wkLabel').textContent=S.week>0?'Week '+S.week:'Practice pile';
+    show(['game','results']);
+    const R=$('results');
+    R.innerHTML=`
+      <div class="res-top"><img alt="The S.H.O.P. goblin chef" src="chef.png">
+        <div><div class="big">${fmt(pts)} points</div><p>${right} of ${S.cards.length} right</p></div></div>
+      <pre class="share" id="share"></pre>
+      <button class="copy" id="copy" type="button">Copy result</button>
+      <div id="boardSlot2"></div>
+      <div class="authrow" id="auth2"></div>
+      <span class="label">Hear every answer</span>
+      <ol class="recap">${A.map((a,k)=>`<li><span class="mark" style="background:${a.ok?'var(--right)':'var(--wrong)'}">${a.ok?'✓':'✕'}</span><div>${esc(S.cards[k].s)}<br>${a.link?`<a href="${esc(a.link)}" target="_blank" rel="noopener">${a.a==='fact'?'Fact':'Fiction'} · ${S.cards[k].ep>0?esc(a.label.split(' · ')[0])+linkTime(a):'Behind the show'}</a>`:`<span>${a.a==='fact'?'Fact':'Fiction'}</span>`}</div></li>`).join('')}</ol>
+      <p class="when">${S.week>0?`Next pile ${etDay(S.next)} at 9am Eastern.`:`Week 1 goes live ${etDay(S.launch)} at 9am Eastern.`}</p>
+      <button class="btn again" id="toCover" type="button">Back to the box</button>`;
+    $('share').textContent=share;
+    $('copy').onclick=()=>copyText(share).then(()=>{$('copy').textContent='Copied'},()=>{$('copy').textContent='Select the text above to copy'});
+    $('toCover').onclick=()=>{renderCover();show(['cover']);mountBoard('boardSlot0');renderAuth('auth0')};
+    mountBoard('boardSlot2');renderAuth('auth2');
+    if(!reduce&&right===S.cards.length&&!store.get('fof.party.'+S.week,'')){store.set('fof.party.'+S.week,'1');confetti()}
+  }
+  function confetti(){const c=document.createElement('canvas');c.style.cssText='position:fixed;inset:0;pointer-events:none;width:100%;height:100%';document.body.appendChild(c);
+    const x=c.getContext('2d');c.width=innerWidth;c.height=innerHeight;const P=Array.from({length:90},()=>({x:innerWidth/2,y:innerHeight/3,vx:(Math.random()-.5)*12,vy:-Math.random()*10-3,c:['#d6a34a','#e6b862','#efe6d2','#7fbf7a'][Math.random()*4|0],r:Math.random()*6}));
+    let t=0;(function f(){x.clearRect(0,0,c.width,c.height);P.forEach(p=>{p.vy+=.3;p.x+=p.vx;p.y+=p.vy;p.r+=.2;x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.c;x.fillRect(-4,-2,8,4);x.restore()});if(++t<110)requestAnimationFrame(f);else c.remove()})()}
+
+  // ---------- input ----------
+  let sx=null,dx=0;
+  card.addEventListener('pointerdown',e=>{if(locked||pick)return;sx=e.clientX;dx=0;card.classList.add('dragging');card.setPointerCapture(e.pointerId)});
+  card.addEventListener('pointermove',e=>{if(sx==null)return;dx=e.clientX-sx;card.style.transform=`translateX(${dx}px) rotate(${dx/18}deg)`;lean(dx)});
+  const end=()=>{if(sx==null)return;card.classList.remove('dragging');sx=null;if(Math.abs(dx)>80)choose(dx<0?'fact':'fiction');else{card.style.transform='';lean(0)}};
+  card.addEventListener('pointerup',end);card.addEventListener('pointercancel',end);
+  $('bFact').onclick=()=>choose('fact');$('bFic').onclick=()=>choose('fiction');$('undo').onclick=undo;
+  document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>commit(+b.dataset.c));
+  $('next').onclick=next;
+  addEventListener('keydown',e=>{if($('table').hidden)return;
+    if(!pick&&!locked){if(e.key==='ArrowLeft')choose('fact');else if(e.key==='ArrowRight')choose('fiction')}
+    else if(pick&&!locked&&['1','2'].includes(e.key))commit(+e.key-1)});
+
+  renderCover();loadMe().then(load);
+})();
+</script>
+</body>
+</html>

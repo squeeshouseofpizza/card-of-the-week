@@ -1,9 +1,12 @@
+import { fofRoute } from './fof.js';
+
 // Card of the Week game server: a Cloudflare Worker with a D1 database bound as DB.
 //
 // It holds the weekly answers (the SCHEDULE secret), checks every guess so the answer never reaches
 // the browser before you finish, handles Discord sign-in, and serves community stats and the leaderboard.
 //
-// Secrets (Settings > Variables and Secrets): SCHEDULE, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET.
+// Secrets (Settings > Variables and Secrets): SCHEDULE, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, and FOF_KEY for
+// Fact or Fiction: The Game (see fof.js).
 
 const GAME_ORIGIN = 'https://squeeshouseofpizza.github.io';
 const CARDS_URL = GAME_ORIGIN + '/card-of-the-week/data/cards.json';
@@ -170,6 +173,11 @@ export default {
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(origin) });
     try {
       const now = currentWeek();
+
+      if (path.startsWith('/fof/')) {
+        const r = await fofRoute(req, env, url, origin, { J, user, GAME_ORIGIN });
+        if (r) return r;
+      }
 
       if (path === '/meta') {
         const retired = now - ARCHIVE - 1;
