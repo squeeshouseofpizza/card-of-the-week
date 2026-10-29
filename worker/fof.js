@@ -81,6 +81,20 @@ async function stateFor(env, B, week, pk) {
 
 // Weekly standings: players signed in with Discord who answered every card. Points first; ties go to whoever was
 // right on the cards most players missed (rarity); a tie on both shares the place.
+// Board results are cached briefly, so a busy week doesn't re-read every answer on every page load (D1 bills rows
+// read). Weekly: 20 seconds. All-time: 5 minutes, since it only changes when someone finishes a week.
+const MEMO = new Map();
+async function cached(key, ttl, fn) {
+  const hit = MEMO.get(key);
+  if (hit && Date.now() - hit.at < ttl * 1000) return hit.v;
+  const req = new Request('https://fof-cache.internal/' + key);
+  const cache = typeof caches !== 'undefined' ? caches.default : null;
+  if (cache) { const r = await cache.match(req); if (r) { const v = await r.json(); MEMO.set(key, { at: Date.now(), v }); return v; } }
+  const v = await fn();
+  MEMO.set(key, { at: Date.now(), v });
+  if (cache) await cache.put(req, new Response(JSON.stringify(v), { headers: { 'Cache-Control': 'max-age=' + ttl } }));
+  return v;
+}
 async function weekBoard(env, week, n) {
   const rows = (await env.DB.prepare('SELECT player, card, ok, points FROM fof_answers WHERE week = ?').bind(week).all()).results;
   const per = new Map(), share = Array(n).fill(0).map(() => [0, 0]);
@@ -153,8 +167,24 @@ export async function fofRoute(req, env, url, origin, h) {
     const all = url.searchParams.get('range') === 'all';
     const week = practice ? PRACTICE : now;
     let list;
-    if (all) list = await allBoard(env, now);
-    else { const B = await bank(env); const cards = pile(B, week); list = cards ? await weekBoard(env, week, cards.length) : []; }
+    const me0 = await h.user(req, env);
+    if (all) {
+      list = await cached('all-' + now, 300, () => allBoard(env, now));
+      if (me0 && !list.some(r => r.id === me0.discord_id)) {
+        // Only this week's pile can be newly finished; the (week, player) index keeps this to a few rows.
+        const done = now >= 1 ? await env.DB.prepare('SELECT COUNT(*) AS n FROM fof_answers WHERE week = ? AND player = ?').bind(now, 'd:' + me0.discord_id).first() : null;
+        if (done && done.n === CARDS) { list = await allBoard(env, now); MEMO.set('all-' + now, { at: Date.now(), v: list }); }
+      }
+    } else {
+      const B = await bank(env); const cards = pile(B, week);
+      list = cards ? await cached('week' + week, 20, () => weekBoard(env, week, cards.length)) : [];
+      // Someone who just finished shouldn't have to wait for the cache to see themselves.
+      if (cards && me0 && !list.some(r => r.id === me0.discord_id)) {
+        const n = await env.DB.prepare('SELECT COUNT(*) AS n FROM fof_answers WHERE week = ? AND player = ?').bind(week, 'd:' + me0.discord_id).first();
+        if (n && n.n === cards.length) { list = await weekBoard(env, week, cards.length); MEMO.set('week' + week, { at: Date.now(), v: list }); }
+      }
+    }
+    list = list.map(r => ({ ...r }));
     rankList(list);
     const users = new Map();
     const ids = list.slice(0, 200).map(r => r.id);
@@ -163,7 +193,7 @@ export async function fofRoute(req, env, url, origin, h) {
       const rs = (await env.DB.prepare(`SELECT discord_id, name, avatar FROM users WHERE discord_id IN (${chunk.map(() => '?').join(',')})`).bind(...chunk).all()).results;
       rs.forEach(u => users.set(u.discord_id, u));
     }
-    const me = await h.user(req, env);
+    const me = me0;
     const out = list.map(r => {
       const u = users.get(r.id) || { name: 'Player' };
       return { rank: r.rank, name: u.name, avatar: u.avatar ? `https://cdn.discordapp.com/avatars/${r.id}/${u.avatar}.png?size=64` : '', points: r.points, right: r.right, weeks: r.weeks, me: !!(me && me.discord_id === r.id) };

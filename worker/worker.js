@@ -293,10 +293,10 @@ export default {
         const week = currentWeek(), all = url.searchParams.get('range') === 'all';
         // All-time is each player's best score from any week. Ties go to whoever got there first.
         const rows = all
+          // One pass over the table (the old correlated subquery re-scanned it for every row, which D1 bills as rows read).
           ? (await env.DB.prepare(`SELECT b.discord_id, u.name, u.avatar, b.score FROM (
-                SELECT discord_id, MAX(score) AS score, MIN(created_at) AS created_at FROM pizza_scores p
-                WHERE score = (SELECT MAX(score) FROM pizza_scores q WHERE q.discord_id = p.discord_id)
-                GROUP BY discord_id) b JOIN users u ON u.discord_id = b.discord_id ORDER BY b.score DESC, b.created_at ASC`).all()).results
+                SELECT discord_id, score, created_at, ROW_NUMBER() OVER (PARTITION BY discord_id ORDER BY score DESC, created_at ASC) AS rn
+                FROM pizza_scores) b JOIN users u ON u.discord_id = b.discord_id WHERE b.rn = 1 ORDER BY b.score DESC, b.created_at ASC`).all()).results
           : (await env.DB.prepare(`SELECT p.discord_id, u.name, u.avatar, p.score FROM pizza_scores p JOIN users u ON u.discord_id = p.discord_id
             WHERE p.week = ? ORDER BY p.score DESC, p.created_at ASC`).bind(week).all()).results;
         const me = await user(req, env);
