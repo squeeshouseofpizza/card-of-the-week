@@ -105,7 +105,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   <details id="help">
     <summary>How to play</summary>
     <p>On a computer, move the mouse to aim and click to drop (arrow keys and space work too). On a phone, drag to aim and let go to drop.</p>
-    <p>Two olives make a basil, two basils make a garlic, and so on up the list under the box. You only get the five smallest toppings. Everything bigger, you have to build. The chili is the tough one. Two whole pizzas cancel out for 150 points.</p>
+    <p>Two olives make a basil, two basils make a garlic, and so on up the list under the box. You only get the five smallest toppings. Everything bigger, you have to build. The chili is the tough one.</p>
     <p>If anything stays above the dashed line for three seconds, you're done.</p>
     <p>Sign in with Discord to get on the weekly high scores. They reset Wednesdays at 9am Eastern.</p>
   </details>
@@ -242,6 +242,8 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   }
   function icon(canvas,lvl){const c=canvas.getContext('2d');c.clearRect(0,0,canvas.width,canvas.height);const w=canvas.width;drawTopping(c,lvl,w/2,w/2,w/2-2,0)}
   // Lifetime collection: the highest topping ever made on this device (the first five are always unlocked), plus double pizza.
+  // Two pizzas merging (150 points) is a hidden surprise, not advertised: Oct 29 2026 testing showed it's likely out of reach
+  // in this box, so How to play doesn't mention it and the post-pizza goal is beating your best.
   let everBig=Math.max(DROPPABLE-1,store.get('pizzadrop.biggest',-1)),everDouble=store.get('pizzadrop.double',false);
   const chainItems=T.map((t,i)=>{const li=el('li');const cv=document.createElement('canvas');cv.width=76;cv.height=76;cv.setAttribute('aria-hidden','true');icon(cv,i);
     const nm=el('span',null,t.name);li.append(cv,nm);$('chain').appendChild(li);return li});
@@ -447,7 +449,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     const run={score,ms,merges,drops,top:biggest};
     api('/pizza/run',{method:'POST',body:run}).catch(()=>{});
     if(biggest>=0){icon($('bigicon'),biggest);$('bigname').textContent=T[biggest].name+(newBig?' (new!)':'');$('biggest').hidden=false}else $('biggest').hidden=true;
-    $('goal').textContent=everBig<PIZZA?'Next goal: make a '+T[everBig+1].name.toLowerCase()+'.':!everDouble?'Next goal: merge two pizzas.':'Next goal: beat your best.';
+    $('goal').textContent=everBig<PIZZA?'Next goal: make a '+T[everBig+1].name.toLowerCase()+'.':'Next goal: beat your best.';
     const gap=prevBest-score;
     let note=score>prevBest&&prevBest>0?'New personal best.':gap>0&&gap<=Math.max(100,prevBest*.15)?'Only '+gap.toLocaleString()+' short of your best.':'';
     $('overNote').textContent=note;$('over').hidden=false;
