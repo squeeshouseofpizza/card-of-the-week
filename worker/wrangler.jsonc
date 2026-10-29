@@ -1,5 +1,5 @@
 // Cloudflare deploys the game server from this folder whenever main changes (Workers Builds).
-// Secrets (SCHEDULE, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET) live only in the Cloudflare dashboard.
+// Secrets (SCHEDULE, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, FOF_KEY) live only in the Cloudflare dashboard.
 {
   "name": "card-of-the-week",
   "main": "worker.js",
