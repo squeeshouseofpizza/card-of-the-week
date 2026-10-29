@@ -34,15 +34,18 @@ export function fofWeek(now = Date.now()) {
 
 // ---------- the encrypted bank ----------
 const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
-let PLAIN = null;
-async function bank(env) {
-  if (PLAIN) return PLAIN;
+// Opens any file built by the shop-hq build scripts (this game's bank, and Guess the Card's schedule).
+export async function openSealed(env, sealed) {
   if (!env.FOF_KEY) throw new Error('FOF_KEY secret is not set');
   const priv = await crypto.subtle.importKey('jwk', JSON.parse(env.FOF_KEY), { name: 'RSA-OAEP', hash: 'SHA-256' }, false, ['decrypt']);
-  const raw = await crypto.subtle.decrypt({ name: 'RSA-OAEP' }, priv, b64(BANK.key));
+  const raw = await crypto.subtle.decrypt({ name: 'RSA-OAEP' }, priv, b64(sealed.key));
   const aes = await crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['decrypt']);
-  const out = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(BANK.iv) }, aes, b64(BANK.data));
-  PLAIN = JSON.parse(new TextDecoder().decode(out));
+  const out = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(sealed.iv) }, aes, b64(sealed.data));
+  return JSON.parse(new TextDecoder().decode(out));
+}
+let PLAIN = null;
+async function bank(env) {
+  if (!PLAIN) PLAIN = await openSealed(env, BANK);
   return PLAIN;
 }
 function pile(B, week) {
