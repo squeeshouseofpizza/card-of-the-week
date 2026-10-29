@@ -177,6 +177,20 @@ async function stateFor(env, D, week, row) {
   return out;
 }
 
+
+// Pizza Drop boards are cached briefly in each Worker instance (20 seconds weekly, 5 minutes all-time) so a busy
+// board doesn't re-read every score on every view. Cloudflare's shared cache isn't used: it does nothing on a
+// workers.dev address. A new score clears this instance's copy, so the player sees it straight away.
+const BOARD_MEMO = new Map();
+async function boardCache(key, ttl, fn) {
+  const hit = BOARD_MEMO.get(key);
+  if (hit && Date.now() - hit.at < ttl * 1000) return hit.v;
+  const v = await fn();
+  BOARD_MEMO.set(key, { at: Date.now(), v });
+  return v;
+}
+function forgetBoards(week) { BOARD_MEMO.delete('pz-all'); BOARD_MEMO.delete('pz-week' + week); }
+
 // ---------- routes ----------
 export default {
   async fetch(req, env) {
@@ -280,7 +294,7 @@ export default {
         // no drop can be worth more than about 28.7 points: that is the most a largest droppable topping
         // can earn if every merge above it, up to a double pizza, gets made from it.
         const ok = [score, ms, merges, drops, top].every(Number.isInteger) && score >= 0 && score <= 150 * merges
-          && score <= 29 * drops + 20 && merges <= drops && drops <= ms / 450 + 2 && ms <= 6 * 3600e3 && top >= -1 && top <= 10;
+          && score <= 29 * drops + 20 && merges <= drops && drops <= ms / 450 + 2 && ms <= 7 * 864e5 && top >= -1 && top <= 10;
         if (!ok) return J({ error: 'invalid' }, 400, origin);
         const week = currentWeek();
         if (path === '/pizza/run') {
@@ -295,21 +309,23 @@ export default {
         await env.DB.prepare(`INSERT INTO pizza_scores (week, discord_id, score, ms, merges, created_at) VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT(week, discord_id) DO UPDATE SET score = excluded.score, ms = excluded.ms, merges = excluded.merges, created_at = excluded.created_at
             WHERE excluded.score > pizza_scores.score`).bind(week, u.discord_id, score, ms, merges, Date.now()).run();
-        const best = await env.DB.prepare('SELECT score FROM pizza_scores WHERE week = ? AND discord_id = ?').bind(week, u.discord_id).first();
-        const above = await env.DB.prepare('SELECT COUNT(*) AS n FROM pizza_scores WHERE week = ? AND score > ?').bind(week, best.score).first();
-        const next = await env.DB.prepare('SELECT score FROM pizza_scores WHERE week = ? AND score > ? ORDER BY score ASC LIMIT 1').bind(week, best.score).first();
+        const best = await env.DB.prepare('SELECT score, created_at FROM pizza_scores WHERE week = ? AND discord_id = ?').bind(week, u.discord_id).first();
+        // Same order as the board: higher score first, and on a tie whoever got there first.
+        const above = await env.DB.prepare('SELECT COUNT(*) AS n FROM pizza_scores WHERE week = ? AND (score > ? OR (score = ? AND created_at < ?))').bind(week, best.score, best.score, best.created_at).first();
+        const next = await env.DB.prepare('SELECT score FROM pizza_scores WHERE week = ? AND (score > ? OR (score = ? AND created_at < ?)) ORDER BY score ASC, created_at DESC LIMIT 1').bind(week, best.score, best.score, best.created_at).first();
+        forgetBoards(week);
         return J({ ok: true, best: best.score, rank: above.n + 1, gap: next ? next.score - best.score : null }, 200, origin);
       }
       if (path === '/pizza/board') {
         const week = currentWeek(), all = url.searchParams.get('range') === 'all';
         // All-time is each player's best score from any week. Ties go to whoever got there first.
-        const rows = all
+        const rows = await boardCache(all ? 'pz-all' : 'pz-week' + week, all ? 300 : 20, async () => all
           // One pass over the table (the old correlated subquery re-scanned it for every row, which D1 bills as rows read).
           ? (await env.DB.prepare(`SELECT b.discord_id, u.name, u.avatar, b.score FROM (
                 SELECT discord_id, score, created_at, ROW_NUMBER() OVER (PARTITION BY discord_id ORDER BY score DESC, created_at ASC) AS rn
                 FROM pizza_scores) b JOIN users u ON u.discord_id = b.discord_id WHERE b.rn = 1 ORDER BY b.score DESC, b.created_at ASC`).all()).results
           : (await env.DB.prepare(`SELECT p.discord_id, u.name, u.avatar, p.score FROM pizza_scores p JOIN users u ON u.discord_id = p.discord_id
-            WHERE p.week = ? ORDER BY p.score DESC, p.created_at ASC`).bind(week).all()).results;
+            WHERE p.week = ? ORDER BY p.score DESC, p.created_at ASC`).bind(week).all()).results);
         const me = await user(req, env);
         const list = rows.map((r, i) => ({ rank: i + 1, name: r.name, avatar: r.avatar ? `https://cdn.discordapp.com/avatars/${r.discord_id}/${r.avatar}.png?size=64` : '', score: r.score, me: !!(me && me.discord_id === r.discord_id) }));
         return J({ week, since: weekStart(week), launch: LAUNCH_MS, range: all ? 'all' : 'week', total: list.length, top: list.slice(0, 25), me: list.find(r => r.me) || null }, 200, origin);
