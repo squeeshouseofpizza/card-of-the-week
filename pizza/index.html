@@ -446,7 +446,9 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     $('overScore').textContent=score.toLocaleString();
     const newBig=biggest>startEver;
     $('share').textContent='🍕 Pizza Drop'+(WEEK_OF?' · week of '+WEEK_OF:'')+'\n'+score.toLocaleString()+' points'+(biggest>=0?' · biggest: '+T[biggest].name+(biggest===PIZZA-1?' 🌶️':biggest===PIZZA?' 🍕':''):'')+'\n'+SHARE_URL;
-    const run={score,ms,merges,drops,top:biggest};
+    // The browser id (shared with Guess the Card) lets the crew's stats page count games per player; signing in uses the account.
+    let cid=store.get('shopweekly.id','');if(!/^[A-Za-z0-9_-]{8,64}$/.test(cid)){cid=(crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2)+Date.now()).replace(/[^A-Za-z0-9_-]/g,'');store.set('shopweekly.id',cid)}
+    const run={score,ms,merges,drops,top:biggest,client:cid};
     api('/pizza/run',{method:'POST',body:run}).catch(()=>{});
     if(biggest>=0){icon($('bigicon'),biggest);$('bigname').textContent=T[biggest].name+(newBig?' (new!)':'');$('biggest').hidden=false}else $('biggest').hidden=true;
     $('goal').textContent=everBig<PIZZA?'Next goal: make a '+T[everBig+1].name.toLowerCase()+'.':'Next goal: beat your best.';

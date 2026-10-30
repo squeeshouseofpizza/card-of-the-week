@@ -106,7 +106,9 @@ td.l,th.l{white-space:nowrap}
       ${P.biggest.map(b=>`<tr><td>${b.top<0?'No merges':TOP[b.top]}</td><td class="l">${bar(b.games,maxB)}${num(b.games)}</td><td>${Math.round(100*b.games/allTop)}%</td></tr>`).join('')}</tbody></table></div>
       <h3>Best scores (signed in)</h3><div class="scroll"><table><thead><tr><th class="l">Player</th><th>Best</th><th>Weeks played</th></tr></thead><tbody>
       ${P.top.map(t=>`<tr><td>${esc(t.name)}</td><td>${num(t.best)}</td><td>${t.weeks}</td></tr>`).join('')||'<tr><td colspan="3" class="l muted">No signed-in scores yet.</td></tr>'}</tbody></table></div>
-      <p class="muted" style="margin:10px 0 0">Every finished game is counted, signed in or not. The game doesn’t track who anonymous players are, so player counts only exist for signed-in scores.</p></section>`;
+      <h3>Games per player</h3><div class="scroll"><table><thead><tr><th class="l">Player</th><th>Games</th><th>Best</th><th>Avg score</th><th>Pizzas</th><th>Last played</th></tr></thead><tbody>
+      ${(P.players||[]).map(p=>`<tr><td>${esc(p.name)}${p.signedIn?'':' <span class="muted">(not signed in)</span>'}</td><td>${num(p.games)}</td><td>${num(p.best)}</td><td>${num(p.avg)}</td><td>${num(p.pizzas)}</td><td>${new Date(p.last).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</td></tr>`).join('')||'<tr><td colspan="6" class="l muted">No tracked games yet.</td></tr>'}</tbody></table></div>
+      <p class="muted" style="margin:10px 0 0">Games per player counts from Oct 29, 2026 on${P.untracked?` (${num(P.untracked)} earlier games weren’t tagged and only show in the daily totals)`:''}. Not signed in means one browser; when that browser signs in, its games move to the account.</p></section>`;
 
     const wk=w=>w===-1?'Practice card':w<-1?'Test '+(-w-1):'Week '+w;
     const pc=v=>v==null?'–':v+'%';

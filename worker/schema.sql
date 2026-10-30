@@ -20,3 +20,5 @@ CREATE TABLE IF NOT EXISTS fof_counts (week INTEGER NOT NULL, card INTEGER NOT N
 CREATE TABLE IF NOT EXISTS fof_scores (week INTEGER NOT NULL, discord_id TEXT NOT NULL, points INTEGER NOT NULL, nright INTEGER NOT NULL, okmask INTEGER NOT NULL, done_at INTEGER NOT NULL, PRIMARY KEY (week, discord_id));
 CREATE INDEX IF NOT EXISTS fof_scores_id ON fof_scores (discord_id, week);
 CREATE TABLE IF NOT EXISTS fof_meta (k TEXT PRIMARY KEY, v TEXT);
+-- pizza_runs.player (Oct 29 2026): d:<discord id> or c:<browser id>; added by the Worker itself (pizzaRunsPlayer in worker.js).
+-- ALTER TABLE pizza_runs ADD COLUMN player TEXT; CREATE INDEX IF NOT EXISTS pizza_runs_player ON pizza_runs (player);

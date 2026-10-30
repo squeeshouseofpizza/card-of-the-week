@@ -202,6 +202,16 @@ function forgetBoards(week) { BOARD_MEMO.delete('pz-all'); BOARD_MEMO.delete('pz
 
 // Guess the Card's stats and leaderboard are cached per Worker instance too (60 and 20 seconds); the signed-in
 // player's own leaderboard row is always read fresh.
+// pizza_runs gained a player column on Oct 29 2026. The Worker adds it itself once (an "already exists" error just
+// means it's there), so nothing has to be run in the D1 console.
+let PZ_COL = null;
+function pizzaRunsPlayer(env) {
+  if (!PZ_COL) PZ_COL = (async () => {
+    try { await env.DB.prepare('ALTER TABLE pizza_runs ADD COLUMN player TEXT').run(); } catch (e) { if (!/duplicate column/i.test(String(e && e.message))) { PZ_COL = null; throw e; } }
+    await env.DB.prepare('CREATE INDEX IF NOT EXISTS pizza_runs_player ON pizza_runs (player)').run();
+  })();
+  return PZ_COL;
+}
 const GTC_MEMO = new Map();
 async function memo(key, ttl, fn) {
   const hit = GTC_MEMO.get(key);
@@ -338,9 +348,15 @@ export default {
         if (!ok) return J({ error: 'invalid' }, 400, origin);
         const week = currentWeek();
         if (path === '/pizza/run') {
-          // Anonymous run log for tuning game length and how often each topping gets made.
-          await env.DB.prepare('INSERT INTO pizza_runs (week, score, ms, drops, merges, top, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
-            .bind(week, score, ms, drops, merges, top, Date.now()).run();
+          // Run log for tuning and the private stats page. Since Oct 29 2026 each run also records who played:
+          // d:<discord id> when signed in, else c:<browser id>. Runs from before that have no player.
+          await pizzaRunsPlayer(env);
+          const me = await user(req, env), client = typeof b.client === 'string' && /^[A-Za-z0-9_-]{8,64}$/.test(b.client) ? b.client : null;
+          const player = me ? 'd:' + me.discord_id : client ? 'c:' + client : null;
+          // Games this browser logged before signing in move to the account.
+          if (me && client) await env.DB.prepare('UPDATE pizza_runs SET player = ? WHERE player = ?').bind(player, 'c:' + client).run();
+          await env.DB.prepare('INSERT INTO pizza_runs (week, score, ms, drops, merges, top, created_at, player) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+            .bind(week, score, ms, drops, merges, top, Date.now(), player).run();
           return J({ ok: true }, 200, origin);
         }
         const u = await user(req, env);
@@ -420,6 +436,13 @@ export default {
         const pizzaDays = fold(runs, (a = { games: 0, s: 0, best: 0, ms: 0 }, r) => ({ games: a.games + r.n, s: a.s + r.s, best: Math.max(a.best, r.best), ms: a.ms + r.ms }))
           .map(d => ({ day: d.day, games: d.games, avgScore: Math.round(d.s / d.games), best: d.best, avgMinutes: Math.round(d.ms / d.games / 6000) / 10 })).sort((a, b) => a.day < b.day ? -1 : 1);
         const biggest = (await env.DB.prepare('SELECT top, COUNT(*) AS games FROM pizza_runs GROUP BY top ORDER BY top').all()).results;
+        await pizzaRunsPlayer(env);
+        const perPlayer = (await env.DB.prepare(`SELECT r.player, u.name, COUNT(*) AS games, MAX(r.score) AS best, ROUND(AVG(r.score)) AS avg,
+            SUM(r.top = 10) AS pizzas, MAX(r.created_at) AS last FROM pizza_runs r LEFT JOIN users u ON r.player = 'd:' || u.discord_id
+            WHERE r.player IS NOT NULL GROUP BY r.player ORDER BY games DESC`).all()).results;
+        let anonN = 0;
+        const pizzaPlayers = perPlayer.map(r => ({ name: r.name || 'Anonymous ' + (++anonN), signedIn: r.player.startsWith('d:'), games: r.games, best: r.best, avg: r.avg, pizzas: r.pizzas || 0, last: r.last }));
+        const untracked = (await env.DB.prepare('SELECT COUNT(*) AS n FROM pizza_runs WHERE player IS NULL').first()).n;
         const pizzaTop = (await env.DB.prepare(`SELECT u.name, MAX(p.score) AS best, COUNT(*) AS weeks FROM pizza_scores p JOIN users u ON u.discord_id = p.discord_id
             GROUP BY p.discord_id ORDER BY best DESC LIMIT 25`).all()).results;
         // Guess the Card per week, plus each player's guesses. Hints: artist after 3 misses, flavor after 4, art after 5.
@@ -446,7 +469,7 @@ export default {
         const users = (await env.DB.prepare('SELECT created_at / 3600000 AS h, COUNT(*) AS n FROM users GROUP BY h').all()).results;
         const signups = fold(users, (a = { n: 0 }, r) => ({ n: a.n + r.n })).sort((a, b) => a.day < b.day ? -1 : 1);
         return J({ at: Date.now(), gtcWeek: now, accounts: users.reduce((s, r) => s + r.n, 0), signups,
-          pizza: { games: runs.reduce((s, r) => s + r.n, 0), days: pizzaDays, biggest, top: pizzaTop },
+          pizza: { games: runs.reduce((s, r) => s + r.n, 0), days: pizzaDays, biggest, top: pizzaTop, players: pizzaPlayers, untracked },
           gtc: { weeks: gtcWeeks }, fof: await fofStats(env) }, 200, origin);
       }
       if (path === '/me') {
