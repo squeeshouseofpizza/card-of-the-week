@@ -1,4 +1,4 @@
-import { fofRoute, openSealed } from './fof.js';
+import { fofRoute, openSealed, fofStats } from './fof.js';
 import GTC from './gtc-bank.js';
 
 // Card of the Week game server: a Cloudflare Worker with a D1 database bound as DB.
@@ -20,6 +20,8 @@ const MIN_STATS_PLAYERS = 5;
 const DEEP_EVERY = 26, DEEP_OFFSET = 13;
 const isDeep = w => w > 0 && w % DEEP_EVERY === DEEP_OFFSET;
 const SESSION_DAYS = 180;
+// Discord accounts that can open the private stats page (stats/). Discord ids aren't secret; they only say who's allowed.
+const ADMINS = new Set([]);
 const SCRYFALL_HEADERS = { 'User-Agent': 'CardOfTheWeek/1.0 (squeeshouseofpizza.com)', 'Accept': 'application/json' };
 
 // ---------- time ----------
@@ -405,6 +407,29 @@ export default {
         if (!row || !row.token) return J({ pending: true }, 200, origin);
         await env.DB.prepare('DELETE FROM logins WHERE nonce = ?').bind(nonce).run();
         return J({ token: row.token }, 200, origin);
+      }
+      // ----- private stats for the crew (stats/ page): Discord sign-in, and only accounts on ADMINS -----
+      if (path === '/admin/stats') {
+        const u = await user(req, env);
+        if (!u) return J({ error: 'signin' }, 401, origin);
+        if (!ADMINS.has(u.discord_id)) return J({ error: 'not admin', you: { id: u.discord_id, name: u.name } }, 403, origin);
+        // Days are Eastern dates. Rows are grouped by UTC hour in SQL, then folded into Eastern days here.
+        const day = ms => new Date(ms).toLocaleDateString('en-CA', { timeZone: TZ });
+        const fold = (rows, f) => { const m = new Map(); for (const r of rows) { const d = day(r.h * 3600e3); m.set(d, f(m.get(d), r)); } return [...m].map(([d, v]) => ({ day: d, ...v })); };
+        const runs = (await env.DB.prepare('SELECT created_at / 3600000 AS h, COUNT(*) AS n, SUM(score) AS s, MAX(score) AS best, SUM(ms) AS ms FROM pizza_runs GROUP BY h').all()).results;
+        const pizzaDays = fold(runs, (a = { games: 0, s: 0, best: 0, ms: 0 }, r) => ({ games: a.games + r.n, s: a.s + r.s, best: Math.max(a.best, r.best), ms: a.ms + r.ms }))
+          .map(d => ({ day: d.day, games: d.games, avgScore: Math.round(d.s / d.games), best: d.best, avgMinutes: Math.round(d.ms / d.games / 6000) / 10 })).sort((a, b) => a.day < b.day ? -1 : 1);
+        const biggest = (await env.DB.prepare('SELECT top, COUNT(*) AS games FROM pizza_runs GROUP BY top ORDER BY top').all()).results;
+        const pizzaTop = (await env.DB.prepare(`SELECT u.name, MAX(p.score) AS best, COUNT(*) AS weeks FROM pizza_scores p JOIN users u ON u.discord_id = p.discord_id
+            GROUP BY p.discord_id ORDER BY best DESC LIMIT 25`).all()).results;
+        const gtcWeeks = (await env.DB.prepare(`SELECT week, COUNT(*) AS players, SUM(done) AS finished, SUM(won) AS solved, SUM(player LIKE 'd:%') AS signed_in,
+            AVG(CASE WHEN won = 1 THEN json_array_length(guesses) END) AS avg_guesses FROM plays GROUP BY week ORDER BY week`).all()).results
+          .map(r => ({ week: r.week, players: r.players, finished: r.finished || 0, solved: r.solved || 0, signedIn: r.signed_in || 0, avgGuesses: r.avg_guesses ? Math.round(r.avg_guesses * 10) / 10 : null }));
+        const users = (await env.DB.prepare('SELECT created_at / 3600000 AS h, COUNT(*) AS n FROM users GROUP BY h').all()).results;
+        const signups = fold(users, (a = { n: 0 }, r) => ({ n: a.n + r.n })).sort((a, b) => a.day < b.day ? -1 : 1);
+        return J({ at: Date.now(), gtcWeek: now, accounts: users.reduce((s, r) => s + r.n, 0), signups,
+          pizza: { games: runs.reduce((s, r) => s + r.n, 0), days: pizzaDays, biggest, top: pizzaTop },
+          gtc: { weeks: gtcWeeks }, fof: await fofStats(env) }, 200, origin);
       }
       if (path === '/me') {
         const u = await user(req, env);

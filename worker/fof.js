@@ -243,3 +243,23 @@ export async function fofRoute(req, env, url, origin, h) {
 
   return null;
 }
+
+// ---------- private stats (called from worker.js /admin/stats, which checks the admin list) ----------
+export async function fofStats(env) {
+  await schema(env);
+  const B = await bank(env), now = fofWeek();
+  const piles = (await env.DB.prepare(`SELECT week, COUNT(*) AS piles, SUM(n = ${CARDS}) AS finished, SUM(player LIKE 'd:%') AS signed_in,
+      SUM(CASE WHEN n = ${CARDS} THEN pts END) AS pts_done FROM (SELECT week, player, COUNT(*) AS n, SUM(points) AS pts FROM fof_answers GROUP BY week, player)
+      GROUP BY week ORDER BY week`).all()).results;
+  const counts = (await env.DB.prepare('SELECT week, card, n, f, ok FROM fof_counts ORDER BY week, card').all()).results;
+  const weeks = piles.map(p => {
+    const cards = pile(B, p.week) || [];
+    return {
+      week: p.week, label: p.week === PRACTICE ? 'Practice' : 'Week ' + p.week, piles: p.piles, finished: p.finished || 0, signedIn: p.signed_in || 0,
+      avgPoints: p.finished ? Math.round(10 * p.pts_done / p.finished) / 10 : null,
+      cards: cards.map((c, i) => { const k = counts.find(r => r.week === p.week && r.card === i) || { n: 0, f: 0, ok: 0 };
+        return { i: i + 1, id: c.id, s: c.s, a: c.a, answers: k.n, saidFact: k.n ? Math.round(100 * k.f / k.n) : null, right: k.n ? Math.round(100 * k.ok / k.n) : null }; }),
+    };
+  });
+  return { currentWeek: now, weeks };
+}

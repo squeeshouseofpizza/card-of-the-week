@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Game stats · S.H.O.P.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:wght@400;500&display=swap">
+<style>
+/* Private stats for the S.H.O.P. games. The numbers come from the game server and only show for Discord accounts on
+   its admin list; this page itself holds no data. */
+:root{
+  --ground:#17120c; --panel:#211a11; --line:rgba(214,163,74,.3); --gold:#d6a34a; --gold-lite:#e6b862;
+  --cream:#efe6d2; --muted:#a99873; --bar:#8a6a2e;
+  --display:"Cinzel",Georgia,serif; --body:"EB Garamond",Georgia,serif; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--ground);color:var(--cream);font-family:var(--body);font-size:17px;line-height:1.45}
+.wrap{max-width:980px;margin:0 auto;padding:20px 16px 48px;display:flex;flex-direction:column;gap:18px}
+h1{font-family:var(--display);font-size:26px;margin:0;color:var(--gold-lite)}
+h2{font-family:var(--display);font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0 0 10px;font-weight:500}
+h3{font-family:var(--display);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px;font-weight:500}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.muted{color:var(--muted);font-size:15px}
+section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.tile .l{font-family:var(--display);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.tile .n{font-family:var(--mono);font-size:24px;font-variant-numeric:tabular-nums}
+#out{display:flex;flex-direction:column;gap:18px}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:15.5px}
+th{font-family:var(--display);font-weight:500;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:right;padding:5px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:6px 8px;text-align:right;border-bottom:1px solid rgba(214,163,74,.12);vertical-align:top}
+th:first-child,td:first-child,td.l,th.l{text-align:left}
+td.s{text-align:left;max-width:520px}
+.bar{display:inline-block;height:10px;background:var(--bar);border-radius:2px;vertical-align:middle;margin-right:6px}
+.btn{background:#5865f2;color:#fff;border:0;border-radius:8px;padding:9px 14px;font:inherit;font-size:16px;cursor:pointer}
+.link{background:none;border:0;color:var(--gold);text-decoration:underline;font:inherit;font-size:15px;cursor:pointer;padding:0}
+.msg{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+code{font-family:var(--mono);background:#2a2116;padding:2px 6px;border-radius:4px}
+.fact{color:#9cc98f}.fiction{color:#e08a6e}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><h1>S.H.O.P. game stats</h1><div id="auth" class="muted"></div></div>
+  <div class="msg" id="msg">Loading…</div>
+  <div id="out" hidden></div>
+</div>
+<script>
+(function(){
+  const API='https://card-of-the-week.squeeshouseofpizza.workers.dev';
+  const $=id=>document.getElementById(id);
+  const MEM=new Map();
+  const store={get(k){try{const v=localStorage.getItem(k);if(v)return JSON.parse(v)}catch(e){}return MEM.get(k)||''},set(k,v){MEM.set(k,v);try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){MEM.delete(k);try{localStorage.removeItem(k)}catch(e){}}};
+  const token=()=>store.get('shopweekly.token');
+  const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const num=n=>n==null?'–':Number(n).toLocaleString();
+  const TOP=['Olive','Basil','Garlic','Mushroom','Onion','Pepperoni','Tomato','Green pepper','Mozzarella','Signature chili','Pizza'];
+  const bar=(v,max,w=120)=>`<span class="bar" style="width:${max?Math.max(2,Math.round(v/max*w)):0}px"></span>`;
+
+  function signIn(){
+    const nonce=Array.from(crypto.getRandomValues(new Uint8Array(18)),x=>x.toString(16).padStart(2,'0')).join('');
+    const w=window.open(API+'/auth/login?nonce='+nonce,'cotw-login','width=520,height=780');
+    if(!w){$('msg').textContent='Allow pop-ups for this page to sign in with Discord.';return}
+    let n=0;const iv=setInterval(async()=>{
+      if(++n>90){clearInterval(iv);return}
+      try{const r=await(await fetch(API+'/auth/claim?nonce='+nonce)).json();if(r.token){clearInterval(iv);store.set('shopweekly.token',r.token);load()}}catch(e){}
+    },2000);
+  }
+  function askSignIn(text){
+    $('out').hidden=true;$('auth').textContent='';
+    $('msg').innerHTML=`<p style="margin:0 0 10px">${esc(text)}</p><button class="btn" id="si" type="button">Sign in with Discord</button>`;
+    $('si').onclick=signIn;
+  }
+
+  async function load(){
+    if(!token())return askSignIn('This page is for the S.H.O.P. crew. Sign in with Discord to see the numbers.');
+    let r,j;
+    try{r=await fetch(API+'/admin/stats',{headers:{Authorization:'Bearer '+token()}});j=await r.json()}catch(e){$('msg').textContent='The game server didn’t answer. Try again in a minute.';return}
+    if(r.status===401){store.del('shopweekly.token');return askSignIn('Your sign-in expired. Sign in with Discord again.')}
+    if(r.status===403){$('out').hidden=true;$('msg').innerHTML=`Signed in as ${esc(j.you.name)}, but this account isn’t on the stats list yet. Send this Discord ID to Claude to be added: <code>${esc(j.you.id)}</code> <button class="link" id="so" type="button">Sign out</button>`;$('so').onclick=signOut;return}
+    if(!r.ok){$('msg').textContent='Something went wrong loading the stats.';return}
+    $('auth').innerHTML='<button class="link" id="so" type="button">Sign out</button>';$('so').onclick=signOut;
+    $('msg').textContent='As of '+new Date(j.at).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' Eastern. Refresh for the latest.';
+    render(j);
+  }
+  async function signOut(){try{await fetch(API+'/auth/logout',{method:'POST',headers:{Authorization:'Bearer '+token()}})}catch(e){}store.del('shopweekly.token');load()}
+
+  function render(j){
+    const P=j.pizza,G=j.gtc.weeks,F=j.fof.weeks;
+    const tiles=[['Discord accounts',j.accounts],['Pizza Drop games',P.games],['Guess the Card games',G.reduce((s,w)=>s+w.players,0)],['Fact or Fiction piles',F.reduce((s,w)=>s+w.piles,0)]];
+    let h=`<div class="tiles">${tiles.map(([l,n])=>`<div class="tile"><div class="l">${l}</div><div class="n">${num(n)}</div></div>`).join('')}</div>`;
+
+    const maxG=Math.max(1,...P.days.map(d=>d.games)),allTop=P.biggest.reduce((s,b)=>s+b.games,0)||1,maxB=Math.max(1,...P.biggest.map(b=>b.games));
+    h+=`<section><h2>Pizza Drop</h2><div class="scroll"><table><thead><tr><th class="l">Day</th><th class="l">Games</th><th>Avg score</th><th>Best</th><th>Avg minutes</th></tr></thead><tbody>
+      ${P.days.slice().reverse().map(d=>`<tr><td>${d.day}</td><td class="l">${bar(d.games,maxG)}${num(d.games)}</td><td>${num(d.avgScore)}</td><td>${num(d.best)}</td><td>${d.avgMinutes}</td></tr>`).join('')||'<tr><td colspan="5" class="l muted">No games yet.</td></tr>'}</tbody></table></div>
+      <h3>Biggest topping made per game</h3><div class="scroll"><table><thead><tr><th class="l">Topping</th><th class="l">Games</th><th>Share</th></tr></thead><tbody>
+      ${P.biggest.map(b=>`<tr><td>${b.top<0?'No merges':TOP[b.top]}</td><td class="l">${bar(b.games,maxB)}${num(b.games)}</td><td>${Math.round(100*b.games/allTop)}%</td></tr>`).join('')}</tbody></table></div>
+      <h3>Best scores (signed in)</h3><div class="scroll"><table><thead><tr><th class="l">Player</th><th>Best</th><th>Weeks played</th></tr></thead><tbody>
+      ${P.top.map(t=>`<tr><td>${esc(t.name)}</td><td>${num(t.best)}</td><td>${t.weeks}</td></tr>`).join('')||'<tr><td colspan="3" class="l muted">No signed-in scores yet.</td></tr>'}</tbody></table></div>
+      <p class="muted" style="margin:10px 0 0">Every finished game is counted, signed in or not. The game doesn’t track who anonymous players are, so player counts only exist for signed-in scores.</p></section>`;
+
+    const wk=w=>w===-1?'Practice card':w<-1?'Test '+(-w-1):'Week '+w;
+    h+=`<section><h2>Guess the Card</h2><div class="scroll"><table><thead><tr><th class="l">Week</th><th>Players</th><th>Finished</th><th>Solved</th><th>Solve rate</th><th>Avg guesses (solved)</th><th>Signed in</th></tr></thead><tbody>
+      ${G.slice().sort((a,b)=>b.week-a.week).map(w=>`<tr><td>${wk(w.week)}</td><td>${num(w.players)}</td><td>${num(w.finished)}</td><td>${num(w.solved)}</td><td>${w.finished?Math.round(100*w.solved/w.finished)+'%':'–'}</td><td>${w.avgGuesses??'–'}</td><td>${num(w.signedIn)}</td></tr>`).join('')||'<tr><td colspan="7" class="l muted">No games yet.</td></tr>'}</tbody></table></div>
+      <p class="muted" style="margin:10px 0 0">Players are counted per browser, so someone on a phone and a laptop without signing in counts twice.</p></section>`;
+
+    h+=`<section><h2>Fact or Fiction: The Game</h2>${F.slice().sort((a,b)=>b.week-a.week).map(w=>`
+      <h3>${esc(w.label)} · ${num(w.piles)} started · ${num(w.finished)} finished · ${num(w.signedIn)} signed in${w.avgPoints!=null?' · avg '+w.avgPoints+' points':''}</h3>
+      <div class="scroll"><table><thead><tr><th class="l">#</th><th class="l">Statement</th><th class="l">Answer</th><th>Answers</th><th>Said Fact</th><th>Got it right</th></tr></thead><tbody>
+      ${w.cards.map(c=>`<tr><td>${c.i}</td><td class="s">${esc(c.s)}</td><td class="l ${c.a}">${c.a==='fact'?'Fact':'Fiction'}</td><td>${num(c.answers)}</td><td>${c.saidFact==null?'–':c.saidFact+'%'}</td><td>${c.right==null?'–':c.right+'%'}</td></tr>`).join('')}</tbody></table></div>`).join('')||'<p class="muted">No piles played yet.</p>'}
+      <p class="muted" style="margin:10px 0 0">“Got it right” is the share of everyone who answered that card.</p></section>`;
+
+    const maxS=Math.max(1,...j.signups.map(s=>s.n));
+    h+=`<section><h2>New Discord sign-ins</h2><div class="scroll"><table><thead><tr><th class="l">Day</th><th class="l">New accounts</th></tr></thead><tbody>
+      ${j.signups.slice().reverse().map(s=>`<tr><td>${s.day}</td><td class="l">${bar(s.n,maxS)}${num(s.n)}</td></tr>`).join('')}</tbody></table></div></section>`;
+    $('out').innerHTML=h;$('out').hidden=false;
+  }
+  load();
+})();
+</script>
+</body>
+</html>
