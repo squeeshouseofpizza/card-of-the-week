@@ -294,13 +294,14 @@ export async function fofStats(env) {
 export async function fofDetail(env, week) {
   await schema(env);
   const B = await bank(env), cards = pile(B, week) || [];
-  const rows = (await env.DB.prepare(`SELECT a.card, a.player, a.pick, a.sure, a.ok, a.points, u.name FROM fof_answers a
+  const rows = (await env.DB.prepare(`SELECT a.card, a.player, a.pick, a.sure, a.ok, a.points, a.created_at, u.name FROM fof_answers a
       LEFT JOIN users u ON u.discord_id = a.discord_id WHERE a.week = ? ORDER BY a.created_at`).bind(week).all()).results;
   const players = new Map(); let anon = 0;
   for (const r of rows) {
-    if (!players.has(r.player)) players.set(r.player, { name: r.name || 'Anonymous ' + (++anon), signedIn: r.player.startsWith('d:'), answers: Array(cards.length).fill(null), points: 0, n: 0 });
+    if (!players.has(r.player)) players.set(r.player, { name: r.name || 'Anonymous ' + (++anon), signedIn: r.player.startsWith('d:'), answers: Array(cards.length).fill(null), points: 0, n: 0, started: r.created_at });
     const p = players.get(r.player); p.answers[r.card] = { pick: r.pick ? 'fact' : 'fiction', sure: r.sure, ok: !!r.ok }; p.points += r.points; p.n++;
   }
-  return [...players.values()].sort((a, b) => (b.n === cards.length) - (a.n === cards.length) || b.points - a.points)
-    .map(p => ({ name: p.name, signedIn: p.signedIn, points: p.points, finished: p.n === cards.length, answers: p.answers }));
+  // Newest first, by when the player answered their first card.
+  return [...players.values()].sort((a, b) => b.started - a.started)
+    .map(p => ({ name: p.name, signedIn: p.signedIn, points: p.points, finished: p.n === cards.length, answers: p.answers, started: p.started }));
 }

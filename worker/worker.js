@@ -448,11 +448,12 @@ export default {
           if (!Number.isInteger(week)) return J({ error: 'week' }, 400, origin);
           if (game === 'fof') return J({ players: await fofDetail(env, week) }, 200, origin);
           if (game !== 'gtc') return J({ error: 'game' }, 400, origin);
-          const rs = (await env.DB.prepare(`SELECT p.player, p.guesses, p.won, p.done, u.name FROM plays p LEFT JOIN users u ON u.discord_id = p.discord_id
+          // Anonymous players are numbered in the order they started; the list is newest first.
+          const rs = (await env.DB.prepare(`SELECT p.player, p.guesses, p.won, p.done, p.started_at, p.finished_at, u.name FROM plays p LEFT JOIN users u ON u.discord_id = p.discord_id
               WHERE p.week = ? ORDER BY p.started_at`).bind(week).all()).results;
           let anon = 0;
-          const list = rs.map(r => ({ name: r.name || 'Anonymous ' + (++anon), signedIn: r.player.startsWith('d:'), guesses: JSON.parse(r.guesses), won: !!r.won, done: !!r.done }))
-            .sort((a, b) => (b.won - a.won) || (a.won ? a.guesses.length - b.guesses.length : 0));
+          const list = rs.map(r => ({ name: r.name || 'Anonymous ' + (++anon), signedIn: r.player.startsWith('d:'), guesses: JSON.parse(r.guesses), won: !!r.won, done: !!r.done,
+              started: r.started_at, ms: r.finished_at ? r.finished_at - r.started_at : null })).reverse();
           return J({ players: list }, 200, origin);
         }
         return J(await memo('admin', 60, async () => {

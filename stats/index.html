@@ -43,7 +43,8 @@ td.s{text-align:left;min-width:280px;max-width:520px}
 .msg{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
 code{font-family:var(--mono);background:#2a2116;padding:2px 6px;border-radius:4px}
 .fact{color:#9cc98f}.fiction{color:#e08a6e}
-details{margin-top:10px}summary{cursor:pointer;color:var(--gold-lite);font-size:15.5px}
+details{margin-top:10px}
+details.earlier>summary{color:var(--muted)}summary{cursor:pointer;color:var(--gold-lite);font-size:15.5px}
 td.l,th.l{white-space:nowrap}
 </style>
 </head>
@@ -111,20 +112,23 @@ td.l,th.l{white-space:nowrap}
       <p class="muted" style="margin:10px 0 0">Games per player counts from Oct 29, 2026 on${P.untracked?` (${num(P.untracked)} earlier games weren’t tagged and only show in the daily totals)`:''}. Not signed in means one browser; when that browser signs in, its games move to the account.</p></section>`;
 
     const wk=w=>w===-1?'Practice card':w<-1?'Test '+(-w-1):'Week '+w;
+    // The two most recent weeks are shown; older ones fold under "Earlier weeks". Nothing is deleted.
+    const recent=(list,f)=>{const s=list.slice().sort((a,b)=>b.week-a.week);if(!s.length)return'';const top=s.slice(0,2).map(f).join(''),rest=s.slice(2);
+      return top+(rest.length?`<details class="earlier"><summary>Earlier weeks (${rest.length})</summary>${rest.map(f).join('')}</details>`:'')};
     const pc=v=>v==null?'–':v+'%';
     h+=`<section><h2>Guess the Card</h2><div class="scroll"><table><thead><tr><th class="l">Week</th><th>Players</th><th>Solved</th><th>Out of guesses</th><th>Stopped partway</th><th>Avg guesses (solved)</th><th>Signed in</th></tr></thead><tbody>
       ${G.slice().sort((a,b)=>b.week-a.week).map(w=>`<tr><td>${wk(w.week)}</td><td>${num(w.players)}</td><td>${num(w.solved)}</td><td>${num(w.outOfGuesses)}</td><td>${num(w.stopped)}</td><td>${w.avgGuesses??'–'}</td><td>${num(w.signedIn)}</td></tr>`).join('')||'<tr><td colspan="7" class="l muted">No games yet.</td></tr>'}</tbody></table></div>
       <p class="muted" style="margin:8px 0 0">Out of guesses: used all six and missed. Stopped partway: made at least one guess, then left. Opening the page without guessing isn't recorded. Players are counted per browser.</p>
-      ${G.slice().sort((a,b)=>b.week-a.week).map(w=>`<h3>${wk(w.week)}</h3><p class="muted" style="margin:0 0 4px">Solved in: ${w.dist.map((n,i)=>n?n+' in '+(i+1):'').filter(Boolean).join(', ')||'nobody yet'}. Hints reached: artist ${w.hints.artist}, flavor text ${w.hints.flavor}, art ${w.hints.art}. Top first guesses: ${w.firsts.map(f=>esc(f[0])+' ('+f[1]+')').join(', ')||'–'}.</p>
-        <details data-game="gtc" data-week="${w.week}"><summary>Each player's guesses</summary><div class="det muted">Loading…</div></details>`).join('')}</section>`;
+      ${recent(G,w=>`<h3>${wk(w.week)}</h3><p class="muted" style="margin:0 0 4px">Solved in: ${w.dist.map((n,i)=>n?n+' in '+(i+1):'').filter(Boolean).join(', ')||'nobody yet'}. Hints reached: artist ${w.hints.artist}, flavor text ${w.hints.flavor}, art ${w.hints.art}. Top first guesses: ${w.firsts.map(f=>esc(f[0])+' ('+f[1]+')').join(', ')||'–'}.</p>
+        <details data-game="gtc" data-week="${w.week}"><summary>Each player's guesses</summary><div class="det muted">Loading…</div></details>`)}</section>`;
 
-    h+=`<section><h2>Fact or Fiction: The Game</h2>${F.slice().sort((a,b)=>b.week-a.week).map(w=>{
+    h+=`<section><h2>Fact or Fiction: The Game</h2>${recent(F,w=>{
       const st=Object.entries(w.stopped||{});
       return `<h3>${esc(w.label)} · ${num(w.piles)} started · ${num(w.finished)} finished · ${num(w.signedIn)} signed in${w.avgPoints!=null?' · avg '+w.avgPoints+' points':''}</h3>
       ${st.length?`<p class="muted" style="margin:0 0 6px">Unfinished piles stopped at: ${st.map(([c,n])=>'card '+c+' ('+n+')').join(', ')}.</p>`:''}
       <div class="scroll"><table><thead><tr><th class="l">#</th><th class="l">Statement</th><th class="l">Answer</th><th>Answers</th><th>Right</th><th>Chose sure</th><th>Right if sure</th><th>Right if locked</th><th>Separates</th></tr></thead><tbody>
       ${w.cards.map(c=>`<tr><td>${c.i}</td><td class="s">${esc(c.s)}</td><td class="l ${c.a}">${c.a==='fact'?'Fact':'Fiction'}</td><td>${num(c.answers)}</td><td>${pc(c.right)}</td><td>${pc(c.sure)}</td><td>${pc(c.rightSure)}</td><td>${pc(c.rightLock)}</td><td>${c.disc==null?'–':c.disc.toFixed(2)}</td></tr>`).join('')}</tbody></table></div>
-      <details data-game="fof" data-week="${w.week}" data-cards="${w.cards.length}"><summary>${esc(w.label)}: each player's answers</summary><div class="det muted">Loading…</div></details>`}).join('')||'<p class="muted">No piles played yet.</p>'}
+      <details data-game="fof" data-week="${w.week}" data-cards="${w.cards.length}"><summary>${esc(w.label)}: each player's answers</summary><div class="det muted">Loading…</div></details>`})||'<p class="muted">No piles played yet.</p>'}
       <p class="muted" style="margin:10px 0 0">Right: share of everyone who answered. Chose sure: share who picked “I’m sure.” “I’m sure” only pays off for someone right more than 2 times in 3, so Right if sure under 67% means players were overconfident on that card. Separates appears once 10 piles are finished: the share right among the top half of finishers minus the bottom half. 0.25 or more means the card rewards people who know the show; near 0 means it played like a coin flip.</p></section>`;
 
     const maxS=Math.max(1,...j.signups.map(s=>s.n));
@@ -136,16 +140,18 @@ td.l,th.l{white-space:nowrap}
   }
   const mark=x=>x?`<span class="${x.ok?'fact':'fiction'}">${x.ok?'✓':'✕'}</span> ${x.pick==='fact'?'Fact':'Fiction'}${x.sure?' · sure':''}`:'<span class="muted">–</span>';
   const who=p=>esc(p.name)+(p.signedIn?'':' <span class="muted">(not signed in)</span>');
+  const when=t=>t?new Date(t).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'–';
+  const dur=ms=>{const s=Math.round(ms/1000);return s<60?s+'s':s<3600?Math.floor(s/60)+'m '+String(s%60).padStart(2,'0')+'s':Math.floor(s/3600)+'h '+String(Math.floor(s%3600/60)).padStart(2,'0')+'m'};
   async function detail(d){
     const box=d.querySelector('.det'),game=d.dataset.game;
     let j;try{const r=await fetch(API+'/admin/detail?game='+game+'&week='+d.dataset.week,{headers:{Authorization:'Bearer '+token()}});if(!r.ok)throw 0;j=await r.json()}
     catch(e){box.textContent='Couldn’t load this. Close and open it again.';delete d.dataset.loaded;return}
     box.className='det scroll';
     if(!j.players.length){box.innerHTML='<p class="muted">Nobody yet.</p>';return}
-    if(game==='gtc')box.innerHTML=`<table><thead><tr><th class="l">Player</th><th class="l">Result</th><th class="l">Guesses in order</th></tr></thead><tbody>
-      ${j.players.map(p=>`<tr><td>${who(p)}</td><td class="l">${p.won?'Solved in '+p.guesses.length:p.done?'Out of guesses':'Stopped after '+p.guesses.length}</td><td class="s">${p.guesses.map(esc).join(' → ')}</td></tr>`).join('')}</tbody></table>`;
-    else{const n=+d.dataset.cards;box.innerHTML=`<table><thead><tr><th class="l">Player</th><th>Points</th>${Array.from({length:n},(_,i)=>`<th class="l">Card ${i+1}</th>`).join('')}</tr></thead><tbody>
-      ${j.players.map(p=>`<tr><td>${who(p)}${p.finished?'':' <span class="muted">(unfinished)</span>'}</td><td>${fmtPts(p.points)}</td>${p.answers.map(x=>`<td class="l">${mark(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`}
+    if(game==='gtc')box.innerHTML=`<p class="muted" style="margin:6px 0">Newest first. Played is when the first guess went in (Eastern); Took is first guess to last.</p><table><thead><tr><th class="l">Played</th><th class="l">Player</th><th class="l">Result</th><th>Took</th><th class="l">Guesses in order</th></tr></thead><tbody>
+      ${j.players.map(p=>`<tr><td class="l">${when(p.started)}</td><td>${who(p)}</td><td class="l">${p.won?'Solved in '+p.guesses.length:p.done?'Out of guesses':'Stopped after '+p.guesses.length}</td><td>${p.ms==null?'–':dur(p.ms)}</td><td class="s">${p.guesses.map(esc).join(' → ')}</td></tr>`).join('')}</tbody></table>`;
+    else{const n=+d.dataset.cards;box.innerHTML=`<p class="muted" style="margin:6px 0">Newest first. Played is when the first card was answered (Eastern).</p><table><thead><tr><th class="l">Played</th><th class="l">Player</th><th>Points</th>${Array.from({length:n},(_,i)=>`<th class="l">Card ${i+1}</th>`).join('')}</tr></thead><tbody>
+      ${j.players.map(p=>`<tr><td class="l">${when(p.started)}</td><td>${who(p)}${p.finished?'':' <span class="muted">(unfinished)</span>'}</td><td>${fmtPts(p.points)}</td>${p.answers.map(x=>`<td class="l">${mark(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`}
   }
   load();
 })();
