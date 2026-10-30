@@ -43,6 +43,9 @@ h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,7vw,38px);mar
 .stat canvas{width:28px;height:28px}
 .stage{position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--panel)}
 #game{display:block;width:100%;height:auto;touch-action:none;cursor:crosshair}
+/* While a game is on, the chef and the topping he holds are the pointer. The system pointer is drawn a frame or two
+   ahead of the canvas, so showing both made the chef look laggy next to it. */
+#game.playing{cursor:none}
 .snd{position:absolute;top:8px;right:8px;z-index:2;display:flex;align-items:center;gap:6px;background:rgba(23,18,12,.78);color:var(--cream);border:1px solid var(--line);border-radius:999px;padding:5px 11px 5px 8px;font-family:var(--body);font-size:14px;cursor:pointer}
 .snd:hover{border-color:var(--gold)}.snd:focus-visible{outline:2px solid var(--gold-lite);outline-offset:2px}
 .snd svg{width:18px;height:18px;flex:none}
@@ -298,7 +301,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     bodies=new Set();score=0;merges=0;drops=0;aimX=W/2;rand=rng(Date.now());current=pick();next=pick();
     coolUntil=0;over=false;overSince=null;simT=0;pops=[];startTime=null;started=false;biggest=-1;chain=0;lastMerge=0;shake=0;banner=null;confetti=[];startEver=everBig;
     Events.on(engine,'collisionStart',collide);Events.on(engine,'collisionActive',collide);
-    $('over').hidden=true;updateHud();showNext();running=true;
+    $('over').hidden=true;updateHud();showNext();running=true;cv.classList.add('playing');
   }
 
   const queue=[];
@@ -438,6 +441,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
 
   // ---------- end of game ----------
   async function endGame(){
+    cv.classList.remove('playing');
     over=true;running=false;overSince=null;overAt=performance.now();
     const ms=startTime?Date.now()-startTime:0;
     const prevBest=store.get('pizzadrop.best',0);
