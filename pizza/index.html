@@ -504,11 +504,13 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
       const o=el('button','linkbtn','Sign out');o.type='button';o.addEventListener('click',async()=>{try{await api('/auth/logout',{method:'POST'})}catch(e){}store.del('shopweekly.token');await loadMe();loadBoard()});a.appendChild(o)}
     else{a.appendChild(el('span',null,'High scores:'));const b=el('button','btn discord','Sign in with Discord');b.type='button';b.addEventListener('click',signIn);a.appendChild(b)}
   }
+  // The crew's stats page counts games per player; games played on this browser before signing in move to the account.
+  function claimRuns(){const cid=store.get('shopweekly.id','');if(token()&&/^[A-Za-z0-9_-]{8,64}$/.test(cid))api('/pizza/claim',{method:'POST',body:{client:cid}}).catch(()=>{})}
   function signIn(){
     const nonce=Array.from(crypto.getRandomValues(new Uint8Array(18)),x=>x.toString(16).padStart(2,'0')).join('');
     const w=window.open(API+'/auth/login?nonce='+nonce,'cotw-login','width=520,height=780');if(!w)return;
     let tries=0;const iv=setInterval(async()=>{tries++;
-      try{const r=await api('/auth/claim?nonce='+nonce);if(r.token){clearInterval(iv);store.set('shopweekly.token',r.token);await loadMe();loadBoard();claimPending();return}}catch(e){}
+      try{const r=await api('/auth/claim?nonce='+nonce);if(r.token){clearInterval(iv);store.set('shopweekly.token',r.token);await loadMe();loadBoard();claimPending();claimRuns();return}}catch(e){}
       if(tries>90)clearInterval(iv)},2000);
   }
   let boardReq=0;
@@ -528,7 +530,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
 
   newGame();requestAnimationFrame(frame);
   // A score finished signed out also counts if the player signed in somewhere else (Guess the Card) and came back.
-  loadMe().then(()=>{loadBoard();if(token())claimPending()});
+  loadMe().then(()=>{loadBoard();if(token()){claimPending();claimRuns()}});
 })();
 </script>
 </body>

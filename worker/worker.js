@@ -336,6 +336,17 @@ export default {
       }
 
       // ----- Pizza Drop weekly high scores (same weekly clock as Guess the Card) -----
+      // Games a browser played before signing in move to the account (called on sign-in and on load when signed in).
+      if (path === '/pizza/claim' && req.method === 'POST') {
+        if (origin !== GAME_ORIGIN) return J({ error: 'origin' }, 403, origin);
+        const u = await user(req, env);
+        if (!u) return J({ error: 'signin' }, 401, origin);
+        const b = await req.json().catch(() => ({}));
+        if (typeof b.client !== 'string' || !/^[A-Za-z0-9_-]{8,64}$/.test(b.client)) return J({ error: 'client' }, 400, origin);
+        await pizzaRunsPlayer(env);
+        await env.DB.prepare('UPDATE pizza_runs SET player = ? WHERE player = ?').bind('d:' + u.discord_id, 'c:' + b.client).run();
+        return J({ ok: true }, 200, origin);
+      }
       if ((path === '/pizza/score' || path === '/pizza/run') && req.method === 'POST') {
         if (origin !== GAME_ORIGIN) return J({ error: 'origin' }, 403, origin);
         const b = await req.json().catch(() => ({}));
