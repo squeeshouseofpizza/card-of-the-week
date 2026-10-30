@@ -42,7 +42,8 @@ h1{font-family:var(--display);font-weight:700;font-size:clamp(30px,8vw,40px);mar
 .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:14px;background:linear-gradient(180deg,#30251a,var(--card));border:1px solid var(--card-edge);box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 0 0 5px var(--card),inset 0 0 0 6px rgba(214,163,74,.55);padding:20px 20px 18px;display:flex;flex-direction:column;gap:12px}
 .back{transform:rotateY(180deg);overflow-y:auto}
 .cardtop{display:flex;justify-content:space-between;align-items:center;gap:8px;font-family:var(--display);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
-.ep{border:1px solid rgba(214,163,74,.5);border-radius:999px;padding:2px 9px;color:var(--gold-lite);letter-spacing:.08em;white-space:nowrap}
+.ep{border:1px solid rgba(214,163,74,.5);border-radius:999px;padding:2px 9px;color:var(--gold-lite);letter-spacing:.08em;min-width:0;text-align:right;border-radius:12px}
+.cardtop>span:first-child{flex:none}
 .stmt{flex:1;display:flex;align-items:center;margin:0;font-size:clamp(22px,6.2vw,27px);line-height:1.3;text-wrap:pretty}
 .hint{font-size:13.5px;color:var(--muted);text-align:center;margin:0}
 .lean{position:absolute;top:18px;font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.12em;padding:4px 10px;border:2px solid;border-radius:6px;opacity:0;pointer-events:none}
@@ -265,10 +266,13 @@ html.framed body{background:transparent;color-scheme:dark}
   // Values are kept in memory as well, so a browser that blocks storage in the Fourthwall frame keeps its sign-in and
   // player id for the visit.
   const MEM=new Map();
+  const PERSIST=(()=>{try{localStorage.setItem('fof._t','1');localStorage.removeItem('fof._t');return true}catch(e){return false}})();
   const store={get(k,d){try{const v=localStorage.getItem(k);if(v!==null)return v}catch(e){}return MEM.has(k)?MEM.get(k):d},set(k,v){MEM.set(k,v);try{localStorage.setItem(k,v)}catch(e){}},del(k){MEM.delete(k);try{localStorage.removeItem(k)}catch(e){}}};
   function clientId(){let c=store.get('fof.client','');if(!/^[A-Za-z0-9_-]{8,64}$/.test(c)){c=Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('');store.set('fof.client',c)}return c}
   const CLIENT=clientId();
-  const token=()=>store.get('shopweekly.token','');
+  // The sign-in token is shared with the other S.H.O.P. games, which store it as JSON. Read either form; write JSON.
+  const token=()=>{const v=store.get('shopweekly.token','');if(v&&v[0]==='"'){try{return JSON.parse(v)}catch(e){}}return v};
+  const setToken=t=>store.set('shopweekly.token',JSON.stringify(t));
   async function api(path,opts={}){
     const h=Object.assign({},opts.headers||{});const t=token();if(t)h.Authorization='Bearer '+t;
     const r=await fetch(API+path,Object.assign({},opts,{headers:h}));const j=await r.json().catch(()=>({}));
@@ -287,7 +291,9 @@ html.framed body{background:transparent;color-scheme:dark}
   const etDay=ms=>new Date(ms).toLocaleString('en-US',{timeZone:'America/New_York',weekday:'long',month:'long',day:'numeric'});
 
   // ---------- screens ----------
-  function show(ids){['cover','game','table','results'].forEach(s=>$(s).hidden=!ids.includes(s));$('pips').hidden=!ids.includes('table');scrollTo(0,0)}
+  // Inside the Fourthwall frame, scrollTo moves nothing; scrolling the game's top into view moves the site's page instead.
+  function show(ids){['cover','game','table','results'].forEach(s=>$(s).hidden=!ids.includes(s));$('pips').hidden=!ids.includes('table');scrollTo(0,0);
+    if(window.parent!==window)try{document.querySelector('.wrap').scrollIntoView({block:'start'})}catch(e){}}
   function renderCover(){
     const st=$('status'),play=$('play');st.hidden=true;play.hidden=true;$('seal').hidden=true;
     if(!S){st.hidden=false;st.textContent='Loading this week’s pile…';return}
@@ -313,7 +319,7 @@ html.framed body{background:transparent;color-scheme:dark}
     const at=nextAt();if(!at||srv()<at||watching)return;watching=true;
     try{const m=await api('/fof/meta');setClock(m);
       if(m.week>Math.max(0,S.week)){
-        if(!$('cover').hidden&&!locked)return location.reload();
+        if(!$('cover').hidden&&!locked&&PERSIST)return location.reload();
         $('liveTxt').textContent=m.week===1&&S.week<0?'Week 1 is live.':`Week ${m.week} is live.`;$('live').hidden=false;return}
     }catch(e){}
     watching=false;
@@ -340,14 +346,14 @@ html.framed body{background:transparent;color-scheme:dark}
   function signIn(){
     const nonce=Array.from(crypto.getRandomValues(new Uint8Array(18)),x=>x.toString(16).padStart(2,'0')).join('');
     const w=window.open(API+'/auth/login?nonce='+nonce,'cotw-login','width=520,height=780');
-    if(!w){document.querySelectorAll('.authrow').forEach(a=>{if(a.offsetParent!==null){const p=document.createElement('p');p.className='note';p.textContent='Allow pop-ups for this page to sign in with Discord.';a.appendChild(p)}});return}
+    if(!w){document.querySelectorAll('.authrow').forEach(a=>{if(a.offsetParent!==null&&!a.querySelector('.popnote')){const p=document.createElement('p');p.className='note popnote';p.textContent='Allow pop-ups for this page to sign in with Discord.';a.appendChild(p)}});return}
     let n=0;const iv=setInterval(async()=>{
       if(++n>180){clearInterval(iv);return}
-      try{const r=await api('/auth/claim?nonce='+nonce);if(r.token){clearInterval(iv);store.set('shopweekly.token',r.token);await loadMe();
+      try{const r=await api('/auth/claim?nonce='+nonce);if(r.token){clearInterval(iv);setToken(r.token);await loadMe();
         // Loading the week again moves a pile played before signing in onto the account.
         try{S=await api('/fof/week?'+q({client:CLIENT}));setClock(S)}catch(e){}
         // If this account already played this week, its pile is the one that counts, so redraw from it.
-        if(!$('results').hidden)return results();
+        if(!$('results').hidden){if(S.done)return results();renderCover();show(['cover']);mountBoard('boardSlot0');renderAuth('auth0');return}
         if(!$('table').hidden&&!locked&&!pick&&$('next').hidden){if(S.done)return results();i=S.answers.length;totals();deal()}
         ['auth0','auth2'].forEach(renderAuth);refreshBoards();renderCover()}}catch(e){}
     },1000);
@@ -421,7 +427,7 @@ html.framed body{background:transparent;color-scheme:dark}
     try{r=await api('/fof/answer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({week:S.week,i,pick,sure:c,client:CLIENT,test:TEST})})}
     catch(e){locked=false;$('sure').hidden=false;$('err').hidden=false;$('err').textContent='That didn’t go through. Check your connection and try again.';return}
     if(r._status===409){ // a new pile went live, or this card was already answered on another tab
-      if(r.week!==undefined&&r.cards){S=r;if(S.done)return results();i=S.answers.length;totals();return deal()}
+      if(r.week!==undefined&&r.cards){S=r;const mine=S.week===r.week&&S.answers.find(a=>a.i===i);if(mine){$('err').hidden=true;totals();return reveal(mine)}if(S.done)return results();i=S.answers.length;totals();return deal()}
       $('err').hidden=false;$('err').textContent='A new pile just went live. Refresh to play it.';return}
     S.answers.push(r);
     setTimeout(()=>reveal(r),Math.max(0,(reduce?0:700)-(Date.now()-t0)));
@@ -452,7 +458,7 @@ html.framed body{background:transparent;color-scheme:dark}
     $('next').hidden=false;$('next').textContent=i===S.cards.length-1?'See results':'Next card';
     setTimeout(()=>$('next').focus({preventScroll:true}),reduce?0:650);
   }
-  function next(){if(i<S.cards.length-1){i++;deal()}else{S.done=true;results()}}
+  function next(){const kb=document.activeElement===$('next');if(i<S.cards.length-1){i++;deal();if(kb)$('bFact').focus({preventScroll:true})}else{S.done=true;results()}}
 
   // ---------- results ----------
   function copyText(t){
@@ -497,7 +503,7 @@ html.framed body{background:transparent;color-scheme:dark}
   const end=()=>{if(sx==null)return;card.classList.remove('dragging');sx=null;if(Math.abs(dx)>80)choose(dx<0?'fact':'fiction');else{card.style.transform='';lean(0)}};
   card.addEventListener('pointerup',end);card.addEventListener('pointercancel',end);
   $('bFact').onclick=()=>choose('fact');$('bFic').onclick=()=>choose('fiction');$('undo').onclick=undo;
-  document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{if(performance.now()-pickedAt<400)return;commit(+b.dataset.c)});
+  document.querySelectorAll('.chip').forEach(b=>b.onclick=e=>{if(e.detail!==0&&performance.now()-pickedAt<400)return;commit(+b.dataset.c)});
   $('next').onclick=next;
   addEventListener('keydown',e=>{if($('table').hidden)return;
     if(!pick&&!locked){if(e.key==='ArrowLeft')choose('fact');else if(e.key==='ArrowRight')choose('fiction')}
