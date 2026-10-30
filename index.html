@@ -244,7 +244,9 @@ details p{margin:8px 0}
   // Values are kept in memory as well, so a browser that blocks storage in the Fourthwall frame (Chrome Incognito, for
   // one) keeps the same player id and sign-in for the visit instead of starting a new game on every guess.
   const MEM=new Map();
-  const store={get(k,f){try{const v=localStorage.getItem(k);if(v)return JSON.parse(v)}catch(e){}return MEM.has(k)?MEM.get(k):f},set(k,v){MEM.set(k,v);try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){MEM.delete(k);try{localStorage.removeItem(k)}catch(e){}}};
+  // With storage blocked, a reload would wipe the in-memory sign-in and player id, so a new card shows the bar instead.
+  const PERSIST=(()=>{try{localStorage.setItem('gtc._t','1');localStorage.removeItem('gtc._t');return true}catch(e){return false}})();
+  const store={get(k,f){try{const v=localStorage.getItem(k);if(v){try{return JSON.parse(v)}catch(e){return v}}}catch(e){}return MEM.has(k)?MEM.get(k):f},set(k,v){MEM.set(k,v);try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){MEM.delete(k);try{localStorage.removeItem(k)}catch(e){}}};
   const K=TEST?'shoptest.':'shopweekly.';
   function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
   function fail(msg){const b=$('errbar');b.textContent=msg;b.hidden=false}
@@ -313,16 +315,18 @@ details p{margin:8px 0}
       const b=el('button','btn discord','Sign in with Discord');b.type='button';b.addEventListener('click',signIn);a.appendChild(b);
     }
   }
+  let signIv=null;
   function signIn(){
     const nonce=Array.from(crypto.getRandomValues(new Uint8Array(18)),x=>x.toString(16).padStart(2,'0')).join('');
     const w=window.open(API+'/auth/login?nonce='+nonce,'cotw-login','width=520,height=780');
     if(!w){fail('Your browser blocked the sign-in window. Allow pop-ups for this page and try again.');return}
     unfail();
-    const a=$('auth');a.classList.add('busy');
-    let tries=0;const iv=setInterval(async()=>{
+    // A new click restarts the wait (closing or cancelling the Discord window used to leave the button dead for 3 minutes).
+    if(signIv)clearInterval(signIv);
+    let tries=0;const iv=signIv=setInterval(async()=>{
       tries++;
-      try{const r=await api('/auth/claim?nonce='+nonce);if(r.token){clearInterval(iv);store.set('shopweekly.token',r.token);a.classList.remove('busy');await loadMe();refresh();return}}catch(e){}
-      if(tries>90){clearInterval(iv);a.classList.remove('busy')}
+      try{const r=await api('/auth/claim?nonce='+nonce);if(r.token){clearInterval(iv);store.set('shopweekly.token',r.token);await loadMe();refresh();return}}catch(e){}
+      if(tries>90)clearInterval(iv);
     },2000);
   }
 
@@ -491,14 +495,14 @@ details p{margin:8px 0}
     if(ST.guesses.some(x=>x.toLowerCase()===c[0].toLowerCase())){$('err').textContent='You already guessed '+c[0]+'.';return}
     sending=true;$('entry').classList.add('busy');
     try{
-      ST=await api('/guess',{method:'POST',body:{week:cur,card:c[0],client:clientId()}});
+      ST=await api('/guess',{method:'POST',body:{week:cur,card:c[0],client:clientId()}});unfail();
       $('guess').value='';closeSugg();
       if(ST.done){finishStreak();renderBoard()}
       render(true);if(!ST.done)$('guess').focus();
     }catch(e){
       // The guess may have been saved even though the reply was lost, so reload the game from the server.
       if(e.code==='week'){$('err').textContent='That week is gone. Pick another one.'}
-      else{await refresh(false);$('err').textContent=ST.guesses.some(x=>x.toLowerCase()===c[0].toLowerCase())?'':'That guess didn\'t go through. Try again.'}
+      else{await refresh(false);const saved=ST.guesses.some(x=>x.toLowerCase()===c[0].toLowerCase());if(saved){$('guess').value='';closeSugg()}$('err').textContent=saved?'':'That guess didn\'t go through. Try again.'}
     }
     finally{sending=false;$('entry').classList.remove('busy')}
   }
@@ -534,7 +538,7 @@ details p{margin:8px 0}
     if(TEST||liveShown)return;
     const at=NOW<1?META.launch:META.next;if(srv()<at)return;
     try{const m=await api('/meta');if(!(m.week>Math.max(NOW,0)))return;
-      if(!sending&&(ST.done||!ST.guesses.length||cur!==NOW))return location.reload();
+      if(PERSIST&&!sending&&(ST.done||!ST.guesses.length||cur!==NOW))return location.reload();
       liveShown=true;const b=el('div','livebar');b.appendChild(el('span',null,'A new card is live.'));const go=el('button','btn','Play it');go.type='button';go.addEventListener('click',()=>location.reload());b.appendChild(go);
       $('game').parentNode.insertBefore(b,$('game'));
     }catch(e){}

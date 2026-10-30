@@ -26,6 +26,7 @@ body{margin:0;background:var(--ground);color:var(--cream);font-family:var(--body
 .auth{display:flex;justify-content:flex-end;align-items:center;gap:10px;font-size:14px;color:var(--muted);flex-wrap:wrap}
 .auth img{width:22px;height:22px;border-radius:50%}
 .auth b{color:var(--cream);font-weight:500}
+.auth .popnote{flex-basis:100%;text-align:right;font-size:13px}
 .linkbtn{background:none;border:0;color:var(--gold);cursor:pointer;padding:0;font:inherit;text-decoration:underline;text-underline-offset:3px}
 .btn{background:var(--gold);color:#1a1309;border:0;border-radius:6px;padding:9px 14px;font-family:var(--display);font-size:13px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
 .btn:hover{background:var(--gold-lite)}
@@ -158,9 +159,10 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   // Storage can be blocked inside the Fourthwall frame (third-party storage settings, some private windows). Keep a
   // copy in memory so sign-in and a pending score still work for the rest of the visit.
   const MEM=new Map();
-  const store={get(k,f){try{const v=localStorage.getItem(k);if(v)return JSON.parse(v)}catch(e){}return MEM.has(k)?MEM.get(k):f},set(k,v){MEM.set(k,v);try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){MEM.delete(k);try{localStorage.removeItem(k)}catch(e){}}};
+  const store={get(k,f){try{const v=localStorage.getItem(k);if(v){try{return JSON.parse(v)}catch(e){return v}}}catch(e){}return MEM.has(k)?MEM.get(k):f},set(k,v){MEM.set(k,v);try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){MEM.delete(k);try{localStorage.removeItem(k)}catch(e){}}};
   function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
-  if(window.parent!==window){const post=()=>parent.postMessage({pizzaDrop:true,height:document.documentElement.scrollHeight},'*');new ResizeObserver(post).observe(document.body);addEventListener('load',post)}
+  // Height of the content, not the frame (scrollHeight never shrinks inside the frame, so the frame only grew).
+  if(window.parent!==window){const wrap=document.querySelector('.wrap');const post=()=>parent.postMessage({pizzaDrop:true,height:Math.ceil(wrap.getBoundingClientRect().bottom+scrollY)},'*');new ResizeObserver(post).observe(wrap);addEventListener('load',post)}
 
   // ---------- toppings: radius, points for making one, and how each is drawn ----------
   const T=[
@@ -508,7 +510,8 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
   function claimRuns(){const cid=store.get('shopweekly.id','');if(token()&&/^[A-Za-z0-9_-]{8,64}$/.test(cid))api('/pizza/claim',{method:'POST',body:{client:cid}}).catch(()=>{})}
   function signIn(){
     const nonce=Array.from(crypto.getRandomValues(new Uint8Array(18)),x=>x.toString(16).padStart(2,'0')).join('');
-    const w=window.open(API+'/auth/login?nonce='+nonce,'cotw-login','width=520,height=780');if(!w)return;
+    const w=window.open(API+'/auth/login?nonce='+nonce,'cotw-login','width=520,height=780');
+    if(!w){const a=$('auth');if(!a.querySelector('.popnote')){const p=document.createElement('span');p.className='popnote';p.textContent='Allow pop-ups for this page to sign in.';a.appendChild(p)}return}
     let tries=0;const iv=setInterval(async()=>{tries++;
       try{const r=await api('/auth/claim?nonce='+nonce);if(r.token){clearInterval(iv);store.set('shopweekly.token',r.token);await loadMe();loadBoard();claimPending();claimRuns();return}}catch(e){}
       if(tries>90)clearInterval(iv)},2000);
