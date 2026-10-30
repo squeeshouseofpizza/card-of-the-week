@@ -422,9 +422,27 @@ export default {
         const biggest = (await env.DB.prepare('SELECT top, COUNT(*) AS games FROM pizza_runs GROUP BY top ORDER BY top').all()).results;
         const pizzaTop = (await env.DB.prepare(`SELECT u.name, MAX(p.score) AS best, COUNT(*) AS weeks FROM pizza_scores p JOIN users u ON u.discord_id = p.discord_id
             GROUP BY p.discord_id ORDER BY best DESC LIMIT 25`).all()).results;
-        const gtcWeeks = (await env.DB.prepare(`SELECT week, COUNT(*) AS players, SUM(done) AS finished, SUM(won) AS solved, SUM(player LIKE 'd:%') AS signed_in,
-            AVG(CASE WHEN won = 1 THEN json_array_length(guesses) END) AS avg_guesses FROM plays GROUP BY week ORDER BY week`).all()).results
-          .map(r => ({ week: r.week, players: r.players, finished: r.finished || 0, solved: r.solved || 0, signedIn: r.signed_in || 0, avgGuesses: r.avg_guesses ? Math.round(r.avg_guesses * 10) / 10 : null }));
+        // Guess the Card per week, plus each player's guesses. Hints: artist after 3 misses, flavor after 4, art after 5.
+        const gp = (await env.DB.prepare(`SELECT p.week, p.player, p.guesses, p.won, p.done, p.started_at, u.name FROM plays p
+            LEFT JOIN users u ON u.discord_id = p.discord_id ORDER BY p.week, p.started_at`).all()).results;
+        const gw = new Map();
+        for (const r of gp) { if (!gw.has(r.week)) gw.set(r.week, []); gw.get(r.week).push(r); }
+        const gtcWeeks = [...gw].map(([week, rs]) => {
+          let anon = 0; const firsts = new Map(), hint = [0, 0, 0];
+          const players = rs.map(r => {
+            const g = JSON.parse(r.guesses), misses = r.won ? g.length - 1 : g.length;
+            if (g[0]) firsts.set(g[0], (firsts.get(g[0]) || 0) + 1);
+            [ARTIST_AT, FLAVOR_AT, ART_AT].forEach((k, i) => { if (misses >= k) hint[i]++; });
+            return { name: r.name || 'Anonymous ' + (++anon), signedIn: r.player.startsWith('d:'), guesses: g, won: !!r.won, done: !!r.done };
+          });
+          const solved = players.filter(p => p.won), finished = players.filter(p => p.done);
+          const dist = Array(MAX_GUESSES).fill(0); solved.forEach(p => dist[p.guesses.length - 1]++);
+          // Not solved splits two ways: out of guesses (used all six) or stopped partway. Opening the page without guessing leaves no row.
+          return { week, players: players.length, finished: finished.length, solved: solved.length, outOfGuesses: players.filter(p => p.done && !p.won).length, stopped: players.filter(p => !p.done).length, signedIn: players.filter(p => p.signedIn).length,
+            avgGuesses: solved.length ? Math.round(10 * solved.reduce((s, p) => s + p.guesses.length, 0) / solved.length) / 10 : null,
+            dist, hints: { artist: hint[0], flavor: hint[1], art: hint[2] }, firsts: [...firsts].sort((a, b) => b[1] - a[1]).slice(0, 5),
+            list: players.sort((a, b) => (b.won - a.won) || (a.won ? a.guesses.length - b.guesses.length : 0)) };
+        });
         const users = (await env.DB.prepare('SELECT created_at / 3600000 AS h, COUNT(*) AS n FROM users GROUP BY h').all()).results;
         const signups = fold(users, (a = { n: 0 }, r) => ({ n: a.n + r.n })).sort((a, b) => a.day < b.day ? -1 : 1);
         return J({ at: Date.now(), gtcWeek: now, accounts: users.reduce((s, r) => s + r.n, 0), signups,
