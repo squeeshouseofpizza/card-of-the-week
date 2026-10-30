@@ -143,7 +143,7 @@ td.l,th.l{white-space:nowrap}
       const r=c.ok/n,t=[];t.push(r>.9?'<span class="tag flag">Too easy</span>':r<.3?'<span class="tag flag">Too hard</span>':'<span class="tag good">Good range</span>');
       if(c.sureN>=3&&c.sureOk/c.sureN<2/3)t.push('<span class="tag flag">Overconfident</span>');
       // When nearly everyone is right (or wrong) there's nothing to separate, so no separation tag.
-      if(c.disc!=null&&r<=.9&&r>=.1)t.push(c.disc<0?'<span class="tag flag">Weaker players did better</span>':c.disc>=.25?'<span class="tag good">Separates players</span>':'<span class="tag flag">Doesn’t separate players</span>');
+      if(c.disc!=null&&r<=.9&&r>=.1)t.push(c.disc<0?'<span class="tag flag">Weaker players did better</span>':(c.disc>=.25?'<span class="tag good">Separates players':'<span class="tag flag">Doesn’t separate players')+` (best half ${c.topRight}%, worst half ${c.bottomRight}%)</span>`);
       if(n<10)t.push('<span class="tag muted">Early read</span>');return t.join('')};
     // The two most recent weeks are shown; older ones fold under "Earlier weeks". Nothing is deleted.
     const recent=(list,f)=>{const s=list.slice().sort((a,b)=>b.week-a.week);if(!s.length)return'';const top=s.slice(0,2).map(f).join(''),rest=s.slice(2);
@@ -168,9 +168,9 @@ td.l,th.l{white-space:nowrap}
       <div class="scroll"><table><thead><tr><th class="l">#</th><th class="l">Statement</th><th class="l">Answer</th><th class="l">Got it right</th><th class="l">What people picked</th><th class="l">“I’m sure”</th><th class="l">Verdict</th></tr></thead><tbody>
       ${w.cards.map(c=>{const n=c.answers,fact=c.a==='fact'?c.ok:n-c.ok,mx=Math.max(1,...w.cards.map(x=>x.answers));
         return `<tr><td>${c.i}</td><td class="s">${esc(c.s)}</td><td class="l ${c.a}">${c.a==='fact'?'Fact':'Fiction'}</td>
-        <td class="l">${n?`<span class="split" title="${c.ok} right, ${n-c.ok} wrong">${c.ok?`<i class="r" style="width:${Math.round(c.ok/mx*70)}px"></i>`:''}${n-c.ok?`<i class="w" style="width:${Math.round((n-c.ok)/mx*70)}px"></i>`:''}</span>${c.ok} of ${n}`:'–'}</td>
+        <td class="l">${n?`<span class="split" title="${c.ok} right, ${n-c.ok} wrong">${c.ok?`<i class="r" style="width:${Math.round(c.ok/mx*70)}px"></i>`:''}${n-c.ok?`<i class="w" style="width:${Math.round((n-c.ok)/mx*70)}px"></i>`:''}</span>${c.ok} of ${n} (${Math.round(100*c.ok/n)}%)`:'–'}</td>
         <td class="w">${n?`${fact} Fact · ${n-fact} Fiction`:'–'}</td>
-        <td class="w">${c.sureN?`${c.sureN} of ${n} · ${c.sureOk} right`:n?'None':'–'}</td>
+        <td class="w">${c.sureN?`${c.sureN} of ${n} · ${c.sureOk} right (${Math.round(100*c.sureOk/c.sureN)}%)`:n?'None':'–'}</td>
         <td class="v">${n?verdict(c):''}</td></tr>`}).join('')}</tbody></table></div>
       <details data-game="fof" data-week="${w.week}" data-cards="${w.cards.length}"><summary>${esc(w.label)}: each player's answers</summary><div class="det muted">Loading…</div></details>`})||'<p class="muted">No piles played yet.</p>'}
       <p class="muted" style="margin:10px 0 0">Bars: bright = right, dark = wrong. Verdicts follow standard test-question guidelines: under 30% or over 90% right needs a look, and about 75% is ideal for a two-answer question. Overconfident: people who chose “I’m sure” were right less than 2 times in 3, the break-even for that button. From 20 finished piles, each card in the good range also shows whether the players who scored best overall were more likely to get it right than the players who scored worst (Separates players) or not (Doesn’t separate players). That's a different question from how many got it right. Early read: fewer than 10 answers.</p></section>`;

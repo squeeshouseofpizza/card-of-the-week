@@ -289,7 +289,8 @@ export async function fofStats(env) {
         const k = cardRows.find(r => r.week === p.week && r.card === i) || { n: 0, ok: 0, sure: 0, sure_ok: 0 };
         const top = discRows.find(r => r.week === p.week && r.card === i && r.half === 'top'), bot = discRows.find(r => r.week === p.week && r.card === i && r.half === 'bottom');
         return { i: i + 1, id: c.id, s: c.s, a: c.a, answers: k.n, ok: k.ok, sureN: k.sure, sureOk: k.sure_ok, right: pct(k.ok, k.n), sure: pct(k.sure, k.n), rightSure: pct(k.sure_ok, k.sure),
-          rightLock: pct(k.ok - k.sure_ok, k.n - k.sure), disc: top && bot && top.m >= 20 ? Math.round(100 * (top.rate - bot.rate)) / 100 : null };
+          rightLock: pct(k.ok - k.sure_ok, k.n - k.sure), disc: top && bot && top.m >= 20 ? Math.round(100 * (top.rate - bot.rate)) / 100 : null,
+          topRight: top && bot && top.m >= 20 ? Math.round(100 * top.rate) : null, bottomRight: top && bot && top.m >= 20 ? Math.round(100 * bot.rate) : null };
       }),
     };
   });
