@@ -19,7 +19,7 @@
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 body{margin:0;background:var(--ground);color:var(--cream);font-family:var(--body);font-size:17px;line-height:1.45}
-.wrap{max-width:980px;margin:0 auto;padding:20px 16px 48px;display:flex;flex-direction:column;gap:18px}
+.wrap{max-width:1240px;margin:0 auto;padding:20px 16px 48px;display:flex;flex-direction:column;gap:18px}
 h1{font-family:var(--display);font-size:26px;margin:0;color:var(--gold-lite)}
 h2{font-family:var(--display);font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0 0 10px;font-weight:500}
 h3{font-family:var(--display);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px;font-weight:500}
@@ -52,7 +52,8 @@ code{font-family:var(--mono);background:#2a2116;padding:2px 6px;border-radius:4p
 .split{display:inline-flex;gap:2px;vertical-align:middle;margin-right:6px}
 .split i{display:block;height:10px;border-radius:2px}
 .split i.r{background:var(--gold-lite)}.split i.w{background:#7a6545}
-td.v{text-align:left;white-space:normal;min-width:150px}
+td.v{text-align:left;white-space:normal;min-width:130px}
+td.w{text-align:left;white-space:normal;min-width:90px}
 .tag{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:0 8px;font-size:13px;margin:1px 2px;white-space:nowrap}
 .tag.good{border-color:#6f8f5f;color:#b7d3a6}.tag.flag{border-color:#9a6a4a;color:#e7b08f}.tag.muted{color:var(--muted)}
 .stats-line{margin:0 0 6px;font-size:15px}
@@ -141,7 +142,8 @@ td.l,th.l{white-space:nowrap}
     const verdict=c=>{const n=c.answers;if(n<5)return'<span class="tag muted">Too few answers yet</span>';
       const r=c.ok/n,t=[];t.push(r>.9?'<span class="tag flag">Too easy</span>':r<.3?'<span class="tag flag">Too hard</span>':'<span class="tag good">Good range</span>');
       if(c.sureN>=3&&c.sureOk/c.sureN<2/3)t.push('<span class="tag flag">Overconfident</span>');
-      if(c.disc!=null)t.push(c.disc<0?'<span class="tag flag">Weaker players did better</span>':c.disc>=.25?'<span class="tag good">Separates strong players</span>':'<span class="tag flag">Coin flip</span>');
+      // When nearly everyone is right (or wrong) there's nothing to separate, so no separation tag.
+      if(c.disc!=null&&r<=.9&&r>=.1)t.push(c.disc<0?'<span class="tag flag">Weaker players did better</span>':c.disc>=.25?'<span class="tag good">Separates players</span>':'<span class="tag flag">Coin flip</span>');
       if(n<10)t.push('<span class="tag muted">Early read</span>');return t.join('')};
     // The two most recent weeks are shown; older ones fold under "Earlier weeks". Nothing is deleted.
     const recent=(list,f)=>{const s=list.slice().sort((a,b)=>b.week-a.week);if(!s.length)return'';const top=s.slice(0,2).map(f).join(''),rest=s.slice(2);
@@ -167,11 +169,11 @@ td.l,th.l{white-space:nowrap}
       ${w.cards.map(c=>{const n=c.answers,fact=c.a==='fact'?c.ok:n-c.ok,mx=Math.max(1,...w.cards.map(x=>x.answers));
         return `<tr><td>${c.i}</td><td class="s">${esc(c.s)}</td><td class="l ${c.a}">${c.a==='fact'?'Fact':'Fiction'}</td>
         <td class="l">${n?`<span class="split" title="${c.ok} right, ${n-c.ok} wrong">${c.ok?`<i class="r" style="width:${Math.round(c.ok/mx*70)}px"></i>`:''}${n-c.ok?`<i class="w" style="width:${Math.round((n-c.ok)/mx*70)}px"></i>`:''}</span>${c.ok} of ${n}`:'–'}</td>
-        <td class="l">${n?`${fact} Fact · ${n-fact} Fiction`:'–'}</td>
-        <td class="l">${c.sureN?`${c.sureN} of ${n} · ${c.sureOk} right`:n?'None':'–'}</td>
+        <td class="w">${n?`${fact} Fact · ${n-fact} Fiction`:'–'}</td>
+        <td class="w">${c.sureN?`${c.sureN} of ${n} · ${c.sureOk} right`:n?'None':'–'}</td>
         <td class="v">${n?verdict(c):''}</td></tr>`}).join('')}</tbody></table></div>
       <details data-game="fof" data-week="${w.week}" data-cards="${w.cards.length}"><summary>${esc(w.label)}: each player's answers</summary><div class="det muted">Loading…</div></details>`})||'<p class="muted">No piles played yet.</p>'}
-      <p class="muted" style="margin:10px 0 0">Bars: bright = right, dark = wrong. Verdicts follow standard test-question guidelines: under 30% or over 90% right needs a look, and about 75% is ideal for a two-answer question. Overconfident: people who chose “I’m sure” were right less than 2 times in 3, the break-even for that button. From 10 finished piles, each card also shows whether the top half of players got it right more than the bottom half. Early read: fewer than 10 answers.</p></section>`;
+      <p class="muted" style="margin:10px 0 0">Bars: bright = right, dark = wrong. Verdicts follow standard test-question guidelines: under 30% or over 90% right needs a look, and about 75% is ideal for a two-answer question. Overconfident: people who chose “I’m sure” were right less than 2 times in 3, the break-even for that button. From 10 finished piles, each card in the good range also shows whether the top half of players got it right more than the bottom half (Separates players) or not (Coin flip). Early read: fewer than 10 answers.</p></section>`;
 
     const maxS=Math.max(1,...j.signups.map(s=>s.n));
     h+=`<section><h2>New Discord sign-ins</h2><div class="scroll"><table><thead><tr><th class="l">Day</th><th class="l">New accounts</th></tr></thead><tbody>
