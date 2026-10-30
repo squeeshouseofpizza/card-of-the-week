@@ -245,20 +245,41 @@ export async function fofRoute(req, env, url, origin, h) {
 }
 
 // ---------- private stats (called from worker.js /admin/stats, which checks the admin list) ----------
+// Read straight from fof_answers so every number traces back to an actual answer. Per card: how many answered, the
+// share right (item difficulty), how often players chose "I'm sure" and how often they were right when they did
+// (sure pays only above 2 in 3), and, once 10 piles are finished, discrimination: the share right among the top half
+// of finishers minus the bottom half (+0.25 or more separates strong players from weak ones; near 0 is a coin flip).
 export async function fofStats(env) {
   await schema(env);
   const B = await bank(env), now = fofWeek();
-  const piles = (await env.DB.prepare(`SELECT week, COUNT(*) AS piles, SUM(n = ${CARDS}) AS finished, SUM(player LIKE 'd:%') AS signed_in,
-      SUM(CASE WHEN n = ${CARDS} THEN pts END) AS pts_done FROM (SELECT week, player, COUNT(*) AS n, SUM(points) AS pts FROM fof_answers GROUP BY week, player)
-      GROUP BY week ORDER BY week`).all()).results;
-  const counts = (await env.DB.prepare('SELECT week, card, n, f, ok FROM fof_counts ORDER BY week, card').all()).results;
-  const weeks = piles.map(p => {
-    const cards = pile(B, p.week) || [];
+  const rows = (await env.DB.prepare(`SELECT a.week, a.card, a.player, a.pick, a.sure, a.ok, a.points, a.created_at, u.name FROM fof_answers a
+      LEFT JOIN users u ON u.discord_id = a.discord_id ORDER BY a.week, a.created_at`).all()).results;
+  const byWeek = new Map();
+  for (const r of rows) { if (!byWeek.has(r.week)) byWeek.set(r.week, []); byWeek.get(r.week).push(r); }
+  const pct = (a, b) => b ? Math.round(100 * a / b) : null;
+  const weeks = [...byWeek].map(([week, rs]) => {
+    const cards = pile(B, week) || [];
+    const players = new Map(); let anon = 0;
+    for (const r of rs) {
+      if (!players.has(r.player)) players.set(r.player, { name: r.name || 'Anonymous ' + (++anon), signedIn: r.player.startsWith('d:'), answers: Array(cards.length).fill(null), points: 0, n: 0 });
+      const p = players.get(r.player); p.answers[r.card] = { pick: r.pick ? 'fact' : 'fiction', sure: r.sure, ok: !!r.ok, points: r.points }; p.points += r.points; p.n++;
+    }
+    const list = [...players.values()], done = list.filter(p => p.n === cards.length).sort((a, b) => b.points - a.points);
+    const half = Math.floor(done.length / 2), upper = done.slice(0, half), lower = done.slice(done.length - half);
+    const stopped = {}; for (const p of list) if (p.n < cards.length) stopped[p.n + 1] = (stopped[p.n + 1] || 0) + 1;
     return {
-      week: p.week, label: p.week === PRACTICE ? 'Practice' : 'Week ' + p.week, piles: p.piles, finished: p.finished || 0, signedIn: p.signed_in || 0,
-      avgPoints: p.finished ? Math.round(10 * p.pts_done / p.finished) / 10 : null,
-      cards: cards.map((c, i) => { const k = counts.find(r => r.week === p.week && r.card === i) || { n: 0, f: 0, ok: 0 };
-        return { i: i + 1, id: c.id, s: c.s, a: c.a, answers: k.n, saidFact: k.n ? Math.round(100 * k.f / k.n) : null, right: k.n ? Math.round(100 * k.ok / k.n) : null }; }),
+      week, label: week === PRACTICE ? 'Practice' : 'Week ' + week, piles: list.length, finished: done.length, signedIn: list.filter(p => p.signedIn).length,
+      avgPoints: done.length ? Math.round(10 * done.reduce((s, p) => s + p.points, 0) / done.length) / 10 : null,
+      stopped,   // unfinished piles by the card they stopped on
+      cards: cards.map((c, i) => {
+        const a = list.map(p => p.answers[i]).filter(Boolean), sure = a.filter(x => x.sure), lock = a.filter(x => !x.sure);
+        const okIn = g => g.filter(p => p.answers[i] && p.answers[i].ok).length / (g.length || 1);
+        return { i: i + 1, id: c.id, s: c.s, a: c.a, answers: a.length, right: pct(a.filter(x => x.ok).length, a.length),
+          sure: pct(sure.length, a.length), rightSure: pct(sure.filter(x => x.ok).length, sure.length), rightLock: pct(lock.filter(x => x.ok).length, lock.length),
+          disc: done.length >= 10 ? Math.round(100 * (okIn(upper) - okIn(lower))) / 100 : null };
+      }),
+      players: list.sort((a, b) => (b.n === cards.length) - (a.n === cards.length) || b.points - a.points)
+        .map(p => ({ name: p.name, signedIn: p.signedIn, points: p.points, finished: p.n === cards.length, answers: p.answers })),
     };
   });
   return { currentWeek: now, weeks };

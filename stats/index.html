@@ -36,13 +36,15 @@ table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font
 th{font-family:var(--display);font-weight:500;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:right;padding:5px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
 td{padding:6px 8px;text-align:right;border-bottom:1px solid rgba(214,163,74,.12);vertical-align:top}
 th:first-child,td:first-child,td.l,th.l{text-align:left}
-td.s{text-align:left;max-width:520px}
+td.s{text-align:left;min-width:280px;max-width:520px}
 .bar{display:inline-block;height:10px;background:var(--bar);border-radius:2px;vertical-align:middle;margin-right:6px}
 .btn{background:#5865f2;color:#fff;border:0;border-radius:8px;padding:9px 14px;font:inherit;font-size:16px;cursor:pointer}
 .link{background:none;border:0;color:var(--gold);text-decoration:underline;font:inherit;font-size:15px;cursor:pointer;padding:0}
 .msg{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
 code{font-family:var(--mono);background:#2a2116;padding:2px 6px;border-radius:4px}
 .fact{color:#9cc98f}.fiction{color:#e08a6e}
+details{margin-top:10px}summary{cursor:pointer;color:var(--gold-lite);font-size:15.5px}
+td.l,th.l{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -61,6 +63,7 @@ code{font-family:var(--mono);background:#2a2116;padding:2px 6px;border-radius:4p
   const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const num=n=>n==null?'–':Number(n).toLocaleString();
   const TOP=['Olive','Basil','Garlic','Mushroom','Onion','Pepperoni','Tomato','Green pepper','Mozzarella','Signature chili','Pizza'];
+  const fmtPts=n=>n<0?'−'+(-n):String(n);
   const bar=(v,max,w=120)=>`<span class="bar" style="width:${max?Math.max(2,Math.round(v/max*w)):0}px"></span>`;
 
   function signIn(){
@@ -106,15 +109,26 @@ code{font-family:var(--mono);background:#2a2116;padding:2px 6px;border-radius:4p
       <p class="muted" style="margin:10px 0 0">Every finished game is counted, signed in or not. The game doesn’t track who anonymous players are, so player counts only exist for signed-in scores.</p></section>`;
 
     const wk=w=>w===-1?'Practice card':w<-1?'Test '+(-w-1):'Week '+w;
-    h+=`<section><h2>Guess the Card</h2><div class="scroll"><table><thead><tr><th class="l">Week</th><th>Players</th><th>Finished</th><th>Solved</th><th>Solve rate</th><th>Avg guesses (solved)</th><th>Signed in</th></tr></thead><tbody>
-      ${G.slice().sort((a,b)=>b.week-a.week).map(w=>`<tr><td>${wk(w.week)}</td><td>${num(w.players)}</td><td>${num(w.finished)}</td><td>${num(w.solved)}</td><td>${w.finished?Math.round(100*w.solved/w.finished)+'%':'–'}</td><td>${w.avgGuesses??'–'}</td><td>${num(w.signedIn)}</td></tr>`).join('')||'<tr><td colspan="7" class="l muted">No games yet.</td></tr>'}</tbody></table></div>
-      <p class="muted" style="margin:10px 0 0">Players are counted per browser, so someone on a phone and a laptop without signing in counts twice.</p></section>`;
+    const pc=v=>v==null?'–':v+'%';
+    const who=p=>esc(p.name)+(p.signedIn?'':' <span class="muted">(not signed in)</span>');
+    h+=`<section><h2>Guess the Card</h2><div class="scroll"><table><thead><tr><th class="l">Week</th><th>Players</th><th>Solved</th><th>Out of guesses</th><th>Stopped partway</th><th>Avg guesses (solved)</th><th>Signed in</th></tr></thead><tbody>
+      ${G.slice().sort((a,b)=>b.week-a.week).map(w=>`<tr><td>${wk(w.week)}</td><td>${num(w.players)}</td><td>${num(w.solved)}</td><td>${num(w.outOfGuesses)}</td><td>${num(w.stopped)}</td><td>${w.avgGuesses??'–'}</td><td>${num(w.signedIn)}</td></tr>`).join('')||'<tr><td colspan="7" class="l muted">No games yet.</td></tr>'}</tbody></table></div>
+      <p class="muted" style="margin:8px 0 0">Out of guesses: used all six and missed. Stopped partway: made at least one guess, then left. Opening the page without guessing isn't recorded. Players are counted per browser.</p>
+      ${G.slice().sort((a,b)=>b.week-a.week).map(w=>`<details><summary>${wk(w.week)}: each player's guesses</summary>
+        <p class="muted" style="margin:6px 0">Solved in: ${w.dist.map((n,i)=>n?n+' in '+(i+1):'').filter(Boolean).join(', ')||'nobody yet'}. Hints reached: artist ${w.hints.artist}, flavor text ${w.hints.flavor}, art ${w.hints.art}. Top first guesses: ${w.firsts.map(f=>esc(f[0])+' ('+f[1]+')').join(', ')||'–'}.</p>
+        <div class="scroll"><table><thead><tr><th class="l">Player</th><th class="l">Result</th><th class="l">Guesses in order</th></tr></thead><tbody>
+        ${w.list.map(p=>`<tr><td>${who(p)}</td><td class="l">${p.won?'Solved in '+p.guesses.length:p.done?'Out of guesses':'Stopped after '+p.guesses.length}</td><td class="s">${p.guesses.map(esc).join(' → ')}</td></tr>`).join('')}</tbody></table></div></details>`).join('')}</section>`;
 
-    h+=`<section><h2>Fact or Fiction: The Game</h2>${F.slice().sort((a,b)=>b.week-a.week).map(w=>`
-      <h3>${esc(w.label)} · ${num(w.piles)} started · ${num(w.finished)} finished · ${num(w.signedIn)} signed in${w.avgPoints!=null?' · avg '+w.avgPoints+' points':''}</h3>
-      <div class="scroll"><table><thead><tr><th class="l">#</th><th class="l">Statement</th><th class="l">Answer</th><th>Answers</th><th>Said Fact</th><th>Got it right</th></tr></thead><tbody>
-      ${w.cards.map(c=>`<tr><td>${c.i}</td><td class="s">${esc(c.s)}</td><td class="l ${c.a}">${c.a==='fact'?'Fact':'Fiction'}</td><td>${num(c.answers)}</td><td>${c.saidFact==null?'–':c.saidFact+'%'}</td><td>${c.right==null?'–':c.right+'%'}</td></tr>`).join('')}</tbody></table></div>`).join('')||'<p class="muted">No piles played yet.</p>'}
-      <p class="muted" style="margin:10px 0 0">“Got it right” is the share of everyone who answered that card.</p></section>`;
+    const mark=x=>x?`<span class="${x.ok?'fact':'fiction'}">${x.ok?'✓':'✕'}</span> ${x.pick==='fact'?'Fact':'Fiction'}${x.sure?' · sure':''}`:'<span class="muted">–</span>';
+    h+=`<section><h2>Fact or Fiction: The Game</h2>${F.slice().sort((a,b)=>b.week-a.week).map(w=>{
+      const st=Object.entries(w.stopped||{});
+      return `<h3>${esc(w.label)} · ${num(w.piles)} started · ${num(w.finished)} finished · ${num(w.signedIn)} signed in${w.avgPoints!=null?' · avg '+w.avgPoints+' points':''}</h3>
+      ${st.length?`<p class="muted" style="margin:0 0 6px">Unfinished piles stopped at: ${st.map(([c,n])=>'card '+c+' ('+n+')').join(', ')}.</p>`:''}
+      <div class="scroll"><table><thead><tr><th class="l">#</th><th class="l">Statement</th><th class="l">Answer</th><th>Answers</th><th>Right</th><th>Chose sure</th><th>Right if sure</th><th>Right if locked</th><th>Separates</th></tr></thead><tbody>
+      ${w.cards.map(c=>`<tr><td>${c.i}</td><td class="s">${esc(c.s)}</td><td class="l ${c.a}">${c.a==='fact'?'Fact':'Fiction'}</td><td>${num(c.answers)}</td><td>${pc(c.right)}</td><td>${pc(c.sure)}</td><td>${pc(c.rightSure)}</td><td>${pc(c.rightLock)}</td><td>${c.disc==null?'–':c.disc.toFixed(2)}</td></tr>`).join('')}</tbody></table></div>
+      <details><summary>${esc(w.label)}: each player's answers</summary><div class="scroll"><table><thead><tr><th class="l">Player</th><th>Points</th>${w.cards.map(c=>`<th class="l">Card ${c.i}</th>`).join('')}</tr></thead><tbody>
+      ${w.players.map(p=>`<tr><td>${who(p)}${p.finished?'':' <span class="muted">(unfinished)</span>'}</td><td>${fmtPts(p.points)}</td>${p.answers.map(x=>`<td class="l">${mark(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></details>`}).join('')||'<p class="muted">No piles played yet.</p>'}
+      <p class="muted" style="margin:10px 0 0">Right: share of everyone who answered. Chose sure: share who picked “I’m sure.” “I’m sure” only pays off for someone right more than 2 times in 3, so Right if sure under 67% means players were overconfident on that card. Separates appears once 10 piles are finished: the share right among the top half of finishers minus the bottom half. 0.25 or more means the card rewards people who know the show; near 0 means it played like a coin flip.</p></section>`;
 
     const maxS=Math.max(1,...j.signups.map(s=>s.n));
     h+=`<section><h2>New Discord sign-ins</h2><div class="scroll"><table><thead><tr><th class="l">Day</th><th class="l">New accounts</th></tr></thead><tbody>
