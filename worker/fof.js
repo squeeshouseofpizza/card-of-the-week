@@ -267,6 +267,9 @@ export async function fofStats(env) {
       GROUP BY week ORDER BY week`).all()).results;
   const cardRows = (await env.DB.prepare(`SELECT week, card, COUNT(*) AS n, SUM(ok) AS ok, SUM(sure) AS sure, SUM(sure * ok) AS sure_ok
       FROM fof_answers GROUP BY week, card`).all()).results;
+  // Points per finished pile, for the week's score spread (like Google Forms' quiz summary and Wordle's guess chart).
+  const ptsRows = (await env.DB.prepare(`SELECT week, pts, COUNT(*) AS c FROM (SELECT week, player, SUM(points) AS pts, COUNT(*) AS n FROM fof_answers GROUP BY week, player)
+      WHERE n = ${CARDS} GROUP BY week, pts`).all()).results;
   const stopRows = (await env.DB.prepare(`SELECT week, n, COUNT(*) AS c FROM (SELECT week, player, COUNT(*) AS n FROM fof_answers GROUP BY week, player)
       WHERE n < ${CARDS} GROUP BY week, n`).all()).results;
   const discRows = (await env.DB.prepare(`WITH p AS (SELECT week, player, SUM(points) AS pts FROM fof_answers GROUP BY week, player HAVING COUNT(*) = ${CARDS}),
@@ -281,10 +284,11 @@ export async function fofStats(env) {
     return {
       week: p.week, label: p.week === PRACTICE ? 'Practice' : 'Week ' + p.week, piles: p.piles, finished: p.finished || 0, signedIn: p.signed_in || 0,
       avgPoints: p.finished ? Math.round(10 * p.pts_done / p.finished) / 10 : null, stopped,
+      points: ptsRows.filter(r => r.week === p.week).map(r => [r.pts, r.c]),
       cards: cards.map((c, i) => {
         const k = cardRows.find(r => r.week === p.week && r.card === i) || { n: 0, ok: 0, sure: 0, sure_ok: 0 };
         const top = discRows.find(r => r.week === p.week && r.card === i && r.half === 'top'), bot = discRows.find(r => r.week === p.week && r.card === i && r.half === 'bottom');
-        return { i: i + 1, id: c.id, s: c.s, a: c.a, answers: k.n, right: pct(k.ok, k.n), sure: pct(k.sure, k.n), rightSure: pct(k.sure_ok, k.sure),
+        return { i: i + 1, id: c.id, s: c.s, a: c.a, answers: k.n, ok: k.ok, sureN: k.sure, sureOk: k.sure_ok, right: pct(k.ok, k.n), sure: pct(k.sure, k.n), rightSure: pct(k.sure_ok, k.sure),
           rightLock: pct(k.ok - k.sure_ok, k.n - k.sure), disc: top && bot && top.m >= 10 ? Math.round(100 * (top.rate - bot.rate)) / 100 : null };
       }),
     };
