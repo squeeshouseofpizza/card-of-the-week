@@ -21,7 +21,7 @@ const DEEP_EVERY = 26, DEEP_OFFSET = 13;
 const isDeep = w => w > 0 && w % DEEP_EVERY === DEEP_OFFSET;
 const SESSION_DAYS = 180;
 // Discord accounts that can open the private stats page (stats/). Discord ids aren't secret; they only say who's allowed.
-const ADMINS = new Set([]);
+const ADMINS = new Set(['327871268458332180']);   // Brian (Dr Siuss)
 const SCRYFALL_HEADERS = { 'User-Agent': 'CardOfTheWeek/1.0 (squeeshouseofpizza.com)', 'Accept': 'application/json' };
 
 // ---------- time ----------
