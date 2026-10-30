@@ -258,7 +258,7 @@ export async function fofRoute(req, env, url, origin, h) {
 // Totals are computed in SQL so the Worker's own CPU stays small as answers pile up. Per card: answers, share right
 // (item difficulty), share who chose "I'm sure", right when sure vs locked in ("I'm sure" pays only above 2 in 3), and
 // from 10 finished piles discrimination: share right among the top half of finishers minus the bottom half (+0.25 or
-// more separates strong players from weak ones; near 0 is a coin flip). Each player's answers load per week on request.
+// more separates strong players from weak ones). Shown from 20 finished piles: with 10, one player swings it by 0.2. Each player's answers load per week on request.
 export async function fofStats(env) {
   await schema(env);
   const B = await bank(env), now = fofWeek();
@@ -289,7 +289,7 @@ export async function fofStats(env) {
         const k = cardRows.find(r => r.week === p.week && r.card === i) || { n: 0, ok: 0, sure: 0, sure_ok: 0 };
         const top = discRows.find(r => r.week === p.week && r.card === i && r.half === 'top'), bot = discRows.find(r => r.week === p.week && r.card === i && r.half === 'bottom');
         return { i: i + 1, id: c.id, s: c.s, a: c.a, answers: k.n, ok: k.ok, sureN: k.sure, sureOk: k.sure_ok, right: pct(k.ok, k.n), sure: pct(k.sure, k.n), rightSure: pct(k.sure_ok, k.sure),
-          rightLock: pct(k.ok - k.sure_ok, k.n - k.sure), disc: top && bot && top.m >= 10 ? Math.round(100 * (top.rate - bot.rate)) / 100 : null };
+          rightLock: pct(k.ok - k.sure_ok, k.n - k.sure), disc: top && bot && top.m >= 20 ? Math.round(100 * (top.rate - bot.rate)) / 100 : null };
       }),
     };
   });
