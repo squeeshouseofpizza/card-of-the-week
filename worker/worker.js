@@ -489,11 +489,20 @@ export default {
               avgGuesses: r.avg_g ? Math.round(r.avg_g * 10) / 10 : null, dist, hints: { artist: r.h1 || 0, flavor: r.h2 || 0, art: r.h3 || 0 },
               firsts: gFirst.filter(f => f.week === r.week).slice(0, 5).map(f => [f.g, f.c]) };
           });
+          // Coming back: for each game and week, how many players had played an earlier week (first week per player in
+          // one pass, so rows read stay about twice the table). Players are per browser, or per account once signed in.
+          const ret = async sql => (await env.DB.prepare(`WITH wp AS (${sql}), f AS (SELECT player, MIN(week) AS fw FROM wp GROUP BY player)
+              SELECT wp.week, COUNT(*) AS players, SUM(wp.week > f.fw) AS came_back FROM wp JOIN f ON f.player = wp.player GROUP BY wp.week ORDER BY wp.week`).all()).results;
+          const returning = {
+            gtc: await ret('SELECT DISTINCT week, player FROM plays WHERE week >= 1'),
+            fof: await ret('SELECT DISTINCT week, player FROM fof_answers WHERE week >= 1'),
+            pizza: await ret('SELECT DISTINCT week, player FROM pizza_runs WHERE player IS NOT NULL'),
+          };
           const users = (await env.DB.prepare('SELECT created_at / 3600000 AS h, COUNT(*) AS n FROM users GROUP BY h').all()).results;
           const signups = fold(users, (a = { n: 0 }, r) => ({ n: a.n + r.n })).sort((a, b) => a.day < b.day ? -1 : 1);
           return { at: Date.now(), gtcWeek: now, accounts: users.reduce((s, r) => s + r.n, 0), signups,
             pizza: { games: runs.reduce((s, r) => s + r.n, 0), days: pizzaDays, biggest, top: pizzaTop, players: pizzaPlayers, untracked },
-            gtc: { weeks: gtcWeeks }, fof: await fofStats(env) };
+            gtc: { weeks: gtcWeeks }, fof: await fofStats(env), returning };
         }), 200, origin);
       }
       if (path === '/me') {

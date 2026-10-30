@@ -43,6 +43,19 @@ td.s{text-align:left;min-width:280px;max-width:520px}
 .msg{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
 code{font-family:var(--mono);background:#2a2116;padding:2px 6px;border-radius:4px}
 .fact{color:#9cc98f}.fiction{color:#e08a6e}
+/* Small charts: one hue; the most common value is the brighter bar. Hover a bar for its exact count. */
+.hist{display:flex;align-items:flex-end;gap:2px;height:46px;margin:6px 0 2px}
+.hist i{display:block;width:16px;min-height:2px;background:var(--bar);border-radius:3px 3px 0 0}
+.hist i.top{background:var(--gold-lite)}
+.histx{display:flex;gap:2px;font-size:11px;color:var(--muted);font-family:var(--mono)}
+.histx span{width:16px;text-align:center}
+.split{display:inline-flex;gap:2px;vertical-align:middle;margin-right:6px}
+.split i{display:block;height:10px;border-radius:2px}
+.split i.r{background:var(--gold-lite)}.split i.w{background:#7a6545}
+td.v{text-align:left;white-space:normal;min-width:150px}
+.tag{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:0 8px;font-size:13px;margin:1px 2px;white-space:nowrap}
+.tag.good{border-color:#6f8f5f;color:#b7d3a6}.tag.flag{border-color:#9a6a4a;color:#e7b08f}.tag.muted{color:var(--muted)}
+.stats-line{margin:0 0 6px;font-size:15px}
 details{margin-top:10px}
 details.earlier>summary{color:var(--muted)}summary{cursor:pointer;color:var(--gold-lite);font-size:15.5px}
 td.l,th.l{white-space:nowrap}
@@ -100,6 +113,15 @@ td.l,th.l{white-space:nowrap}
     const tiles=[['Discord accounts',j.accounts],['Pizza Drop games',P.games],['Guess the Card games',G.reduce((s,w)=>s+w.players,0)],['Fact or Fiction piles',F.reduce((s,w)=>s+w.piles,0)]];
     let h=`<div class="tiles">${tiles.map(([l,n])=>`<div class="tile"><div class="l">${l}</div><div class="n">${num(n)}</div></div>`).join('')}</div>`;
 
+    // Coming back: the number to watch for growth (weekly cohorts, as in Roblox's creator analytics, kept to one row per week).
+    const R=j.returning||{gtc:[],fof:[],pizza:[]};
+    const retTable=(rows,label)=>{const r=rows.slice().reverse().slice(0,8);if(!r.length)return`<p class="muted" style="margin:0">${label}: starts with week 1.</p>`;
+      const mx=Math.max(1,...r.map(x=>x.players));
+      return `<h3>${label}</h3><table><thead><tr><th class="l">Week</th><th class="l">Players</th><th>Came back</th><th>New</th></tr></thead><tbody>${r.map(x=>{const ret=x.came_back||0,nw=x.players-ret;
+        return `<tr><td>${x.week<1?'Before launch':'Week '+x.week}</td><td class="l"><span class="split" title="${ret} came back, ${nw} new">${ret?`<i class="r" style="width:${Math.max(2,Math.round(ret/mx*140))}px"></i>`:''}${nw?`<i class="w" style="width:${Math.max(2,Math.round(nw/mx*140))}px"></i>`:''}</span>${num(x.players)}</td><td>${num(ret)}</td><td>${num(nw)}</td></tr>`}).join('')}</tbody></table>`};
+    h+=`<section><h2>Coming back</h2><p class="muted stats-line">Players each week who had played an earlier week (bright) versus first-timers (dark). Counted per browser, or per Discord account once signed in; the practice weeks don't count.</p>
+      <div class="scroll">${retTable(R.gtc,'Guess the Card')}${retTable(R.fof,'Fact or Fiction')}${retTable(R.pizza,'Pizza Drop')}</div></section>`;
+
     const maxG=Math.max(1,...P.days.map(d=>d.games)),allTop=P.biggest.reduce((s,b)=>s+b.games,0)||1,maxB=Math.max(1,...P.biggest.map(b=>b.games));
     h+=`<section><h2>Pizza Drop</h2><div class="scroll"><table><thead><tr><th class="l">Day</th><th class="l">Games</th><th>Avg score</th><th>Best</th><th>Avg minutes</th></tr></thead><tbody>
       ${P.days.slice().reverse().map(d=>`<tr><td>${d.day}</td><td class="l">${bar(d.games,maxG)}${num(d.games)}</td><td>${num(d.avgScore)}</td><td>${num(d.best)}</td><td>${d.avgMinutes}</td></tr>`).join('')||'<tr><td colspan="5" class="l muted">No games yet.</td></tr>'}</tbody></table></div>
@@ -112,6 +134,15 @@ td.l,th.l{white-space:nowrap}
       <p class="muted" style="margin:10px 0 0">Games per player counts from Oct 29, 2026 on${P.untracked?` (${num(P.untracked)} earlier games weren’t tagged and only show in the daily totals)`:''}. Not signed in means one browser; when that browser signs in, its games move to the account.</p></section>`;
 
     const wk=w=>w===-1?'Practice card':w<-1?'Test '+(-w-1):'Week '+w;
+    // A small bar chart; the most common value is highlighted (like Wordle's guess chart).
+    const hist=(pairs)=>{if(!pairs.some(p=>p[1]))return'';const mx=Math.max(1,...pairs.map(p=>p[1]));return `<div class="hist">${pairs.map(([k,c])=>`<i class="${c===mx&&c>0?'top':''}" style="height:${c?Math.max(3,Math.round(c/mx*44)):0}px" title="${esc(k)}: ${c}"></i>`).join('')}</div><div class="histx">${pairs.map(([k])=>`<span>${esc(k)}</span>`).join('')}</div>`};
+    // Verdict per Fact or Fiction card, from test-question guidelines: under 30% or over 90% right needs attention,
+    // about 75% is ideal for a two-answer question; "I'm sure" pays only above 2 in 3; discrimination 0.25+ is good.
+    const verdict=c=>{const n=c.answers;if(n<5)return'<span class="tag muted">Too few answers yet</span>';
+      const r=c.ok/n,t=[];t.push(r>.9?'<span class="tag flag">Too easy</span>':r<.3?'<span class="tag flag">Too hard</span>':'<span class="tag good">Good range</span>');
+      if(c.sureN>=3&&c.sureOk/c.sureN<2/3)t.push('<span class="tag flag">Overconfident</span>');
+      if(c.disc!=null)t.push(c.disc<0?'<span class="tag flag">Weaker players did better</span>':c.disc>=.25?'<span class="tag good">Separates strong players</span>':'<span class="tag flag">Coin flip</span>');
+      if(n<10)t.push('<span class="tag muted">Early read</span>');return t.join('')};
     // The two most recent weeks are shown; older ones fold under "Earlier weeks". Nothing is deleted.
     const recent=(list,f)=>{const s=list.slice().sort((a,b)=>b.week-a.week);if(!s.length)return'';const top=s.slice(0,2).map(f).join(''),rest=s.slice(2);
       return top+(rest.length?`<details class="earlier"><summary>Earlier weeks (${rest.length})</summary>${rest.map(f).join('')}</details>`:'')};
@@ -119,17 +150,28 @@ td.l,th.l{white-space:nowrap}
     h+=`<section><h2>Guess the Card</h2><div class="scroll"><table><thead><tr><th class="l">Week</th><th>Players</th><th>Solved</th><th>Out of guesses</th><th>Stopped partway</th><th>Avg guesses (solved)</th><th>Signed in</th></tr></thead><tbody>
       ${G.slice().sort((a,b)=>b.week-a.week).map(w=>`<tr><td>${wk(w.week)}</td><td>${num(w.players)}</td><td>${num(w.solved)}</td><td>${num(w.outOfGuesses)}</td><td>${num(w.stopped)}</td><td>${w.avgGuesses??'–'}</td><td>${num(w.signedIn)}</td></tr>`).join('')||'<tr><td colspan="7" class="l muted">No games yet.</td></tr>'}</tbody></table></div>
       <p class="muted" style="margin:8px 0 0">Out of guesses: used all six and missed. Stopped partway: made at least one guess, then left. Opening the page without guessing isn't recorded. Players are counted per browser.</p>
-      ${recent(G,w=>`<h3>${wk(w.week)}</h3><p class="muted" style="margin:0 0 4px">Solved in: ${w.dist.map((n,i)=>n?n+' in '+(i+1):'').filter(Boolean).join(', ')||'nobody yet'}. Hints reached: artist ${w.hints.artist}, flavor text ${w.hints.flavor}, art ${w.hints.art}. Top first guesses: ${w.firsts.map(f=>esc(f[0])+' ('+f[1]+')').join(', ')||'–'}.</p>
-        <details data-game="gtc" data-week="${w.week}"><summary>Each player's guesses</summary><div class="det muted">Loading…</div></details>`)}</section>`;
+      ${recent(G,w=>{const past=G.filter(x=>x.week>=1&&x.week<w.week&&x.avgGuesses!=null),pa=past.length?Math.round(10*past.reduce((s,x)=>s+x.avgGuesses,0)/past.length)/10:null;
+        return `<h3>${wk(w.week)}</h3><p class="stats-line">${w.avgGuesses!=null?'Average '+w.avgGuesses+' guesses to solve'+(pa!=null?` (earlier weeks: ${pa})`:''):'Nobody has solved it yet'}. Hints reached: artist ${w.hints.artist}, flavor text ${w.hints.flavor}, art ${w.hints.art}.</p>
+        ${hist([...w.dist.map((c,i)=>[String(i+1),c]),['X',w.outOfGuesses]])}<p class="muted" style="margin:2px 0 6px;font-size:13px">Solved in 1 to 6 guesses; X = out of guesses. ${num(w.stopped)} stopped partway (not shown).</p>
+        <p class="muted stats-line">Top first guesses: ${w.firsts.map(f=>esc(f[0])+' ('+f[1]+')').join(', ')||'–'}.</p>
+        <details data-game="gtc" data-week="${w.week}"><summary>Each player's guesses</summary><div class="det muted">Loading…</div></details>`})}</section>`;
 
     h+=`<section><h2>Fact or Fiction: The Game</h2>${recent(F,w=>{
-      const st=Object.entries(w.stopped||{});
-      return `<h3>${esc(w.label)} · ${num(w.piles)} started · ${num(w.finished)} finished · ${num(w.signedIn)} signed in${w.avgPoints!=null?' · avg '+w.avgPoints+' points':''}</h3>
-      ${st.length?`<p class="muted" style="margin:0 0 6px">Unfinished piles stopped at: ${st.map(([c,n])=>'card '+c+' ('+n+')').join(', ')}.</p>`:''}
-      <div class="scroll"><table><thead><tr><th class="l">#</th><th class="l">Statement</th><th class="l">Answer</th><th>Answers</th><th>Right</th><th>Chose sure</th><th>Right if sure</th><th>Right if locked</th><th>Separates</th></tr></thead><tbody>
-      ${w.cards.map(c=>`<tr><td>${c.i}</td><td class="s">${esc(c.s)}</td><td class="l ${c.a}">${c.a==='fact'?'Fact':'Fiction'}</td><td>${num(c.answers)}</td><td>${pc(c.right)}</td><td>${pc(c.sure)}</td><td>${pc(c.rightSure)}</td><td>${pc(c.rightLock)}</td><td>${c.disc==null?'–':c.disc.toFixed(2)}</td></tr>`).join('')}</tbody></table></div>
+      const st=Object.entries(w.stopped||{}),pts=(w.points||[]).slice().sort((a,b)=>a[0]-b[0]);
+      let spread='';if(pts.length){const all=[];pts.forEach(([p,c])=>{for(let k=0;k<c;k++)all.push(p)});const med=all.length%2?all[(all.length-1)/2]:(all[all.length/2-1]+all[all.length/2])/2;
+        const lo=pts[0][0],hi=pts[pts.length-1][0],m=new Map(pts),bins=[];for(let v=lo;v<=hi;v++)bins.push([fmtPts(v),m.get(v)||0]);
+        spread=`<p class="stats-line">Finished piles scored ${fmtPts(lo)} to ${fmtPts(hi)} points: average ${w.avgPoints}, median ${fmtPts(med)}.</p>${hist(bins)}<p class="muted" style="margin:2px 0 8px;font-size:13px">Points per finished pile.</p>`}
+      return `<h3>${esc(w.label)} · ${num(w.piles)} started · ${num(w.finished)} finished · ${num(w.signedIn)} signed in</h3>
+      ${spread}${st.length?`<p class="muted stats-line">Unfinished piles stopped at: ${st.map(([c,n])=>'card '+c+' ('+n+')').join(', ')}.</p>`:''}
+      <div class="scroll"><table><thead><tr><th class="l">#</th><th class="l">Statement</th><th class="l">Answer</th><th class="l">Got it right</th><th class="l">What people picked</th><th class="l">“I’m sure”</th><th class="l">Verdict</th></tr></thead><tbody>
+      ${w.cards.map(c=>{const n=c.answers,fact=c.a==='fact'?c.ok:n-c.ok,mx=Math.max(1,...w.cards.map(x=>x.answers));
+        return `<tr><td>${c.i}</td><td class="s">${esc(c.s)}</td><td class="l ${c.a}">${c.a==='fact'?'Fact':'Fiction'}</td>
+        <td class="l">${n?`<span class="split" title="${c.ok} right, ${n-c.ok} wrong">${c.ok?`<i class="r" style="width:${Math.round(c.ok/mx*70)}px"></i>`:''}${n-c.ok?`<i class="w" style="width:${Math.round((n-c.ok)/mx*70)}px"></i>`:''}</span>${c.ok} of ${n}`:'–'}</td>
+        <td class="l">${n?`${fact} Fact · ${n-fact} Fiction`:'–'}</td>
+        <td class="l">${c.sureN?`${c.sureN} of ${n} · ${c.sureOk} right`:n?'None':'–'}</td>
+        <td class="v">${n?verdict(c):''}</td></tr>`}).join('')}</tbody></table></div>
       <details data-game="fof" data-week="${w.week}" data-cards="${w.cards.length}"><summary>${esc(w.label)}: each player's answers</summary><div class="det muted">Loading…</div></details>`})||'<p class="muted">No piles played yet.</p>'}
-      <p class="muted" style="margin:10px 0 0">Right: share of everyone who answered. Chose sure: share who picked “I’m sure.” “I’m sure” only pays off for someone right more than 2 times in 3, so Right if sure under 67% means players were overconfident on that card. Separates appears once 10 piles are finished: the share right among the top half of finishers minus the bottom half. 0.25 or more means the card rewards people who know the show; near 0 means it played like a coin flip.</p></section>`;
+      <p class="muted" style="margin:10px 0 0">Bars: bright = right, dark = wrong. Verdicts follow standard test-question guidelines: under 30% or over 90% right needs a look, and about 75% is ideal for a two-answer question. Overconfident: people who chose “I’m sure” were right less than 2 times in 3, the break-even for that button. From 10 finished piles, each card also shows whether the top half of players got it right more than the bottom half. Early read: fewer than 10 answers.</p></section>`;
 
     const maxS=Math.max(1,...j.signups.map(s=>s.n));
     h+=`<section><h2>New Discord sign-ins</h2><div class="scroll"><table><thead><tr><th class="l">Day</th><th class="l">New accounts</th></tr></thead><tbody>
@@ -149,9 +191,9 @@ td.l,th.l{white-space:nowrap}
     box.className='det scroll';
     if(!j.players.length){box.innerHTML='<p class="muted">Nobody yet.</p>';return}
     if(game==='gtc')box.innerHTML=`<p class="muted" style="margin:6px 0">Newest first. Played is when the first guess went in (Eastern); Took is first guess to last.</p><table><thead><tr><th class="l">Played</th><th class="l">Player</th><th class="l">Result</th><th>Took</th><th class="l">Guesses in order</th></tr></thead><tbody>
-      ${j.players.map(p=>`<tr><td class="l">${when(p.started)}</td><td>${who(p)}</td><td class="l">${p.won?'Solved in '+p.guesses.length:p.done?'Out of guesses':'Stopped after '+p.guesses.length}</td><td>${p.ms==null?'–':dur(p.ms)}</td><td class="s">${p.guesses.map(esc).join(' → ')}</td></tr>`).join('')}</tbody></table>`;
+      ${j.players.map(p=>`<tr><td class="l">${when(p.started)}</td><td class="l">${who(p)}</td><td class="l">${p.won?'Solved in '+p.guesses.length:p.done?'Out of guesses':'Stopped after '+p.guesses.length}</td><td>${p.ms==null?'–':dur(p.ms)}</td><td class="s">${p.guesses.map(esc).join(' → ')}</td></tr>`).join('')}</tbody></table>`;
     else{const n=+d.dataset.cards;box.innerHTML=`<p class="muted" style="margin:6px 0">Newest first. Played is when the first card was answered (Eastern).</p><table><thead><tr><th class="l">Played</th><th class="l">Player</th><th>Points</th>${Array.from({length:n},(_,i)=>`<th class="l">Card ${i+1}</th>`).join('')}</tr></thead><tbody>
-      ${j.players.map(p=>`<tr><td class="l">${when(p.started)}</td><td>${who(p)}${p.finished?'':' <span class="muted">(unfinished)</span>'}</td><td>${fmtPts(p.points)}</td>${p.answers.map(x=>`<td class="l">${mark(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`}
+      ${j.players.map(p=>`<tr><td class="l">${when(p.started)}</td><td class="l">${who(p)}${p.finished?'':' <span class="muted">(unfinished)</span>'}</td><td>${fmtPts(p.points)}</td>${p.answers.map(x=>`<td class="l">${mark(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`}
   }
   load();
 })();
