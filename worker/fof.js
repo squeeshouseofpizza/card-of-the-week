@@ -33,7 +33,8 @@ export function fofWeek(now = Date.now()) {
 }
 
 // ---------- the encrypted bank ----------
-const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+// A plain loop: Uint8Array.from(str, fn) calls a function per character and cost ~6 ms of CPU on the 78 KB bank.
+const b64 = s => { const t = atob(s), u = new Uint8Array(t.length); for (let i = 0; i < t.length; i++) u[i] = t.charCodeAt(i); return u; };
 // Opens any file built by the shop-hq build scripts (this game's bank, and Guess the Card's schedule).
 export async function openSealed(env, sealed) {
   if (!env.FOF_KEY) throw new Error('FOF_KEY secret is not set');
@@ -72,17 +73,23 @@ function schema(env) {
       'CREATE TABLE IF NOT EXISTS fof_meta (k TEXT PRIMARY KEY, v TEXT)'
     ]) await env.DB.prepare(q).run();
     if (!await env.DB.prepare("SELECT 1 FROM fof_meta WHERE k = 'filled'").first()) {
-      // A recount, so running it twice (two Worker instances starting at once) gives the same result.
-      await env.DB.prepare(`INSERT INTO fof_counts (week, card, n, f, ok) SELECT week, card, COUNT(*), SUM(pick), SUM(ok) FROM fof_answers WHERE 1
-          GROUP BY week, card ON CONFLICT (week, card) DO UPDATE SET n = excluded.n, f = excluded.f, ok = excluded.ok`).run();
-      await env.DB.prepare(`INSERT OR IGNORE INTO fof_scores (week, discord_id, points, nright, okmask, done_at)
+      // A recount in one transaction, so two Worker instances starting at once, or an answer landing mid-fill, can't
+      // leave the totals off: answers and their counter updates are also written together (see /fof/answer).
+      await runBatch(env, [
+        env.DB.prepare(`INSERT INTO fof_counts (week, card, n, f, ok) SELECT week, card, COUNT(*), SUM(pick), SUM(ok) FROM fof_answers WHERE 1
+          GROUP BY week, card ON CONFLICT (week, card) DO UPDATE SET n = excluded.n, f = excluded.f, ok = excluded.ok`),
+        env.DB.prepare(`INSERT OR IGNORE INTO fof_scores (week, discord_id, points, nright, okmask, done_at)
           SELECT week, MAX(discord_id), SUM(points), SUM(ok), SUM(ok << card), MAX(created_at) FROM fof_answers
-          WHERE player LIKE 'd:%' AND discord_id IS NOT NULL GROUP BY week, player HAVING COUNT(*) = ${CARDS}`).run();
-      await env.DB.prepare("INSERT OR IGNORE INTO fof_meta (k, v) VALUES ('filled', ?)").bind(String(Date.now())).run();
+          WHERE player LIKE 'd:%' AND discord_id IS NOT NULL GROUP BY week, player HAVING COUNT(*) = ${CARDS}`),
+        env.DB.prepare("INSERT OR IGNORE INTO fof_meta (k, v) VALUES ('filled', ?)").bind(String(Date.now())),
+      ]);
     }
   })().catch(e => { SCHEMA = null; throw e; });
   return SCHEMA;
 }
+
+// D1 runs a batch as one transaction, in order, on one connection. (Test shims without batch run the statements in turn.)
+const runBatch = (env, st) => env.DB.batch ? env.DB.batch(st) : (async () => { const out = []; for (const q of st) out.push(await q.run()); return out; })();
 
 // ---------- helpers ----------
 const okClient = c => typeof c === 'string' && /^[A-Za-z0-9_-]{8,64}$/.test(c);
@@ -187,12 +194,15 @@ export async function fofRoute(req, env, url, origin, h) {
     const done = await env.DB.prepare('SELECT COUNT(*) AS n FROM fof_answers WHERE week = ? AND player = ?').bind(week, pk.key).first();
     if (done.n !== i) return h.J(await stateFor(env, B, week, pk), 409, origin);
     const c = cards[i], ok = (b.pick === c.a) ? 1 : 0, points = POINTS[sure][ok ? 0 : 1], fact = b.pick === 'fact' ? 1 : 0;
-    const ins = await env.DB.prepare('INSERT OR IGNORE INTO fof_answers (week, card, player, discord_id, sid, pick, sure, ok, points, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(week, i, pk.key, pk.u ? pk.u.discord_id : null, c.id, fact, sure, ok, points, Date.now()).run();
+    // The answer and its counter update go in one transaction; the counter only moves if the answer was new.
+    const [ins] = await runBatch(env, [
+      env.DB.prepare('INSERT OR IGNORE INTO fof_answers (week, card, player, discord_id, sid, pick, sure, ok, points, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .bind(week, i, pk.key, pk.u ? pk.u.discord_id : null, c.id, fact, sure, ok, points, Date.now()),
+      env.DB.prepare(`INSERT INTO fof_counts (week, card, n, f, ok) SELECT ?, ?, 1, ?, ? WHERE changes() = 1
+          ON CONFLICT (week, card) DO UPDATE SET n = n + 1, f = f + excluded.f, ok = ok + excluded.ok`).bind(week, i, fact, ok),
+    ]);
     // Another tab answered this card a moment earlier: send back what was actually saved.
     if (!changed(ins)) return h.J(await stateFor(env, B, week, pk), 409, origin);
-    await env.DB.prepare(`INSERT INTO fof_counts (week, card, n, f, ok) VALUES (?, ?, 1, ?, ?)
-        ON CONFLICT (week, card) DO UPDATE SET n = n + 1, f = f + excluded.f, ok = ok + excluded.ok`).bind(week, i, fact, ok).run();
     if (pk.u && i === cards.length - 1) await finish(env, week, pk.u.discord_id, cards.length);
     const k = await env.DB.prepare('SELECT n, f FROM fof_counts WHERE week = ? AND card = ?').bind(week, i).first();
     return h.J({ i, pick: b.pick, sure, ok: !!ok, points, ...back(c), crowd: crowdOf(k) }, 200, origin);
@@ -244,43 +254,53 @@ export async function fofRoute(req, env, url, origin, h) {
   return null;
 }
 
-// ---------- private stats (called from worker.js /admin/stats, which checks the admin list) ----------
-// Read straight from fof_answers so every number traces back to an actual answer. Per card: how many answered, the
-// share right (item difficulty), how often players chose "I'm sure" and how often they were right when they did
-// (sure pays only above 2 in 3), and, once 10 piles are finished, discrimination: the share right among the top half
-// of finishers minus the bottom half (+0.25 or more separates strong players from weak ones; near 0 is a coin flip).
+// ---------- private stats (called from worker.js /admin/stats and /admin/detail, which check the admin list) ----------
+// Totals are computed in SQL so the Worker's own CPU stays small as answers pile up. Per card: answers, share right
+// (item difficulty), share who chose "I'm sure", right when sure vs locked in ("I'm sure" pays only above 2 in 3), and
+// from 10 finished piles discrimination: share right among the top half of finishers minus the bottom half (+0.25 or
+// more separates strong players from weak ones; near 0 is a coin flip). Each player's answers load per week on request.
 export async function fofStats(env) {
   await schema(env);
   const B = await bank(env), now = fofWeek();
-  const rows = (await env.DB.prepare(`SELECT a.week, a.card, a.player, a.pick, a.sure, a.ok, a.points, a.created_at, u.name FROM fof_answers a
-      LEFT JOIN users u ON u.discord_id = a.discord_id ORDER BY a.week, a.created_at`).all()).results;
-  const byWeek = new Map();
-  for (const r of rows) { if (!byWeek.has(r.week)) byWeek.set(r.week, []); byWeek.get(r.week).push(r); }
+  const piles = (await env.DB.prepare(`SELECT week, COUNT(*) AS piles, SUM(n = ${CARDS}) AS finished, SUM(player LIKE 'd:%') AS signed_in,
+      SUM(CASE WHEN n = ${CARDS} THEN pts END) AS pts_done FROM (SELECT week, player, COUNT(*) AS n, SUM(points) AS pts FROM fof_answers GROUP BY week, player)
+      GROUP BY week ORDER BY week`).all()).results;
+  const cardRows = (await env.DB.prepare(`SELECT week, card, COUNT(*) AS n, SUM(ok) AS ok, SUM(sure) AS sure, SUM(sure * ok) AS sure_ok
+      FROM fof_answers GROUP BY week, card`).all()).results;
+  const stopRows = (await env.DB.prepare(`SELECT week, n, COUNT(*) AS c FROM (SELECT week, player, COUNT(*) AS n FROM fof_answers GROUP BY week, player)
+      WHERE n < ${CARDS} GROUP BY week, n`).all()).results;
+  const discRows = (await env.DB.prepare(`WITH p AS (SELECT week, player, SUM(points) AS pts FROM fof_answers GROUP BY week, player HAVING COUNT(*) = ${CARDS}),
+      r AS (SELECT week, player, ROW_NUMBER() OVER (PARTITION BY week ORDER BY pts DESC) AS k, COUNT(*) OVER (PARTITION BY week) AS m FROM p)
+      SELECT a.week, a.card, CASE WHEN r.k <= r.m / 2 THEN 'top' ELSE 'bottom' END AS half, AVG(a.ok) AS rate, MAX(r.m) AS m
+      FROM fof_answers a JOIN r ON r.week = a.week AND r.player = a.player
+      WHERE r.k <= r.m / 2 OR r.k > r.m - r.m / 2 GROUP BY a.week, a.card, half`).all()).results;
   const pct = (a, b) => b ? Math.round(100 * a / b) : null;
-  const weeks = [...byWeek].map(([week, rs]) => {
-    const cards = pile(B, week) || [];
-    const players = new Map(); let anon = 0;
-    for (const r of rs) {
-      if (!players.has(r.player)) players.set(r.player, { name: r.name || 'Anonymous ' + (++anon), signedIn: r.player.startsWith('d:'), answers: Array(cards.length).fill(null), points: 0, n: 0 });
-      const p = players.get(r.player); p.answers[r.card] = { pick: r.pick ? 'fact' : 'fiction', sure: r.sure, ok: !!r.ok, points: r.points }; p.points += r.points; p.n++;
-    }
-    const list = [...players.values()], done = list.filter(p => p.n === cards.length).sort((a, b) => b.points - a.points);
-    const half = Math.floor(done.length / 2), upper = done.slice(0, half), lower = done.slice(done.length - half);
-    const stopped = {}; for (const p of list) if (p.n < cards.length) stopped[p.n + 1] = (stopped[p.n + 1] || 0) + 1;
+  const weeks = piles.map(p => {
+    const cards = pile(B, p.week) || [], stopped = {};
+    for (const r of stopRows) if (r.week === p.week) stopped[r.n + 1] = r.c;
     return {
-      week, label: week === PRACTICE ? 'Practice' : 'Week ' + week, piles: list.length, finished: done.length, signedIn: list.filter(p => p.signedIn).length,
-      avgPoints: done.length ? Math.round(10 * done.reduce((s, p) => s + p.points, 0) / done.length) / 10 : null,
-      stopped,   // unfinished piles by the card they stopped on
+      week: p.week, label: p.week === PRACTICE ? 'Practice' : 'Week ' + p.week, piles: p.piles, finished: p.finished || 0, signedIn: p.signed_in || 0,
+      avgPoints: p.finished ? Math.round(10 * p.pts_done / p.finished) / 10 : null, stopped,
       cards: cards.map((c, i) => {
-        const a = list.map(p => p.answers[i]).filter(Boolean), sure = a.filter(x => x.sure), lock = a.filter(x => !x.sure);
-        const okIn = g => g.filter(p => p.answers[i] && p.answers[i].ok).length / (g.length || 1);
-        return { i: i + 1, id: c.id, s: c.s, a: c.a, answers: a.length, right: pct(a.filter(x => x.ok).length, a.length),
-          sure: pct(sure.length, a.length), rightSure: pct(sure.filter(x => x.ok).length, sure.length), rightLock: pct(lock.filter(x => x.ok).length, lock.length),
-          disc: done.length >= 10 ? Math.round(100 * (okIn(upper) - okIn(lower))) / 100 : null };
+        const k = cardRows.find(r => r.week === p.week && r.card === i) || { n: 0, ok: 0, sure: 0, sure_ok: 0 };
+        const top = discRows.find(r => r.week === p.week && r.card === i && r.half === 'top'), bot = discRows.find(r => r.week === p.week && r.card === i && r.half === 'bottom');
+        return { i: i + 1, id: c.id, s: c.s, a: c.a, answers: k.n, right: pct(k.ok, k.n), sure: pct(k.sure, k.n), rightSure: pct(k.sure_ok, k.sure),
+          rightLock: pct(k.ok - k.sure_ok, k.n - k.sure), disc: top && bot && top.m >= 10 ? Math.round(100 * (top.rate - bot.rate)) / 100 : null };
       }),
-      players: list.sort((a, b) => (b.n === cards.length) - (a.n === cards.length) || b.points - a.points)
-        .map(p => ({ name: p.name, signedIn: p.signedIn, points: p.points, finished: p.n === cards.length, answers: p.answers })),
     };
   });
   return { currentWeek: now, weeks };
+}
+export async function fofDetail(env, week) {
+  await schema(env);
+  const B = await bank(env), cards = pile(B, week) || [];
+  const rows = (await env.DB.prepare(`SELECT a.card, a.player, a.pick, a.sure, a.ok, a.points, u.name FROM fof_answers a
+      LEFT JOIN users u ON u.discord_id = a.discord_id WHERE a.week = ? ORDER BY a.created_at`).bind(week).all()).results;
+  const players = new Map(); let anon = 0;
+  for (const r of rows) {
+    if (!players.has(r.player)) players.set(r.player, { name: r.name || 'Anonymous ' + (++anon), signedIn: r.player.startsWith('d:'), answers: Array(cards.length).fill(null), points: 0, n: 0 });
+    const p = players.get(r.player); p.answers[r.card] = { pick: r.pick ? 'fact' : 'fiction', sure: r.sure, ok: !!r.ok }; p.points += r.points; p.n++;
+  }
+  return [...players.values()].sort((a, b) => (b.n === cards.length) - (a.n === cards.length) || b.points - a.points)
+    .map(p => ({ name: p.name, signedIn: p.signedIn, points: p.points, finished: p.n === cards.length, answers: p.answers }));
 }

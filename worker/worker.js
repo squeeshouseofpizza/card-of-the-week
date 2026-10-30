@@ -1,4 +1,4 @@
-import { fofRoute, openSealed, fofStats } from './fof.js';
+import { fofRoute, openSealed, fofStats, fofDetail } from './fof.js';
 import GTC from './gtc-bank.js';
 
 // Card of the Week game server: a Cloudflare Worker with a D1 database bound as DB.
@@ -207,9 +207,9 @@ function forgetBoards(week) { BOARD_MEMO.delete('pz-all'); BOARD_MEMO.delete('pz
 let PZ_COL = null;
 function pizzaRunsPlayer(env) {
   if (!PZ_COL) PZ_COL = (async () => {
-    try { await env.DB.prepare('ALTER TABLE pizza_runs ADD COLUMN player TEXT').run(); } catch (e) { if (!/duplicate column/i.test(String(e && e.message))) { PZ_COL = null; throw e; } }
+    try { await env.DB.prepare('ALTER TABLE pizza_runs ADD COLUMN player TEXT').run(); } catch (e) { if (!/duplicate column/i.test(String(e && e.message))) throw e; }
     await env.DB.prepare('CREATE INDEX IF NOT EXISTS pizza_runs_player ON pizza_runs (player)').run();
-  })();
+  })().catch(e => { PZ_COL = null; throw e; });
   return PZ_COL;
 }
 const GTC_MEMO = new Map();
@@ -436,52 +436,64 @@ export default {
         return J({ token: row.token }, 200, origin);
       }
       // ----- private stats for the crew (stats/ page): Discord sign-in, and only accounts on ADMINS -----
-      if (path === '/admin/stats') {
+      // ----- private stats for the crew (stats/ page): Discord sign-in, and only accounts on ADMINS -----
+      // Totals are computed in SQL and cached for a minute per Worker instance; each week's per-player detail loads
+      // separately when opened, so the page stays cheap as players grow.
+      if (path === '/admin/stats' || path === '/admin/detail') {
         const u = await user(req, env);
         if (!u) return J({ error: 'signin' }, 401, origin);
         if (!ADMINS.has(u.discord_id)) return J({ error: 'not admin', you: { id: u.discord_id, name: u.name } }, 403, origin);
-        // Days are Eastern dates. Rows are grouped by UTC hour in SQL, then folded into Eastern days here.
-        const day = ms => new Date(ms).toLocaleDateString('en-CA', { timeZone: TZ });
-        const fold = (rows, f) => { const m = new Map(); for (const r of rows) { const d = day(r.h * 3600e3); m.set(d, f(m.get(d), r)); } return [...m].map(([d, v]) => ({ day: d, ...v })); };
-        const runs = (await env.DB.prepare('SELECT created_at / 3600000 AS h, COUNT(*) AS n, SUM(score) AS s, MAX(score) AS best, SUM(ms) AS ms FROM pizza_runs GROUP BY h').all()).results;
-        const pizzaDays = fold(runs, (a = { games: 0, s: 0, best: 0, ms: 0 }, r) => ({ games: a.games + r.n, s: a.s + r.s, best: Math.max(a.best, r.best), ms: a.ms + r.ms }))
-          .map(d => ({ day: d.day, games: d.games, avgScore: Math.round(d.s / d.games), best: d.best, avgMinutes: Math.round(d.ms / d.games / 6000) / 10 })).sort((a, b) => a.day < b.day ? -1 : 1);
-        const biggest = (await env.DB.prepare('SELECT top, COUNT(*) AS games FROM pizza_runs GROUP BY top ORDER BY top').all()).results;
-        await pizzaRunsPlayer(env);
-        const perPlayer = (await env.DB.prepare(`SELECT r.player, u.name, COUNT(*) AS games, MAX(r.score) AS best, ROUND(AVG(r.score)) AS avg,
-            SUM(r.top = 10) AS pizzas, MAX(r.created_at) AS last FROM pizza_runs r LEFT JOIN users u ON r.player = 'd:' || u.discord_id
-            WHERE r.player IS NOT NULL GROUP BY r.player ORDER BY games DESC`).all()).results;
-        let anonN = 0;
-        const pizzaPlayers = perPlayer.map(r => ({ name: r.name || 'Anonymous ' + (++anonN), signedIn: r.player.startsWith('d:'), games: r.games, best: r.best, avg: r.avg, pizzas: r.pizzas || 0, last: r.last }));
-        const untracked = (await env.DB.prepare('SELECT COUNT(*) AS n FROM pizza_runs WHERE player IS NULL').first()).n;
-        const pizzaTop = (await env.DB.prepare(`SELECT u.name, MAX(p.score) AS best, COUNT(*) AS weeks FROM pizza_scores p JOIN users u ON u.discord_id = p.discord_id
-            GROUP BY p.discord_id ORDER BY best DESC LIMIT 25`).all()).results;
-        // Guess the Card per week, plus each player's guesses. Hints: artist after 3 misses, flavor after 4, art after 5.
-        const gp = (await env.DB.prepare(`SELECT p.week, p.player, p.guesses, p.won, p.done, p.started_at, u.name FROM plays p
-            LEFT JOIN users u ON u.discord_id = p.discord_id ORDER BY p.week, p.started_at`).all()).results;
-        const gw = new Map();
-        for (const r of gp) { if (!gw.has(r.week)) gw.set(r.week, []); gw.get(r.week).push(r); }
-        const gtcWeeks = [...gw].map(([week, rs]) => {
-          let anon = 0; const firsts = new Map(), hint = [0, 0, 0];
-          const players = rs.map(r => {
-            const g = JSON.parse(r.guesses), misses = r.won ? g.length - 1 : g.length;
-            if (g[0]) firsts.set(g[0], (firsts.get(g[0]) || 0) + 1);
-            [ARTIST_AT, FLAVOR_AT, ART_AT].forEach((k, i) => { if (misses >= k) hint[i]++; });
-            return { name: r.name || 'Anonymous ' + (++anon), signedIn: r.player.startsWith('d:'), guesses: g, won: !!r.won, done: !!r.done };
+        if (path === '/admin/detail') {
+          const week = parseInt(url.searchParams.get('week'), 10), game = url.searchParams.get('game');
+          if (!Number.isInteger(week)) return J({ error: 'week' }, 400, origin);
+          if (game === 'fof') return J({ players: await fofDetail(env, week) }, 200, origin);
+          if (game !== 'gtc') return J({ error: 'game' }, 400, origin);
+          const rs = (await env.DB.prepare(`SELECT p.player, p.guesses, p.won, p.done, u.name FROM plays p LEFT JOIN users u ON u.discord_id = p.discord_id
+              WHERE p.week = ? ORDER BY p.started_at`).bind(week).all()).results;
+          let anon = 0;
+          const list = rs.map(r => ({ name: r.name || 'Anonymous ' + (++anon), signedIn: r.player.startsWith('d:'), guesses: JSON.parse(r.guesses), won: !!r.won, done: !!r.done }))
+            .sort((a, b) => (b.won - a.won) || (a.won ? a.guesses.length - b.guesses.length : 0));
+          return J({ players: list }, 200, origin);
+        }
+        return J(await memo('admin', 60, async () => {
+          // Days are Eastern dates. Rows are grouped by UTC hour in SQL, then folded into Eastern days here.
+          const day = ms => new Date(ms).toLocaleDateString('en-CA', { timeZone: TZ });
+          const fold = (rows, f) => { const m = new Map(); for (const r of rows) { const d = day(r.h * 3600e3); m.set(d, f(m.get(d), r)); } return [...m].map(([d, v]) => ({ day: d, ...v })); };
+          const runs = (await env.DB.prepare('SELECT created_at / 3600000 AS h, COUNT(*) AS n, SUM(score) AS s, MAX(score) AS best, SUM(ms) AS ms FROM pizza_runs GROUP BY h').all()).results;
+          const pizzaDays = fold(runs, (a = { games: 0, s: 0, best: 0, ms: 0 }, r) => ({ games: a.games + r.n, s: a.s + r.s, best: Math.max(a.best, r.best), ms: a.ms + r.ms }))
+            .map(d => ({ day: d.day, games: d.games, avgScore: Math.round(d.s / d.games), best: d.best, avgMinutes: Math.round(d.ms / d.games / 6000) / 10 })).sort((a, b) => a.day < b.day ? -1 : 1);
+          const biggest = (await env.DB.prepare('SELECT top, COUNT(*) AS games FROM pizza_runs GROUP BY top ORDER BY top').all()).results;
+          await pizzaRunsPlayer(env);
+          // substr() lets the join use the users key (a 'd:' || id join scanned every user for every run).
+          const perPlayer = (await env.DB.prepare(`SELECT r.player, u.name, COUNT(*) AS games, MAX(r.score) AS best, ROUND(AVG(r.score)) AS avg,
+              SUM(r.top = 10) AS pizzas, MAX(r.created_at) AS last FROM pizza_runs r LEFT JOIN users u ON u.discord_id = substr(r.player, 3)
+              WHERE r.player IS NOT NULL GROUP BY r.player ORDER BY games DESC`).all()).results;
+          let anonN = 0;
+          const pizzaPlayers = perPlayer.map(r => ({ name: (r.player.startsWith('d:') && r.name) || 'Anonymous ' + (++anonN), signedIn: r.player.startsWith('d:'), games: r.games, best: r.best, avg: r.avg, pizzas: r.pizzas || 0, last: r.last }));
+          const untracked = (await env.DB.prepare('SELECT COUNT(*) AS n FROM pizza_runs WHERE player IS NULL').first()).n;
+          const pizzaTop = (await env.DB.prepare(`SELECT u.name, MAX(p.score) AS best, COUNT(*) AS weeks FROM pizza_scores p JOIN users u ON u.discord_id = p.discord_id
+              GROUP BY p.discord_id ORDER BY best DESC LIMIT 25`).all()).results;
+          // Guess the Card per week. Not solved splits into out of guesses (used all six) and stopped partway; opening the
+          // page without guessing leaves no row. Hints: artist after 3 misses, flavor after 4, art after 5.
+          const gRows = (await env.DB.prepare(`SELECT week, COUNT(*) AS players, SUM(won) AS solved, SUM(done = 1 AND won = 0) AS out_of, SUM(done = 0) AS stopped,
+              SUM(player LIKE 'd:%') AS signed_in, AVG(CASE WHEN won = 1 THEN json_array_length(guesses) END) AS avg_g,
+              SUM(json_array_length(guesses) - won >= ?) AS h1, SUM(json_array_length(guesses) - won >= ?) AS h2, SUM(json_array_length(guesses) - won >= ?) AS h3
+              FROM plays GROUP BY week`).bind(ARTIST_AT, FLAVOR_AT, ART_AT).all()).results;
+          const gDist = (await env.DB.prepare('SELECT week, json_array_length(guesses) AS n, COUNT(*) AS c FROM plays WHERE won = 1 GROUP BY week, n').all()).results;
+          const gFirst = (await env.DB.prepare(`SELECT week, json_extract(guesses, '$[0]') AS g, COUNT(*) AS c FROM plays WHERE json_array_length(guesses) > 0
+              GROUP BY week, g ORDER BY week, c DESC`).all()).results;
+          const gtcWeeks = gRows.map(r => {
+            const dist = Array(MAX_GUESSES).fill(0); gDist.filter(d => d.week === r.week).forEach(d => { dist[d.n - 1] = d.c; });
+            return { week: r.week, players: r.players, solved: r.solved || 0, outOfGuesses: r.out_of || 0, stopped: r.stopped || 0, signedIn: r.signed_in || 0,
+              avgGuesses: r.avg_g ? Math.round(r.avg_g * 10) / 10 : null, dist, hints: { artist: r.h1 || 0, flavor: r.h2 || 0, art: r.h3 || 0 },
+              firsts: gFirst.filter(f => f.week === r.week).slice(0, 5).map(f => [f.g, f.c]) };
           });
-          const solved = players.filter(p => p.won), finished = players.filter(p => p.done);
-          const dist = Array(MAX_GUESSES).fill(0); solved.forEach(p => dist[p.guesses.length - 1]++);
-          // Not solved splits two ways: out of guesses (used all six) or stopped partway. Opening the page without guessing leaves no row.
-          return { week, players: players.length, finished: finished.length, solved: solved.length, outOfGuesses: players.filter(p => p.done && !p.won).length, stopped: players.filter(p => !p.done).length, signedIn: players.filter(p => p.signedIn).length,
-            avgGuesses: solved.length ? Math.round(10 * solved.reduce((s, p) => s + p.guesses.length, 0) / solved.length) / 10 : null,
-            dist, hints: { artist: hint[0], flavor: hint[1], art: hint[2] }, firsts: [...firsts].sort((a, b) => b[1] - a[1]).slice(0, 5),
-            list: players.sort((a, b) => (b.won - a.won) || (a.won ? a.guesses.length - b.guesses.length : 0)) };
-        });
-        const users = (await env.DB.prepare('SELECT created_at / 3600000 AS h, COUNT(*) AS n FROM users GROUP BY h').all()).results;
-        const signups = fold(users, (a = { n: 0 }, r) => ({ n: a.n + r.n })).sort((a, b) => a.day < b.day ? -1 : 1);
-        return J({ at: Date.now(), gtcWeek: now, accounts: users.reduce((s, r) => s + r.n, 0), signups,
-          pizza: { games: runs.reduce((s, r) => s + r.n, 0), days: pizzaDays, biggest, top: pizzaTop, players: pizzaPlayers, untracked },
-          gtc: { weeks: gtcWeeks }, fof: await fofStats(env) }, 200, origin);
+          const users = (await env.DB.prepare('SELECT created_at / 3600000 AS h, COUNT(*) AS n FROM users GROUP BY h').all()).results;
+          const signups = fold(users, (a = { n: 0 }, r) => ({ n: a.n + r.n })).sort((a, b) => a.day < b.day ? -1 : 1);
+          return { at: Date.now(), gtcWeek: now, accounts: users.reduce((s, r) => s + r.n, 0), signups,
+            pizza: { games: runs.reduce((s, r) => s + r.n, 0), days: pizzaDays, biggest, top: pizzaTop, players: pizzaPlayers, untracked },
+            gtc: { weeks: gtcWeeks }, fof: await fofStats(env) };
+        }), 200, origin);
       }
       if (path === '/me') {
         const u = await user(req, env);
