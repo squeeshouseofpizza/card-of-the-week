@@ -212,6 +212,19 @@ function pizzaRunsPlayer(env) {
   })().catch(e => { PZ_COL = null; throw e; });
   return PZ_COL;
 }
+// Stats page, Pizza Drop games per player: most games first, then most recently played, then name, so every row has a
+// fixed place (ties used to come back in storage order, which put not-signed-in browsers first at random).
+function byGames(a, b) { return b.games - a.games || b.last - a.last || String(a.name).localeCompare(String(b.name)); }
+// Not-signed-in browsers, labelled by the first six characters of the browser's random id so a label always means the
+// same browser (numbering by position renumbered everyone whenever a browser played more or signed in).
+async function pizzaAnon(env) {
+  await pizzaRunsPlayer(env);
+  // The range on player uses the pizza_runs_player index ('c;' is the character after 'c:').
+  const rs = (await env.DB.prepare(`SELECT player, COUNT(*) AS games, MAX(score) AS best, SUM(score) AS total, SUM(top = 10) AS pizzas,
+      MAX(created_at) AS last FROM pizza_runs WHERE player >= 'c:' AND player < 'c;' GROUP BY player`).all()).results;
+  return rs.map(r => ({ name: 'Anonymous ' + r.player.slice(2, 8), signedIn: false, games: r.games, best: r.best,
+    avg: Math.round(r.total / r.games), pizzas: r.pizzas || 0, last: r.last })).sort(byGames);
+}
 const GTC_MEMO = new Map();
 async function memo(key, ttl, fn) {
   const hit = GTC_MEMO.get(key);
@@ -445,6 +458,7 @@ export default {
         if (!ADMINS.has(u.discord_id)) return J({ error: 'not admin', you: { id: u.discord_id, name: u.name } }, 403, origin);
         if (path === '/admin/detail') {
           const week = parseInt(url.searchParams.get('week'), 10), game = url.searchParams.get('game');
+          if (game === 'pizza-anon') return J({ players: await memo('pzanon', 60, () => pizzaAnon(env)) }, 200, origin);
           if (!Number.isInteger(week)) return J({ error: 'week' }, 400, origin);
           if (game === 'fof') return J({ players: await fofDetail(env, week) }, 200, origin);
           if (game !== 'gtc') return J({ error: 'game' }, 400, origin);
@@ -466,11 +480,18 @@ export default {
           const biggest = (await env.DB.prepare('SELECT top, COUNT(*) AS games FROM pizza_runs GROUP BY top ORDER BY top').all()).results;
           await pizzaRunsPlayer(env);
           // substr() lets the join use the users key (a 'd:' || id join scanned every user for every run).
-          const perPlayer = (await env.DB.prepare(`SELECT r.player, u.name, COUNT(*) AS games, MAX(r.score) AS best, ROUND(AVG(r.score)) AS avg,
+          // Signed-in players are listed; not-signed-in browsers come back as one summary row (their full list loads
+          // on open through /admin/detail?game=pizza-anon), so the page stays small however many browsers play.
+          const perPlayer = (await env.DB.prepare(`SELECT r.player, u.name, COUNT(*) AS games, MAX(r.score) AS best, SUM(r.score) AS total,
               SUM(r.top = 10) AS pizzas, MAX(r.created_at) AS last FROM pizza_runs r LEFT JOIN users u ON u.discord_id = substr(r.player, 3)
-              WHERE r.player IS NOT NULL GROUP BY r.player ORDER BY games DESC`).all()).results;
-          let anonN = 0;
-          const pizzaPlayers = perPlayer.map(r => ({ name: (r.player.startsWith('d:') && r.name) || 'Anonymous ' + (++anonN), signedIn: r.player.startsWith('d:'), games: r.games, best: r.best, avg: r.avg, pizzas: r.pizzas || 0, last: r.last }));
+              WHERE r.player IS NOT NULL GROUP BY r.player`).all()).results;
+          const signed = perPlayer.filter(r => r.player.startsWith('d:')), anonRows = perPlayer.filter(r => !r.player.startsWith('d:'));
+          const pizzaPlayers = signed.map(r => ({ name: r.name || 'Discord account', signedIn: true, games: r.games, best: r.best,
+              avg: Math.round(r.total / r.games), pizzas: r.pizzas || 0, last: r.last })).sort(byGames);
+          const anonGames = anonRows.reduce((s, r) => s + r.games, 0);
+          const pizzaAnonSum = { browsers: anonRows.length, games: anonGames, best: anonRows.reduce((m, r) => Math.max(m, r.best), 0),
+            avg: anonGames ? Math.round(anonRows.reduce((s, r) => s + r.total, 0) / anonGames) : null,
+            pizzas: anonRows.reduce((s, r) => s + (r.pizzas || 0), 0), last: anonRows.reduce((m, r) => Math.max(m, r.last), 0) || null };
           const untracked = (await env.DB.prepare('SELECT COUNT(*) AS n FROM pizza_runs WHERE player IS NULL').first()).n;
           const pizzaTop = (await env.DB.prepare(`SELECT u.name, MAX(p.score) AS best, COUNT(*) AS weeks FROM pizza_scores p JOIN users u ON u.discord_id = p.discord_id
               GROUP BY p.discord_id ORDER BY best DESC LIMIT 25`).all()).results;
@@ -501,7 +522,7 @@ export default {
           const users = (await env.DB.prepare('SELECT created_at / 3600000 AS h, COUNT(*) AS n FROM users GROUP BY h').all()).results;
           const signups = fold(users, (a = { n: 0 }, r) => ({ n: a.n + r.n })).sort((a, b) => a.day < b.day ? -1 : 1);
           return { at: Date.now(), gtcWeek: now, accounts: users.reduce((s, r) => s + r.n, 0), signups,
-            pizza: { games: runs.reduce((s, r) => s + r.n, 0), days: pizzaDays, biggest, top: pizzaTop, players: pizzaPlayers, untracked },
+            pizza: { games: runs.reduce((s, r) => s + r.n, 0), days: pizzaDays, biggest, top: pizzaTop, players: pizzaPlayers, anon: pizzaAnonSum, untracked },
             gtc: { weeks: gtcWeeks }, fof: await fofStats(env), returning };
         }), 200, origin);
       }

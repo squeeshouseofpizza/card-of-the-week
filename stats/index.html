@@ -60,6 +60,8 @@ td.w{text-align:left;white-space:normal;min-width:90px}
 details{margin-top:10px}
 details.earlier>summary{color:var(--muted)}summary{cursor:pointer;color:var(--gold-lite);font-size:15.5px}
 td.l,th.l{white-space:nowrap}
+button.sort{background:none;border:0;padding:0;font:inherit;letter-spacing:inherit;text-transform:inherit;color:inherit;cursor:pointer;white-space:nowrap}
+button.sort:hover,button.sort.on{color:var(--gold-lite)}
 </style>
 </head>
 <body>
@@ -110,7 +112,7 @@ td.l,th.l{white-space:nowrap}
   async function signOut(){try{await fetch(API+'/auth/logout',{method:'POST',headers:{Authorization:'Bearer '+token()}})}catch(e){}store.del('shopweekly.token');load()}
 
   function render(j){
-    const P=j.pizza,G=j.gtc.weeks,F=j.fof.weeks;
+    const P=j.pizza,G=j.gtc.weeks,F=j.fof.weeks,A=P.anon;
     const tiles=[['Discord accounts',j.accounts],['Pizza Drop games',P.games],['Guess the Card games',G.reduce((s,w)=>s+w.players,0)],['Fact or Fiction piles',F.reduce((s,w)=>s+w.piles,0)]];
     let h=`<div class="tiles">${tiles.map(([l,n])=>`<div class="tile"><div class="l">${l}</div><div class="n">${num(n)}</div></div>`).join('')}</div>`;
 
@@ -130,9 +132,9 @@ td.l,th.l{white-space:nowrap}
       ${P.biggest.map(b=>`<tr><td>${b.top<0?'No merges':TOP[b.top]}</td><td class="l">${bar(b.games,maxB)}${num(b.games)}</td><td>${Math.round(100*b.games/allTop)}%</td></tr>`).join('')}</tbody></table></div>
       <h3>Best scores (signed in)</h3><div class="scroll"><table><thead><tr><th class="l">Player</th><th>Best</th><th>Weeks played</th></tr></thead><tbody>
       ${P.top.map(t=>`<tr><td>${esc(t.name)}</td><td>${num(t.best)}</td><td>${t.weeks}</td></tr>`).join('')||'<tr><td colspan="3" class="l muted">No signed-in scores yet.</td></tr>'}</tbody></table></div>
-      <h3>Games per player</h3><div class="scroll"><table><thead><tr><th class="l">Player</th><th>Games</th><th>Best</th><th>Avg score</th><th>Pizzas</th><th>Last played</th></tr></thead><tbody>
-      ${(P.players||[]).map(p=>`<tr><td>${esc(p.name)}${p.signedIn?'':' <span class="muted">(not signed in)</span>'}</td><td>${num(p.games)}</td><td>${num(p.best)}</td><td>${num(p.avg)}</td><td>${num(p.pizzas)}</td><td>${new Date(p.last).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</td></tr>`).join('')||'<tr><td colspan="6" class="l muted">No tracked games yet.</td></tr>'}</tbody></table></div>
-      <p class="muted" style="margin:10px 0 0">Games per player counts from Oct 29, 2026 on${P.untracked?` (${num(P.untracked)} earlier games weren’t tagged and only show in the daily totals)`:''}. Not signed in means one browser; when that browser signs in, its games move to the account.</p></section>`;
+      <h3>Games per player</h3><div class="scroll">${pzTable('signed',P.players||[],'No signed-in games yet.')}</div>
+      ${A&&A.browsers?`<details data-game="pizza-anon" data-week="0"><summary>Not signed in: ${plural(A.browsers,'browser')}, ${plural(A.games,'game')} · best ${num(A.best)} · ${plural(A.pizzas,'pizza')} · last played ${when(A.last)}</summary><div class="det muted">Loading…</div></details>`:''}
+      <p class="muted" style="margin:10px 0 0">Click a column heading to sort; ties go to most games, then most recently played. Counts start Oct 29, 2026${P.untracked?` (${num(P.untracked)} earlier games weren’t tagged and only show in the daily totals)`:''}. Not signed in means one browser, so one person on a phone and a laptop counts twice; when a browser signs in, its games move to the account.</p></section>`;
 
     const wk=w=>w===-1?'Practice card':w<-1?'Test '+(-w-1):'Week '+w;
     // A small bar chart; the most common value is highlighted (like Wordle's guess chart).
@@ -179,6 +181,10 @@ td.l,th.l{white-space:nowrap}
     h+=`<section><h2>New Discord sign-ins</h2><div class="scroll"><table><thead><tr><th class="l">Day</th><th class="l">New accounts</th></tr></thead><tbody>
       ${j.signups.slice().reverse().map(s=>`<tr><td>${s.day}</td><td class="l">${bar(s.n,maxS)}${num(s.n)}</td></tr>`).join('')}</tbody></table></div></section>`;
     $('out').innerHTML=h;$('out').hidden=false;
+    // Sortable Pizza Drop player tables (one handler, set rather than added, so reloading after sign-in doesn't stack them).
+    $('out').onclick=e=>{const b=e.target.closest('button[data-sort]');if(!b)return;const t=b.closest('table[data-pz]'),id=t.dataset.pz,s=PZ_SORT[id],k=b.dataset.sort;
+      if(s.key===k)s.dir=-s.dir;else{s.key=k;s.dir=k==='name'?1:-1}
+      t.outerHTML=pzTable(id,PZ_ROWS[id],t.dataset.empty)};
     // Each week's per-player detail loads the first time it's opened.
     $('out').querySelectorAll('details[data-game]').forEach(d=>d.addEventListener('toggle',()=>{if(d.open&&!d.dataset.loaded){d.dataset.loaded='1';detail(d)}}));
   }
@@ -186,12 +192,27 @@ td.l,th.l{white-space:nowrap}
   const who=p=>esc(p.name)+(p.signedIn?'':' <span class="muted">(not signed in)</span>');
   const when=t=>t?new Date(t).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'–';
   const dur=ms=>{const s=Math.round(ms/1000);return s<60?s+'s':s<3600?Math.floor(s/60)+'m '+String(s%60).padStart(2,'0')+'s':Math.floor(s/3600)+'h '+String(Math.floor(s%3600/60)).padStart(2,'0')+'m'};
+  const plural=(n,w)=>num(n)+' '+w+(n===1?'':'s');
+  // Pizza Drop games per player. Default order matches the server: most games, then most recently played, then name.
+  // Any other column sorts first by that column, then falls back to the default order.
+  const PZ_COLS=[['name','Player'],['games','Games'],['best','Best'],['avg','Avg score'],['pizzas','Pizzas'],['last','Last played']];
+  const PZ_SORT={signed:{key:'games',dir:-1},anon:{key:'games',dir:-1}},PZ_ROWS={};
+  const pzBase=(a,b)=>b.games-a.games||b.last-a.last||String(a.name).localeCompare(String(b.name));
+  function pzTable(id,rows,empty){
+    PZ_ROWS[id]=rows;const s=PZ_SORT[id];
+    const cmp=(a,b)=>(s.key==='name'?String(a.name).localeCompare(String(b.name)):(a[s.key]||0)-(b[s.key]||0))*s.dir||pzBase(a,b);
+    const head=PZ_COLS.map(([k,l],i)=>{const on=s.key===k;return `<th${i?'':' class="l"'}${on?` aria-sort="${s.dir<0?'descending':'ascending'}"`:''}><button type="button" class="sort${on?' on':''}" data-sort="${k}">${l}${on?(s.dir<0?' ▼':' ▲'):''}</button></th>`}).join('');
+    const body=rows.slice().sort(cmp).map(p=>`<tr><td>${esc(p.name)}</td><td>${num(p.games)}</td><td>${num(p.best)}</td><td>${num(p.avg)}</td><td>${num(p.pizzas)}</td><td>${when(p.last)}</td></tr>`).join('')||`<tr><td colspan="6" class="l muted">${esc(empty||'Nobody yet.')}</td></tr>`;
+    return `<table data-pz="${id}" data-empty="${esc(empty)}"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+  }
   async function detail(d){
     const box=d.querySelector('.det'),game=d.dataset.game;
     let j;try{const r=await fetch(API+'/admin/detail?game='+game+'&week='+d.dataset.week,{headers:{Authorization:'Bearer '+token()}});if(!r.ok)throw 0;j=await r.json()}
     catch(e){box.textContent='Couldn’t load this. Close and open it again.';delete d.dataset.loaded;return}
     box.className='det scroll';
     if(!j.players.length){box.innerHTML='<p class="muted">Nobody yet.</p>';return}
+    // Only the table scrolls sideways on a phone, so the note above it stays put.
+    if(game==='pizza-anon'){box.className='det';box.innerHTML=`<p class="muted" style="margin:6px 0">Each browser that played without signing in, labelled by the start of its random id, so a label always means the same browser.</p><div class="scroll">${pzTable('anon',j.players,'')}</div>`;return}
     if(game==='gtc')box.innerHTML=`<p class="muted" style="margin:6px 0">Newest first. Played is when the first guess went in (Eastern); Took is first guess to last.</p><table><thead><tr><th class="l">Played</th><th class="l">Player</th><th class="l">Result</th><th>Took</th><th class="l">Guesses in order</th></tr></thead><tbody>
       ${j.players.map(p=>`<tr><td class="l">${when(p.started)}</td><td class="l">${who(p)}</td><td class="l">${p.won?'Solved in '+p.guesses.length:p.done?'Out of guesses':'Stopped after '+p.guesses.length}</td><td>${p.ms==null?'–':dur(p.ms)}</td><td class="s">${p.guesses.map(esc).join(' → ')}</td></tr>`).join('')}</tbody></table>`;
     else{const n=+d.dataset.cards;box.innerHTML=`<p class="muted" style="margin:6px 0">Newest first. Played is when the first card was answered (Eastern).</p><table><thead><tr><th class="l">Played</th><th class="l">Player</th><th>Points</th>${Array.from({length:n},(_,i)=>`<th class="l">Card ${i+1}</th>`).join('')}</tr></thead><tbody>
