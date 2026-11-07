@@ -103,7 +103,7 @@ button.sort:hover,button.sort.on{color:var(--gold-lite)}
     let r,j;
     try{r=await fetch(API+'/admin/stats',{headers:{Authorization:'Bearer '+token()}});j=await r.json()}catch(e){$('msg').textContent='The game server didn’t answer. Try again in a minute.';return}
     if(r.status===401){store.del('shopweekly.token');return askSignIn('Your sign-in expired. Sign in with Discord again.')}
-    if(r.status===403){$('out').hidden=true;$('msg').innerHTML=`Signed in as ${esc(j.you.name)}, but this account isn’t on the stats list yet. Send this Discord ID to Claude to be added: <code>${esc(j.you.id)}</code> <button class="link" id="so" type="button">Sign out</button>`;$('so').onclick=signOut;return}
+    if(r.status===403){$('out').hidden=true;$('msg').innerHTML=`Signed in as ${esc(j.you.name)}, but this account isn’t on the stats list yet. Send this Discord ID to the S.H.O.P. crew to be added: <code>${esc(j.you.id)}</code> <button class="link" id="so" type="button">Sign out</button>`;$('so').onclick=signOut;return}
     if(!r.ok){$('msg').textContent='Something went wrong loading the stats.';return}
     $('auth').innerHTML='<button class="link" id="so" type="button">Sign out</button>';$('so').onclick=signOut;
     $('msg').textContent='As of '+new Date(j.at).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' Eastern. Refresh for the latest.';
