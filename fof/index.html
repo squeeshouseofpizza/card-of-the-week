@@ -13,8 +13,8 @@
 /* Layout: one column, a dealt card in the middle of a felt table, two piles below it like the card Fact or Fiction. Single dark look, the S.H.O.P. house style. */
 :root{
   color-scheme:dark;
-  --ground:#17120c; --felt:#1f1810; --card:#2a2016; --card-edge:#4a3820;
-  --ink:#efe6d2; --muted:#a99873; --gold:#d6a34a; --gold-lite:#e6b862;
+  --ground:#1c1d21; --felt:#232429; --card:#2b2d33; --card-edge:#3b3d44;
+  --ink:#ece9e2; --muted:#a6a49d; --label:Verdana,"DejaVu Sans",Geneva,sans-serif; --gold:#d6a34a; --gold-lite:#e6b862;
   --right:#7fbf7a; --wrong:#e0785e; --fic:#7a3b2a;
   --display:"Cinzel",Georgia,serif; --body:"EB Garamond",Georgia,serif; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
 }
@@ -24,14 +24,14 @@ body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);
 .wrap{max-width:560px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
 .demo{font-size:13px;color:var(--muted);border:1px dashed var(--card-edge);border-radius:8px;padding:6px 10px;text-align:center}
 header{display:flex;flex-direction:column;gap:2px}
-.eyebrow{font-family:var(--display);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+.eyebrow{font-family:var(--label);font-weight:bold;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold)}
 h1{font-family:var(--display);font-weight:700;font-size:clamp(30px,8vw,40px);margin:0;letter-spacing:.04em;line-height:1.05;text-wrap:balance}
 .sub{color:var(--muted);margin:0;font-size:16px}
 .pips{display:flex;gap:6px;justify-content:center}
 .pip{width:22px;height:6px;border-radius:3px;background:var(--card-edge)}
 .pip.on{background:var(--gold)}
 .pip.r{background:var(--right)} .pip.w{background:var(--wrong)}
-.table{position:relative;background:radial-gradient(ellipse 80% 60% at 50% 35%,rgba(214,163,74,.10),rgba(214,163,74,0) 70%),var(--felt);border:1px solid var(--card-edge);border-radius:14px;padding:18px 14px 16px;display:flex;flex-direction:column;gap:14px;overflow:hidden}
+.table{position:relative;background:var(--felt);border:1px solid var(--card-edge);border-radius:14px;padding:18px 14px 16px;display:flex;flex-direction:column;gap:14px;overflow:hidden}
 .deck{position:relative;height:340px;perspective:1200px;transition:height .4s ease}
 .ghost{position:absolute;inset:8px 6px -6px;border-radius:14px;background:var(--card);border:1px solid var(--card-edge);transform:rotate(-2.5deg);opacity:.55}
 .ghost.g2{transform:rotate(2deg);inset:4px 10px -3px;opacity:.75}
@@ -39,9 +39,9 @@ h1{font-family:var(--display);font-weight:700;font-size:clamp(30px,8vw,40px);mar
 .card.dragging{transition:none;cursor:grabbing}
 .flip{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.3,.7,.2,1)}
 .card.flipped .flip{transform:rotateY(180deg)}
-.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:14px;background:linear-gradient(180deg,#30251a,var(--card));border:1px solid var(--card-edge);box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 0 0 5px var(--card),inset 0 0 0 6px rgba(214,163,74,.55);padding:20px 20px 18px;display:flex;flex-direction:column;gap:12px}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:14px;background:linear-gradient(180deg,#33353b,var(--card));border:1px solid var(--card-edge);box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 0 0 5px var(--card),inset 0 0 0 6px rgba(214,163,74,.55);padding:20px 20px 18px;display:flex;flex-direction:column;gap:12px}
 .back{transform:rotateY(180deg);overflow-y:auto}
-.cardtop{display:flex;justify-content:space-between;align-items:center;gap:8px;font-family:var(--display);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.cardtop{display:flex;justify-content:space-between;align-items:center;gap:8px;font-family:var(--label);font-weight:bold;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold)}
 .ep{border:1px solid rgba(214,163,74,.5);border-radius:999px;padding:2px 9px;color:var(--gold-lite);letter-spacing:.08em;min-width:0;text-align:right;border-radius:12px}
 .cardtop>span:first-child{flex:none}
 .stmt{flex:1;display:flex;align-items:center;margin:0;font-size:clamp(22px,6.2vw,27px);line-height:1.3;text-wrap:pretty}
@@ -56,7 +56,7 @@ h1{font-family:var(--display);font-weight:700;font-size:clamp(30px,8vw,40px);mar
 .mark{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;font-family:var(--mono);font-size:14px;color:var(--ground)}
 .r .mark{background:var(--right)} .w .mark{background:var(--wrong)}
 .quote{margin:0;padding-left:12px;border-left:2px solid var(--gold);font-style:italic;font-size:16.5px}
-.label{font-family:var(--display);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);display:block;font-style:normal;margin-bottom:2px}
+.label{font-family:var(--label);font-weight:bold;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);display:block;font-style:normal;margin-bottom:2px}
 .changed{margin:0;font-size:16px}
 .crowd{display:flex;flex-direction:column;gap:4px;font-size:13.5px;color:var(--muted)}
 .bar{height:8px;border-radius:4px;background:var(--card-edge);overflow:hidden;display:flex}
@@ -69,7 +69,7 @@ h1{font-family:var(--display);font-weight:700;font-size:clamp(30px,8vw,40px);mar
 .btn.next{background:transparent;color:var(--gold-lite);border-color:var(--gold)}
 .btn:focus-visible,.chip:focus-visible,.copy:focus-visible,.hear:focus-visible{outline:2px solid var(--gold-lite);outline-offset:2px}
 .sure{display:flex;flex-direction:column;gap:8px}
-.sure p{margin:0;text-align:center;font-family:var(--display);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.sure p{margin:0;text-align:center;font-family:var(--label);font-weight:bold;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold)}
 .chips{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .chip{display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:10px;border:1px solid var(--card-edge);background:var(--card);color:var(--ink);padding:9px 4px;cursor:pointer;font-family:var(--body);font-size:16px;min-height:56px}
 .chip small{font-family:var(--mono);font-size:12px;color:var(--muted)}
@@ -78,7 +78,7 @@ h1{font-family:var(--display);font-weight:700;font-size:clamp(30px,8vw,40px);mar
 .next{width:100%}
 .piles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .pile{border:1px dashed var(--card-edge);border-radius:10px;padding:8px 10px;min-height:66px;display:flex;flex-direction:column;gap:6px}
-.pile h3{margin:0;font-family:var(--display);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:500;display:flex;justify-content:space-between}
+.pile h3{margin:0;font-family:var(--label);font-weight:bold;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between}
 .minis{display:flex;flex-wrap:wrap;gap:4px}
 .mini{width:18px;height:24px;border-radius:3px;background:var(--card);border:1px solid var(--card-edge);display:grid;place-items:center;font-family:var(--mono);font-size:11px}
 .mini.r{color:var(--right);border-color:var(--right)} .mini.w{color:var(--wrong);border-color:var(--wrong)}
@@ -126,7 +126,7 @@ pre.share{margin:0;background:var(--ground);border:1px solid var(--card-edge);bo
 .links{display:flex;justify-content:center;gap:22px}
 .linkbtn{background:none;border:0;color:var(--gold-lite);font:inherit;font-size:16px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:6px 2px}
 details.how{border:1px solid var(--card-edge);border-radius:10px;padding:10px 14px;background:var(--felt)}
-details.how summary{cursor:pointer;font-family:var(--display);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+details.how summary{cursor:pointer;font-family:var(--label);font-weight:bold;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold)}
 details.how ol{margin:10px 0 2px;padding-left:20px;display:flex;flex-direction:column;gap:6px}
 /* Small header during play */
 .minihead{display:flex;align-items:center;gap:12px}
@@ -134,13 +134,13 @@ details.how ol{margin:10px 0 2px;padding-left:20px;display:flex;flex-direction:c
 .minihead .t{font-family:var(--display);font-weight:700;font-size:18px;letter-spacing:.04em;line-height:1.15}
 /* Leaderboard */
 .board{display:flex;flex-direction:column;gap:10px;border:1px solid var(--card-edge);border-radius:12px;background:var(--felt);padding:14px}
-.board h2{margin:0;font-family:var(--display);font-size:16px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+.board h2{margin:0;font-family:var(--label);font-weight:bold;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold)}
 .tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .tab{border:1px solid var(--card-edge);background:var(--card);color:var(--muted);border-radius:8px;padding:8px;font-family:var(--display);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
 .tab[aria-pressed="true"]{border-color:var(--gold);color:var(--gold-lite)}
 .cap{margin:0;font-size:14px;color:var(--muted)}
 table.lb{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:16px}
-.lb th{font-family:var(--display);font-weight:500;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:right;padding:4px 6px;border-bottom:1px solid var(--card-edge)}
+.lb th{font-family:var(--label);font-weight:bold;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:right;padding:4px 6px;border-bottom:1px solid var(--card-edge)}
 .lb th:nth-child(2),.lb td:nth-child(2){text-align:left}
 .lb td{padding:6px;text-align:right;border-bottom:1px solid rgba(214,163,74,.12)}
 .lb td:first-child{color:var(--muted);width:2.6em}
