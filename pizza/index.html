@@ -11,8 +11,8 @@
 <style>
 /* Layout: one narrow column; the pizza box is the hero, scores above it, leaderboard below */
 :root{
-  --ground:#17120c; --panel:#211a11; --panel-2:#2a2116; --line:rgba(214,163,74,.3);
-  --gold:#d6a34a; --gold-lite:#e6b862; --gold-dim:#8a6a2e; --cream:#efe6d2; --muted:#a99873;
+  --ground:#1c1d21; --panel:#232429; --panel-2:#2b2d33; --line:rgba(214,163,74,.3);
+  --gold:#d6a34a; --gold-lite:#e6b862; --gold-dim:#8a6a2e; --cream:#ece9e2; --muted:#a6a49d; --label:Verdana,"DejaVu Sans",Geneva,sans-serif;
   --box:#b9884f; --box-in:#8c6236; --box-edge:#6d4a27;
   --display:"Cinzel",Georgia,serif; --body:"EB Garamond",Georgia,serif; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
   color-scheme:dark;
@@ -34,12 +34,12 @@ body{margin:0;background:var(--ground);color:var(--cream);font-family:var(--body
 .btn.discord{background:#5865f2;color:#fff;font-family:var(--body);text-transform:none;letter-spacing:0;font-size:15px;padding:7px 12px}
 .btn:focus-visible,.linkbtn:focus-visible{outline:2px solid var(--gold-lite);outline-offset:2px}
 header{display:flex;flex-direction:column;gap:2px}
-.eyebrow{font-family:var(--display);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+.eyebrow{font-family:var(--label);font-weight:bold;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold)}
 h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,7vw,38px);margin:0;letter-spacing:.04em;line-height:1.1}
 .sub{color:var(--muted);font-size:15px;margin:0}
 .hud{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .stat{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
-.stat .l{font-family:var(--display);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.stat .l{font-family:var(--label);font-weight:bold;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold)}
 .stat .n{font-family:var(--mono);font-size:20px;color:var(--cream);font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:8px;min-height:28px}
 .stat canvas{width:28px;height:28px}
 .stage{position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--panel)}
@@ -47,10 +47,10 @@ h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,7vw,38px);mar
 /* While a game is on, the chef and the topping he holds are the pointer. The system pointer is drawn a frame or two
    ahead of the canvas, so showing both made the chef look laggy next to it. */
 #game.playing{cursor:none}
-.snd{position:absolute;top:8px;right:8px;z-index:2;display:flex;align-items:center;gap:6px;background:rgba(23,18,12,.78);color:var(--cream);border:1px solid var(--line);border-radius:999px;padding:5px 11px 5px 8px;font-family:var(--body);font-size:14px;cursor:pointer}
+.snd{position:absolute;top:8px;right:8px;z-index:2;display:flex;align-items:center;gap:6px;background:rgba(28,29,33,.78);color:var(--cream);border:1px solid var(--line);border-radius:999px;padding:5px 11px 5px 8px;font-family:var(--body);font-size:14px;cursor:pointer}
 .snd:hover{border-color:var(--gold)}.snd:focus-visible{outline:2px solid var(--gold-lite);outline-offset:2px}
 .snd svg{width:18px;height:18px;flex:none}
-.over{position:absolute;inset:0;background:rgba(18,13,8,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center}
+.over{position:absolute;inset:0;background:rgba(20,21,24,.84);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center}
 .over h2{font-family:var(--display);font-size:26px;margin:0;color:var(--gold-lite)}
 .over .big{font-family:var(--mono);font-size:34px}
 .over p{margin:0;color:var(--muted);font-size:15px;max-width:34ch}
@@ -60,7 +60,7 @@ h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,7vw,38px);mar
 .over .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 pre.share{margin:0;background:var(--ground);border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-family:var(--mono);font-size:13px;white-space:pre-wrap;user-select:all;text-align:left}
 .legend{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
-.legend h2{font-family:var(--display);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0;font-weight:500}
+.legend h2{font-family:var(--label);font-weight:bold;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin:0}
 .chain{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:10px 6px}
 .chain li{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;line-height:1.2;color:var(--cream);text-align:center}
 .chain li.m{color:var(--muted)}
@@ -74,7 +74,7 @@ pre.share{margin:0;background:var(--ground);border:1px solid var(--line);border-
 .chain canvas{width:38px;height:38px}
 .nn{font-family:var(--body);font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 details{border:1px solid var(--line);border-radius:8px;padding:10px 14px;color:var(--muted);font-size:15px;background:var(--panel)}
-summary{cursor:pointer;font-family:var(--display);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+summary{cursor:pointer;font-family:var(--label);font-weight:bold;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold)}
 details p{margin:8px 0}
 .board-lb{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
 .lbhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
@@ -82,7 +82,7 @@ details p{margin:8px 0}
 .seg button{background:transparent;border:0;color:var(--muted);font:inherit;font-size:14px;padding:5px 12px;cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--gold);color:#1a1309}
 .seg button:focus-visible{outline:2px solid var(--gold-lite);outline-offset:-2px}
-.board-lb h2{font-family:var(--display);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0;font-weight:500}
+.board-lb h2{font-family:var(--label);font-weight:bold;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin:0}
 .lb{width:100%;border-collapse:collapse;font-size:15px}
 .lb td{padding:6px 4px;border-top:1px solid rgba(214,163,74,.12)}
 .lb td.r{width:2.4em;color:var(--muted);font-family:var(--mono);font-size:13px}
@@ -373,7 +373,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     ctx.clearRect(0,0,W,H);ctx.save();
     if(shake>.3){ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);shake*=.88}else shake=0;
     // box
-    ctx.fillStyle='#2a2116';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#2b2d33';ctx.fillRect(0,0,W,H);
     ctx.fillStyle='#8c6236';ctx.fillRect(0,TOP-30,W,H-TOP+30);
     const g=ctx.createLinearGradient(0,TOP,0,H);g.addColorStop(0,'#c99a5b');g.addColorStop(1,'#a77a43');ctx.fillStyle=g;ctx.fillRect(WALL,TOP-30,W-WALL*2,FLOOR-TOP+30);
     if(!stamp){stamp=document.createElement('canvas');stamp.width=W;stamp.height=H;const sc=stamp.getContext('2d'),cy=TOP+(FLOOR-TOP)*.55;
@@ -404,12 +404,12 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     ctx.beginPath();ctx.moveTo(WALL,LINE);ctx.lineTo(W-WALL,LINE);ctx.stroke();ctx.setLineDash([]);
     if(warn){ctx.fillStyle='#e05a3c';ctx.fillRect(WALL,LINE-5,(W-2*WALL)*(1-warn),4);
       const txt='Overflowing · '+Math.max(1,Math.ceil((GRACE-(simT-overSince))/1000));ctx.font='700 17px Cinzel,Georgia,serif';ctx.textAlign='center';
-      const tw=ctx.measureText(txt).width+28;ctx.fillStyle='rgba(23,18,12,.88)';ctx.beginPath();ctx.roundRect?ctx.roundRect(W/2-tw/2,LINE+10,tw,30,15):ctx.rect(W/2-tw/2,LINE+10,tw,30);ctx.fill();
+      const tw=ctx.measureText(txt).width+28;ctx.fillStyle='rgba(28,29,33,.88)';ctx.beginPath();ctx.roundRect?ctx.roundRect(W/2-tw/2,LINE+10,tw,30,15):ctx.rect(W/2-tw/2,LINE+10,tw,30);ctx.fill();
       ctx.strokeStyle='#e05a3c';ctx.lineWidth=1.5;ctx.stroke();ctx.fillStyle='#ffd9cc';ctx.fillText(txt,W/2,LINE+31)}
     // first-game hints
     if(!taught&&running&&!over){const msg=!started?(TOUCH?'Drag to aim, let go to drop':'Move to aim, click to drop'):merges===0?'Land two of the same together':null;
       if(msg){ctx.globalAlpha=.75+.25*Math.sin(now/300);ctx.font='600 19px Cinzel,Georgia,serif';ctx.textAlign='center';const y=TOP+(FLOOR-TOP)*.22,tw=ctx.measureText(msg).width+32;
-        ctx.fillStyle='rgba(23,18,12,.86)';ctx.beginPath();ctx.roundRect?ctx.roundRect(W/2-tw/2,y-26,tw,38,19):ctx.rect(W/2-tw/2,y-26,tw,38);ctx.fill();
+        ctx.fillStyle='rgba(28,29,33,.86)';ctx.beginPath();ctx.roundRect?ctx.roundRect(W/2-tw/2,y-26,tw,38,19):ctx.rect(W/2-tw/2,y-26,tw,38);ctx.fill();
         ctx.fillStyle='#fff3d6';ctx.fillText(msg,W/2,y);ctx.globalAlpha=1}}
     // merge pops
     pops=pops.filter(p=>now-p.t<700);
@@ -423,7 +423,7 @@ footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);paddin
     ctx.globalAlpha=1;
     if(banner){const dur=banner.long?2400:1600,k=(now-banner.t)/dur;if(k>1)banner=null;else{
       ctx.globalAlpha=k<.12?k/.12:k>.78?(1-k)/.22:1;const sz=banner.big?40:28,y=TOP+(banner.sub?92:70),pop=k<.12?.7+.3*(k/.12)+.08*Math.sin(k/.12*Math.PI):1;
-      ctx.save();ctx.translate(W/2,y);ctx.scale(pop,pop);ctx.textAlign='center';ctx.lineWidth=6;ctx.strokeStyle='rgba(23,18,12,.85)';
+      ctx.save();ctx.translate(W/2,y);ctx.scale(pop,pop);ctx.textAlign='center';ctx.lineWidth=6;ctx.strokeStyle='rgba(28,29,33,.85)';
       if(banner.sub){ctx.font='600 16px Cinzel,Georgia,serif';ctx.strokeText(banner.sub.toUpperCase(),0,-sz*.95);ctx.fillStyle='#fff3d6';ctx.fillText(banner.sub.toUpperCase(),0,-sz*.95)}
       ctx.font=`700 ${sz}px Cinzel,Georgia,serif`;ctx.strokeText(banner.txt,0,0);ctx.fillStyle=banner.big?'#f0c674':'#fff3d6';ctx.fillText(banner.txt,0,0);ctx.restore();ctx.globalAlpha=1}}
   }
