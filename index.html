@@ -11,11 +11,11 @@
 <style>
 /* Layout: one centered play column in the S.H.O.P. dark and gold house style; card art carries the color, the frame stays quiet */
 :root{
-  --ground:#17120c; --panel:#211a11; --panel-2:#2a2116; --line:rgba(214,163,74,.3);
+  --ground:#1c1d21; --panel:#232429; --panel-2:#2b2d33; --line:rgba(214,163,74,.3);
   --gold:#d6a34a; --gold-lite:#e6b862; --gold-dim:#8a6a2e;
-  --cream:#efe6d2; --muted:#a99873;
-  --hit:#5f7f4f; --hit-fg:#f1f6ea; --near:#b9852f; --near-fg:#1a1309; --miss:#2b241a; --miss-fg:#c9bb9c;
-  --display:"Cinzel",Georgia,serif; --body:"EB Garamond",Georgia,serif; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --cream:#ece9e2; --muted:#a6a49d;
+  --hit:#5f7f4f; --hit-fg:#f1f6ea; --near:#b9852f; --near-fg:#1a1309; --miss:#2e3036; --miss-fg:#c4c3bd;
+  --display:"Cinzel",Georgia,serif; --label:Verdana,"DejaVu Sans",Geneva,sans-serif; --body:"EB Garamond",Georgia,serif; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
   color-scheme:dark;
 }
 html.framed{color-scheme:light;background:transparent}
@@ -35,9 +35,9 @@ body{margin:0;background:var(--ground);color:var(--cream);font-family:var(--body
 .demo{border:1px dashed var(--gold-dim);color:var(--muted);font-size:14px;padding:8px 12px;border-radius:6px;text-align:center}
 .banner{position:relative;border-radius:12px;overflow:hidden;min-height:150px;border:1px solid var(--line);background:var(--panel);display:flex;align-items:flex-end}
 .banner .bg{position:absolute;inset:0;background-size:cover;background-position:center 30%}
-.banner .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(23,18,12,.15) 0%,rgba(23,18,12,.55) 55%,rgba(23,18,12,.95) 100%)}
+.banner .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(28,29,33,.15) 0%,rgba(28,29,33,.55) 55%,rgba(28,29,33,.95) 100%)}
 .banner .txt{position:relative;padding:16px 18px;display:flex;flex-direction:column;gap:2px;width:100%}
-.eyebrow{font-family:var(--display);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+.eyebrow{font-family:var(--label);font-weight:bold;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold)}
 h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,6vw,40px);margin:0;letter-spacing:.04em;line-height:1.1;text-wrap:balance}
 .last{font-size:14px;color:var(--muted);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .last b{color:var(--cream);font-weight:500}
@@ -54,7 +54,7 @@ select{background:var(--panel);border:1px solid var(--line);border-radius:6px;pa
 .toggle[aria-pressed="true"]{color:var(--gold-lite);border-color:var(--gold)}
 .board{display:flex;flex-direction:column;gap:8px}
 .head,.row{display:grid;grid-template-columns:minmax(0,1.7fr) repeat(5,minmax(0,1fr));gap:6px}
-.head div{font-family:var(--display);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:0 4px}
+.head div{font-family:var(--label);font-weight:bold;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:0 4px}
 .tile{position:relative;border-radius:6px;padding:9px 6px;text-align:center;font-size:14px;line-height:1.25;background:var(--miss);color:var(--miss-fg);
   border:1px solid rgba(255,255,255,.04);display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:52px;min-width:0;overflow-wrap:anywhere}
 .tile small{font-size:11px;opacity:.85;font-family:var(--mono)}
@@ -79,7 +79,7 @@ select{background:var(--panel);border:1px solid var(--line);border-radius:6px;pa
 .err{color:#e08a6e;font-size:14px;min-height:1.2em;margin:4px 2px 0}
 .hints{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:10px;align-items:start}
 .hint{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:0}
-.hint .k{font-family:var(--display);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.hint .k{font-family:var(--label);font-weight:bold;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold)}
 .hint .v{color:var(--cream)}
 .hint.locked .v{color:var(--muted);font-style:italic}
 .hintcol{display:flex;flex-direction:column;gap:10px;min-width:0}
@@ -126,7 +126,7 @@ select{background:var(--panel);border:1px solid var(--line);border-radius:6px;pa
 pre.share{margin:0;background:var(--ground);border:1px solid var(--line);border-radius:6px;padding:10px;font-family:var(--mono);font-size:13px;line-height:1.35;white-space:pre-wrap;user-select:all}
 .note{font-size:13px;color:var(--muted)}
 details{border:1px solid var(--line);border-radius:8px;padding:10px 14px;color:var(--muted);font-size:15px;background:var(--panel)}
-summary{cursor:pointer;font-family:var(--display);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+summary{cursor:pointer;font-family:var(--label);font-weight:bold;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold)}
 details p{margin:8px 0}
 .key{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:4px}
 @media (max-width:560px){
@@ -148,7 +148,7 @@ details p{margin:8px 0}
 .btn.discord{background:#5865f2;color:#fff;font-family:var(--body);text-transform:none;letter-spacing:0;font-size:15px;padding:7px 12px}
 .btn.discord:hover{background:#4752c4}
 .board-lb{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
-.board-lb h2{font-family:var(--display);font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0;font-weight:500}
+.board-lb h2{font-family:var(--label);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin:0;font-weight:bold}
 .lb{width:100%;border-collapse:collapse;font-size:15px}
 .lb td{padding:6px 4px;border-top:1px solid rgba(214,163,74,.12)}
 .lb td.r{width:2.4em;color:var(--muted);font-family:var(--mono);font-size:13px}
@@ -159,7 +159,7 @@ details p{margin:8px 0}
 .lb tr.me td{color:var(--gold-lite)}
 .lbnote{font-size:13px;color:var(--muted);margin:0}
 .deep{margin:0;border:1px solid var(--gold);border-radius:8px;padding:9px 12px;font-size:15px;color:var(--cream);background:rgba(214,163,74,.08)}
-.deep b{font-family:var(--display);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-lite);font-weight:500;margin-right:6px}
+.deep b{font-family:var(--label);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-lite);font-weight:bold;margin-right:6px}
 .busy{opacity:.6;pointer-events:none}
 </style>
 </head>
