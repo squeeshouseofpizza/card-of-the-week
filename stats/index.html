@@ -11,8 +11,8 @@
 /* Private stats for the S.H.O.P. games. The numbers come from the game server and only show for Discord accounts on
    its admin list; this page itself holds no data. */
 :root{
-  --ground:#17120c; --panel:#211a11; --line:rgba(214,163,74,.3); --gold:#d6a34a; --gold-lite:#e6b862;
-  --cream:#efe6d2; --muted:#a99873; --bar:#8a6a2e;
+  --ground:#1c1d21; --panel:#232429; --line:rgba(214,163,74,.3); --gold:#d6a34a; --gold-lite:#e6b862;
+  --cream:#ece9e2; --muted:#a6a49d; --bar:#8a6a2e; --label:Verdana,"DejaVu Sans",Geneva,sans-serif;
   --display:"Cinzel",Georgia,serif; --body:"EB Garamond",Georgia,serif; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
   color-scheme:dark;
 }
@@ -21,19 +21,19 @@
 body{margin:0;background:var(--ground);color:var(--cream);font-family:var(--body);font-size:17px;line-height:1.45}
 .wrap{max-width:1240px;margin:0 auto;padding:20px 16px 48px;display:flex;flex-direction:column;gap:18px}
 h1{font-family:var(--display);font-size:26px;margin:0;color:var(--gold-lite)}
-h2{font-family:var(--display);font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0 0 10px;font-weight:500}
-h3{font-family:var(--display);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px;font-weight:500}
+h2{font-family:var(--label);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin:0 0 10px;font-weight:bold}
+h3{font-family:var(--label);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px;font-weight:bold}
 .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .muted{color:var(--muted);font-size:15px}
 section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
 .tile{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
-.tile .l{font-family:var(--display);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.tile .l{font-family:var(--label);font-weight:bold;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold)}
 .tile .n{font-family:var(--mono);font-size:24px;font-variant-numeric:tabular-nums}
 #out{display:flex;flex-direction:column;gap:18px}
 .scroll{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:15.5px}
-th{font-family:var(--display);font-weight:500;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:right;padding:5px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-family:var(--label);font-weight:bold;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:right;padding:5px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
 td{padding:6px 8px;text-align:right;border-bottom:1px solid rgba(214,163,74,.12);vertical-align:top}
 th:first-child,td:first-child,td.l,th.l{text-align:left}
 td.s{text-align:left;min-width:280px;max-width:520px}
@@ -41,7 +41,7 @@ td.s{text-align:left;min-width:280px;max-width:520px}
 .btn{background:#5865f2;color:#fff;border:0;border-radius:8px;padding:9px 14px;font:inherit;font-size:16px;cursor:pointer}
 .link{background:none;border:0;color:var(--gold);text-decoration:underline;font:inherit;font-size:15px;cursor:pointer;padding:0}
 .msg{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
-code{font-family:var(--mono);background:#2a2116;padding:2px 6px;border-radius:4px}
+code{font-family:var(--mono);background:#2b2d33;padding:2px 6px;border-radius:4px}
 .fact{color:#9cc98f}.fiction{color:#e08a6e}
 /* Small charts: one hue; the most common value is the brighter bar. Hover a bar for its exact count. */
 .hist{display:flex;align-items:flex-end;gap:2px;height:46px;margin:6px 0 2px}
@@ -51,7 +51,7 @@ code{font-family:var(--mono);background:#2a2116;padding:2px 6px;border-radius:4p
 .histx span{width:16px;text-align:center}
 .split{display:inline-flex;gap:2px;vertical-align:middle;margin-right:6px}
 .split i{display:block;height:10px;border-radius:2px}
-.split i.r{background:var(--gold-lite)}.split i.w{background:#7a6545}
+.split i.r{background:var(--gold-lite)}.split i.w{background:#6b6d75}
 td.v{text-align:left;white-space:normal;min-width:130px}
 td.w{text-align:left;white-space:normal;min-width:90px}
 .tag{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:0 8px;font-size:13px;margin:1px 2px;white-space:nowrap}
